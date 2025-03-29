@@ -1,0 +1,51 @@
+.filtros {
+    display: flex;
+    flex-direction: column;
+    max-width: 400px;
+    padding: 20px 20px 10px 10px;
+}
+
+.titleFiltros {
+    font-size: 18px;
+    font-weight: bold;
+    color: #2c3e50;
+    margin-bottom: 15px;
+    padding-bottom: 5px;
+}
+
+.filtro-container {
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+}
+
+.filtro-label {
+    font-size: 14px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 5px;
+}
+
+.filtro-select {
+    height: 40px;
+    padding: 8px;
+    border: 2px solid #cbdce6;
+    border-radius: 8px;
+    background-color: #f8fafc;
+    font-size: 14px;
+    color: #333;
+    outline: none;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+/* Efecto cuando pasás el mouse */
+.filtro-select:hover {
+    border-color: #7aa4c8;
+}
+
+/* Efecto cuando hacés click */
+.filtro-select:focus {
+    border-color: #497b97;
+    box-shadow: 0px 0px 5px rgba(73, 123, 151, 0.5);
+}
