@@ -1,5 +1,6 @@
 import React from 'react';
-import './Header.css'; // Importamos los estilos
+import { Link } from 'react-router-dom';
+import './Header.css'; 
 
 const Header = () => {
   return (
@@ -12,7 +13,7 @@ const Header = () => {
             <nav>
               <a href="#">Tickets</a>
               <a href="#">Mensajes</a>
-              <a href="#">Caja</a>
+              <Link to="/creador">Creador</Link>
               <a href="#">Config</a>
             </nav>
           </div>

@@ -1,7 +1,26 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import './Caja.css';
 
 const Caja = () => {
+  const [movimientos, setMovimientos] = useState([]);
+
+  useEffect(() => {
+    const fetchMovimientos = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/movimientos');
+        const data = await response.json();
+        setMovimientos(data);
+      } catch (error) {
+        console.error('Error al obtener movimientos:', error);
+      }
+    };
+
+    fetchMovimientos();
+    const interval = setInterval(fetchMovimientos, 5000); // Actualiza cada 5 segundos
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="caja">
       <div className="tab-container">
@@ -34,47 +53,29 @@ const Caja = () => {
           <table className="transaction-table">
             <thead>
               <tr>
-                <th className="table-header">ID</th>
+                <th className="table-header">Patente</th>
                 <th className="table-header">Fecha</th>
                 <th className="table-header">Hora</th>
                 <th className="table-header">Descripción</th>
                 <th className="table-header">Operador</th>
-                <th className="table-header">Origen</th>
-                <th className="table-header">Comprobante</th>
+                <th className="table-header">Tipo de Vehículo</th>
+                <th className="table-header">M. De Pago</th>
                 <th className="table-header">Monto</th>
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td className="table-data">1</td>
-                <td className="table-data">2023-10-01</td>
-                <td className="table-data">12:00</td>
-                <td className="table-data">Transaction details here</td>
-                <td className="table-data">Diego</td>
-                <td className="table-data">Origin A</td>
-                <td className="table-data">Receipt A</td>
-                <td className="table-data">$10.000</td>
-              </tr>
-              <tr>
-                <td className="table-data">2</td>
-                <td className="table-data">2023-10-01</td>
-                <td className="table-data">12:30</td>
-                <td className="table-data">Transaction details here</td>
-                <td className="table-data">Carlos</td>
-                <td className="table-data">Origin B</td>
-                <td className="table-data">Receipt B</td>
-                <td className="table-data">$20.000</td>
-              </tr>
-              <tr>
-                <td className="table-data">3</td>
-                <td className="table-data">2023-10-01</td>
-                <td className="table-data">13:00</td>
-                <td className="table-data">Transaction details here</td>
-                <td className="table-data">Carlos</td>
-                <td className="table-data">Origin C</td>
-                <td className="table-data">Receipt B</td>
-                <td className="table-data">$25.000</td>
-              </tr>
+              {movimientos.map((movimiento) => (
+                <tr key={movimiento._id}>
+                  <td className="table-data">{movimiento.patente}</td>
+                  <td className="table-data">{new Date(movimiento.fecha).toLocaleDateString()}</td>
+                  <td className="table-data">{new Date(movimiento.fecha).toLocaleTimeString()}</td>
+                  <td className="table-data">{movimiento.descripcion}</td>
+                  <td className="table-data">{movimiento.operador}</td>
+                  <td className="table-data">{movimiento.tipoVehiculo.charAt(0).toUpperCase() + movimiento.tipoVehiculo.slice(1)}</td>
+                  <td className="table-data">{movimiento.metodoPago}</td>
+                  <td className="table-data">${movimiento.monto.toLocaleString()}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
