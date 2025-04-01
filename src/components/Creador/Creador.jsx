@@ -57,14 +57,11 @@ const Creador = () => {
             })
             .catch(err => console.error("Error registrando entrada:", err));
     };
-    const registrarSalida = (patente) => {
+    const registrarSalida = (patente, metodoPago) => {
         fetch(`http://localhost:5000/api/vehiculos/${patente}/registrarSalida`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                operador: "Carlos",
-                metodoPago: metodosPago[patente] || "Efectivo",
-            }),
+            body: JSON.stringify({ metodoPago })
         })
             .then(res => res.json())
             .then(data => {
@@ -118,15 +115,25 @@ const Creador = () => {
                             <td>{vehiculo.historialEstadias?.[vehiculo.historialEstadias.length - 1]?.entrada ? new Date(vehiculo.historialEstadias[vehiculo.historialEstadias.length - 1].entrada).toLocaleTimeString() : "-"}</td>
                             <td>{vehiculo.historialEstadias?.[vehiculo.historialEstadias.length - 1]?.salida ? new Date(vehiculo.historialEstadias[vehiculo.historialEstadias.length - 1].salida).toLocaleTimeString() : "-"}</td>
                             <td>
-                                <button onClick={() => registrarEntrada(vehiculo.patente)}>Entrada</button>
-                                <button onClick={() => registrarSalida(vehiculo.patente)}>Salida</button>
+                                <button onClick={() => registrarEntrada(vehiculo.patente)} disabled={vehiculo.abonado}>
+                                    Entrada
+                                </button>
+                                <button
+                                    onClick={() => registrarSalida(vehiculo.patente, metodosPago[vehiculo.patente] ?? "Efectivo")}
+                                    disabled={vehiculo.abonado}
+                                >
+                                    Salida
+                                </button>
                             </td>
                             <td>
                                 <select
-                                    value={metodosPago[vehiculo.patente] || "Efectivo"}
-                                    onChange={(e) =>
-                                        setMetodosPago({ ...metodosPago, [vehiculo.patente]: e.target.value })
-                                    }
+                                    value={metodosPago[vehiculo.patente] ?? "Efectivo"}
+                                    onChange={(e) => {
+                                        setMetodosPago(prev => ({
+                                            ...prev,
+                                            [vehiculo.patente]: e.target.value
+                                        }));
+                                    }}
                                 >
                                     <option value="Efectivo">Efectivo</option>
                                     <option value="Tarjeta">Tarjeta</option>
