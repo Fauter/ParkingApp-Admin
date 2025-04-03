@@ -60,19 +60,21 @@ const Caja = () => {
                 <th className="table-header">Operador</th>
                 <th className="table-header">Tipo de Vehículo</th>
                 <th className="table-header">M. De Pago</th>
+                <th className="table-header">Factura</th>
                 <th className="table-header">Monto</th>
               </tr>
             </thead>
             <tbody>
               {movimientos.map((movimiento) => (
                 <tr key={movimiento._id}>
-                  <td className="table-data">{movimiento.patente}</td>
+                  <td className="table-data">{movimiento.patente.toUpperCase()}</td>
                   <td className="table-data">{new Date(movimiento.fecha).toLocaleDateString()}</td>
                   <td className="table-data">{new Date(movimiento.fecha).toLocaleTimeString()}</td>
                   <td className="table-data">{movimiento.descripcion}</td>
                   <td className="table-data">{movimiento.operador}</td>
                   <td className="table-data">{movimiento.tipoVehiculo.charAt(0).toUpperCase() + movimiento.tipoVehiculo.slice(1)}</td>
                   <td className="table-data">{movimiento.metodoPago}</td>
+                  <td className="table-data">{movimiento.factura}</td>
                   <td className="table-data">${movimiento.monto.toLocaleString()}</td>
                 </tr>
               ))}

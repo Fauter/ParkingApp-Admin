@@ -45,7 +45,7 @@ const Creador = () => {
             },
             body: JSON.stringify({
                 operador: 'Carlos',
-                metodoPago: 'Tarjeta',
+                metodoPago: 'Efectivo',
                 monto: 1000, // MONTO POR HORA
             }),
         })
@@ -61,7 +61,7 @@ const Creador = () => {
         fetch(`http://localhost:5000/api/vehiculos/${patente}/registrarSalida`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ metodoPago })
+            body: JSON.stringify({ metodoPago }),
         })
             .then(res => res.json())
             .then(data => {
@@ -136,7 +136,8 @@ const Creador = () => {
                                     }}
                                 >
                                     <option value="Efectivo">Efectivo</option>
-                                    <option value="Tarjeta">Tarjeta</option>
+                                    <option value="Débito">Débito</option>
+                                    <option value="Crédito">Crédito</option>
                                     <option value="QR">QR</option>
                                 </select>
                             </td>

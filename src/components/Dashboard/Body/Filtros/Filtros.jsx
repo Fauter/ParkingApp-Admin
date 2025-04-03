@@ -19,7 +19,8 @@ function Filtros() {
                 <select className="filtro-select">
                     <option value="">Seleccionar Método</option>
                     <option value="efectivo">Efectivo</option>
-                    <option value="tarjeta">Tarjeta</option>
+                    <option value="Débito">Débito</option>
+                    <option value="Crédito">Crédito</option>
                     <option value="qr">QR</option>
                 </select>
             </div>
