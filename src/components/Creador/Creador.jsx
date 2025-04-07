@@ -9,7 +9,7 @@ const Creador = () => {
     const [metodosPago, setMetodosPago] = useState({});
 
     useEffect(() => {
-        fetch("https://parkingapp-back.onrender.com/api/vehiculos")
+        fetch("http://localhost:5000/api/vehiculos")
             .then(res => res.json())
             .then(data => setVehiculos(data))
             .catch(err => console.error("Error al obtener vehículos:", err));
@@ -18,7 +18,7 @@ const Creador = () => {
     const agregarVehiculo = () => {
         if (!patente) return;
         const nuevoVehiculo = { patente, tipoVehiculo, abonado };
-        fetch("https://parkingapp-back.onrender.com/api/vehiculos", {
+        fetch("http://localhost:5000/api/vehiculos", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(nuevoVehiculo),
@@ -38,7 +38,7 @@ const Creador = () => {
     };
 
     const registrarEntrada = (patente) => {
-        fetch(`https://parkingapp-back.onrender.com/api/vehiculos/${patente}/registrarEntrada`, {
+        fetch(`http://localhost:5000/api/vehiculos/${patente}/registrarEntrada`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -58,7 +58,7 @@ const Creador = () => {
             .catch(err => console.error("Error registrando entrada:", err));
     };
     const registrarSalida = (patente, metodoPago) => {
-        fetch(`https://parkingapp-back.onrender.com/api/vehiculos/${patente}/registrarSalida`, {
+        fetch(`http://localhost:5000/api/vehiculos/${patente}/registrarSalida`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ metodoPago }),
@@ -74,25 +74,6 @@ const Creador = () => {
 
     return (
         <div className="creador-container">
-            <h2>Gestor de Vehículos</h2>
-            <div className="formulario">
-                <input
-                    type="text"
-                    placeholder="Patente"
-                    value={patente}
-                    onChange={(e) => setPatente(e.target.value)}
-                />
-                <select value={tipoVehiculo} onChange={(e) => setTipoVehiculo(e.target.value)}>
-                    <option value="auto">Auto</option>
-                    <option value="camioneta">Camioneta</option>
-                </select>
-                <select value={abonado} onChange={(e) => setAbonado(e.target.value === "true")}> 
-                    <option value="false">No Abonado</option>
-                    <option value="true">Abonado</option>
-                </select>
-                <button onClick={agregarVehiculo}>Agregar Vehículo</button>
-            </div>
-
             {/* ABAJO */}
             <table>
                 <thead>

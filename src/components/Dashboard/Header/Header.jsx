@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import profilePic from '../../../assets/profilePic.png'
 import './Header.css'; 
 
 const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [username, setUsername] = useState('');
-  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -13,7 +13,7 @@ const Header = () => {
       if (!token) return;
   
       try {
-        const response = await fetch('https://parkingapp-back.onrender.com/api/auth/profile', { 
+        const response = await fetch('http://localhost:5000/api/auth/profile', { 
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`, // <-- Asegúrate de incluir "Bearer "
@@ -52,10 +52,10 @@ const Header = () => {
               <h2 className="header-title">Admin Dashboard</h2>
             </div>
             <nav>
-              <a href="#">Tickets</a>
+              <a href="/">Tickets</a>
               <a href="#">Mensajes</a>
+              <Link to="/config">Config</Link>
               <a href="https://prueba.ofiflex.com.ar">Operador</a>
-              <a href="#">Config</a>
             </nav>
           </div>
           <div className="header-right">
@@ -66,7 +66,7 @@ const Header = () => {
               <div
                 className="profile-pic"
                 onClick={toggleMenu}
-                style={{ backgroundImage: 'url("https://cdn.usegalileo.ai/sdxl10/3626cf3a-8bcf-4b43-999a-f401d2f88b55.png")' }}
+                style={{ backgroundImage: `url(${profilePic})` }}              
               ></div>
               {menuOpen && (
                 <div className="dropdown-menu">

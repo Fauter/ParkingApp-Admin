@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-route
 import Login from "./components/Login/Login.jsx";
 import Dashboard from './components/Dashboard/Dashboard.jsx';
 import Creador from './components/Creador/Creador.jsx';
+import Config from './components/Config/Config.jsx';
 
 function App() {
   const navigate = useNavigate();

@@ -7,7 +7,7 @@ const Caja = () => {
   useEffect(() => {
     const fetchMovimientos = async () => {
       try {
-        const response = await fetch('https://parkingapp-back.onrender.com/api/movimientos');
+        const response = await fetch('http://localhost:5000/api/movimientos');
         const data = await response.json();
         setMovimientos(data);
       } catch (error) {
