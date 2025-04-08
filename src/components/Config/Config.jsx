@@ -9,7 +9,7 @@ const Config = () => {
   });
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/precios')
+    fetch('https://parkingapp-back.onrender.com/api/precios')
       .then(res => res.json())
       .then(data => setPrecios(data))
       .catch(err => {
@@ -28,7 +28,7 @@ const Config = () => {
   };
 
   const handleSave = (vehiculo) => {
-    fetch(`http://localhost:5000/api/precios/${vehiculo}`, {
+    fetch(`https://parkingapp-back.onrender.com/api/precios/${vehiculo}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json'

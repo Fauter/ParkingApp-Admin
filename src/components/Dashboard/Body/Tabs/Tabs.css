@@ -1,0 +1,44 @@
+
+.tab-container {
+}
+
+.tab-links {
+    display: flex;
+    gap: 16px;
+}
+.tab-link {
+    text-decoration: none;
+    color: #497b97;
+    font-weight: bold;
+    }
+.tab-link.active {
+    border-bottom: 3px solid #276a91;
+    color: #0d161c;
+}
+
+.search-container {
+    margin-top: 12px;
+    border-top: 2px solid #cbdce6;
+    padding-top: 12px;
+}
+.search-input-container {
+    display: flex;
+    align-items: center;
+    border-radius: 4px;
+    background-color: #e0eaf0;
+    width: 99%;
+}
+.search-icon {
+    display: flex;
+    margin: 0px 5px 0px 5px;
+}
+.search-input {
+    width: 100%;
+    padding: 8px;
+    border: none;
+    font-size: 14px;
+    background-color: #e0eaf0;
+}
+.search-input:focus {
+    outline: none;
+}

@@ -2,73 +2,38 @@
     display: flex;
     flex-direction: column;
     padding: 20px 10px 10px 10px;
-}
-
-.tab-container {
-    border-bottom: 2px solid #cbdce6;
-    padding-bottom: 12px;
-}
-
-.tab-links {
-    display: flex;
-    gap: 16px;
-}
-.tab-link {
-    text-decoration: none;
-    color: #497b97;
-    font-weight: bold;
-    }
-.tab-link.active {
-    border-bottom: 3px solid #276a91;
-    color: #0d161c;
-}
-
-.search-container {
-    margin-top: 16px;
-}
-.search-input-container {
-    display: flex;
-    align-items: center;
-    border-radius: 4px;
-    background-color: #e0eaf0;
-    width: 99%;
-}
-.search-icon {
-    display: flex;
-    margin: 0px 5px 0px 5px;
-}
-.search-input {
-    width: 100%;
-    padding: 8px;
-    border: none;
-    font-size: 14px;
-    background-color: #e0eaf0;
-}
-.search-input:focus {
-    outline: none;
-}
-
-.table-container {
+  }
+  
+  .table-container {
     margin-top: 16px;
     border-radius: 8px;
     overflow: hidden;
     width: 99%;
-}
-.transaction-table {
+  }
+  
+  .table-wrapper {
+    overflow-x: auto;
+  }
+  
+  .transaction-table {
     width: 100%;
     background-color: #f1f6f8;
     border-collapse: collapse;
-}
-.table-header {
+  }
+  
+  .transaction-table th,
+  .transaction-table td {
     padding: 12px;
-    color: #0d161c;
     text-align: left;
+    font-size: 14px;
+    color: #0d161c;
+  }
+  
+  .transaction-table th {
     font-weight: bold;
-    font-size: 14px;
-}
-.table-data {
-    padding: 12px;
-    text-align: left;
-    color: #0d161c;
-    font-size: 14px;
-}
+    background-color: #e5eef3;
+  }
+  
+  .transaction-table tr:nth-child(even) {
+    background-color: #eaf3f7;
+  }
