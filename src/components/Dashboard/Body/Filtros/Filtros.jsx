@@ -61,7 +61,16 @@ function Filtros({ filtros, setFiltros, activeTab, limpiarFiltros }) {
               <option value="21-24">21:00 - 00:00</option>
             </select>
           </div>
-  
+          <div className="filtro-container">
+            <label className="filtro-label">Fecha</label>
+            <input
+              type="date"
+              name="fecha"
+              className="filtro-input"
+              value={filtros.fecha}
+              onChange={handleChange}
+            />
+          </div>
           <div className="filtro-container">
             <label className="filtro-label">Tipo de Vehículo</label>
             <select

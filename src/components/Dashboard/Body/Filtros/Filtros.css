@@ -36,6 +36,14 @@
     transition: all 0.3s ease;
     cursor: pointer;
 }
+.filtro-input {
+    height: 20px;
+    border: 2px solid #cbdce6;
+    border-radius: 8px;
+    background-color: #f8fafc;
+    font-size: 14px;
+    color: #333;
+}
 
 /* Efecto cuando pasás el mouse */
 .filtro-select:hover {

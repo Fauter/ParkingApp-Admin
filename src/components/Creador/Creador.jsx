@@ -9,7 +9,7 @@ const Creador = () => {
     const [metodosPago, setMetodosPago] = useState({});
 
     useEffect(() => {
-        fetch("https://parkingapp-back.onrender.com/api/vehiculos")
+        fetch("http://localhost:5000/api/vehiculos")
             .then(res => res.json())
             .then(data => setVehiculos(data))
             .catch(err => console.error("Error al obtener vehículos:", err));
@@ -18,7 +18,7 @@ const Creador = () => {
     const agregarVehiculo = () => {
         if (!patente) return;
         const nuevoVehiculo = { patente, tipoVehiculo, abonado };
-        fetch("https://parkingapp-back.onrender.com/api/vehiculos", {
+        fetch("http://localhost:5000/api/vehiculos", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(nuevoVehiculo),
@@ -38,7 +38,7 @@ const Creador = () => {
     };
 
     const registrarEntrada = (patente) => {
-        fetch(`https://parkingapp-back.onrender.com/api/vehiculos/${patente}/registrarEntrada`, {
+        fetch(`http://localhost:5000/api/vehiculos/${patente}/registrarEntrada`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -58,7 +58,7 @@ const Creador = () => {
             .catch(err => console.error("Error registrando entrada:", err));
     };
     const registrarSalida = (patente, metodoPago) => {
-        fetch(`https://parkingapp-back.onrender.com/api/vehiculos/${patente}/registrarSalida`, {
+        fetch(`http://localhost:5000/api/vehiculos/${patente}/registrarSalida`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ metodoPago }),

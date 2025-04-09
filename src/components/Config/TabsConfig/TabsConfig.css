@@ -1,0 +1,28 @@
+.configTab-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+  
+.configTab-links {
+  width: 100%;
+  display: flex;
+  gap: 16px;
+  border-bottom: 2px solid #cbdce6;
+  padding-bottom: 8px;
+  justify-content: center;
+}
+  
+.configTab-link {
+  text-decoration: none;
+  color: #497b97;
+  font-weight: bold;
+  padding: 8px 12px;
+}
+.configTab-link:hover {
+  color: #2f5d73;
+}
+.configTab-link.active {
+    border-bottom: 3px solid #276a91;
+    color: #0d161c;
+} 

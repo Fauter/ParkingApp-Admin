@@ -14,14 +14,15 @@ function Body() {
         operador: "",
         hora: "",
         tipoMovimiento: "",
-        horaEntrada: "" 
+        horaEntrada: "",
+        fecha: ""
     });
 
 
     useEffect(() => {
         const fetchMovimientos = async () => {
           try {
-            const response = await fetch("https://parkingapp-back.onrender.com/api/movimientos");
+            const response = await fetch("http://localhost:5000/api/movimientos");
             const data = await response.json();
             setMovimientos(data);
           } catch (error) {
@@ -36,7 +37,7 @@ function Body() {
     useEffect(() => {
         const fetchVehiculos = async () => {
           try {
-            const response = await fetch("https://parkingapp-back.onrender.com/api/vehiculos");
+            const response = await fetch("http://localhost:5000/api/vehiculos");
             const data = await response.json();
             setVehiculos(data);
           } catch (error) {
@@ -60,9 +61,13 @@ function Body() {
           (!filtros.metodoPago || mov.metodoPago === filtros.metodoPago) &&
           (!filtros.operador || mov.operador.toLowerCase().includes(filtros.operador.toLowerCase())) &&
           (!filtros.hora || (horaMovimiento >= desde && horaMovimiento < hasta)) &&
-          (!filtros.tipoMovimiento ||
+          (!filtros.fecha || new Date(mov.fecha).toLocaleDateString("sv-SE") === filtros.fecha) &&
+          (
+            !filtros.tipoMovimiento ||
             (filtros.tipoMovimiento === "Por Hora" && (!mov.tipoMovimiento || mov.tipoMovimiento.toLowerCase() === "por hora")) ||
-            (mov.tipoMovimiento && mov.tipoMovimiento.toLowerCase() === filtros.tipoMovimiento.toLowerCase()))        );
+            (mov.tipoMovimiento && mov.tipoMovimiento.toLowerCase() === filtros.tipoMovimiento.toLowerCase())
+          )
+        );
     });
     // FILTRAR VEHICULOS DENTRO
     const vehiculosFiltrados = vehiculos.filter((veh) => {
@@ -92,7 +97,8 @@ function Body() {
             operador: "",
             hora: "",
             tipoMovimiento: "",
-            horaEntrada: "" 
+            horaEntrada: "",
+            fecha: ""
         });
     };
 
