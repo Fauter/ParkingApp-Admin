@@ -52,7 +52,7 @@ const Header = () => {
               <h2 className="header-title">Admin Dashboard</h2>
             </div>
             <nav>
-              <a href="/">Tickets</a>
+              <a href="/">Inicio</a>
               <a href="#">Mensajes</a>
               <Link to="/config">Config</Link>
               <a href="https://prueba.ofiflex.com.ar">Operador</a>
