@@ -36,7 +36,7 @@ function Body() {
     useEffect(() => {
         const fetchVehiculos = async () => {
           try {
-            const response = await fetch("http://localhost:5000/api/vehiculos");
+            const response = await fetch("https://parkingapp-back.onrender.com/api/vehiculos");
             const data = await response.json();
             setVehiculos(data);
           } catch (error) {
