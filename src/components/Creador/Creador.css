@@ -26,13 +26,11 @@ input, select, button {
 }
 
 button {
-    background: #007bff;
     color: white;
     cursor: pointer;
     border: none;
 }
 button:hover {
-    background: #0056b3;
 }
 
 table {

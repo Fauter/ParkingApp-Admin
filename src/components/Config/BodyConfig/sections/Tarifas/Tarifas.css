@@ -1,0 +1,179 @@
+  .tarifas-container {
+    min-width: 60%;
+    max-width: 100%; /* Para que pueda crecer */
+    overflow-x: auto;
+  }
+  
+  .tarifas-title {
+    display: flex;
+    justify-content: space-between; 
+    align-items: center;           
+    margin-bottom: 2rem;            
+    padding: 0 1.5rem;              
+  }
+
+  .crear-tarifa-btn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 0.7rem 1.2rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+  .crear-tarifa-btn:hover {
+    background-color: #0056b3;
+  }
+  .eliminar-tarifa-btn {
+    background-color: #f8d7da; 
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+  }
+  .eliminar-tarifa-btn:hover {
+    background-color: #f1b0b7; 
+    border-color: #eea6ad;
+  }
+  
+  .tarifa-section {
+    margin-bottom: 3rem;
+  }
+  
+  .tarifa-table {
+    width: 100%;
+    background-color: #f1f6f8;
+    border-collapse: collapse;
+    overflow: hidden;
+  }
+  .tarifa-table td,
+  .tarifa-table th {
+    min-width: 80px; /* Ajustalo a gusto */
+    word-break: break-word;
+  }
+  .tarifa-table th {
+    padding: 12px;
+    font-size: 14px;
+    color: #0d161c;
+    font-weight: bold;
+    background-color: #e5eef3;
+  }
+  .tarifa-table td {
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 6px 12px 6px 12px;
+    font-size: 14px;
+    color: #0d161c;
+  }
+  .tarifa-table td.primera-columna {
+    background-color: #e5eef3; /* mismo color que th */
+    font-weight: bold;
+    color: #0d161c;
+  }
+  .tarifa-table tr:nth-child(even) {
+    background-color: #eaf3f7;
+  }
+  .tarifa-table input {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    font-size: 15px;
+    background: grey;
+    box-sizing: border-box;
+    background: transparent;
+    border: none;
+    outline: none;
+    padding: 8px;
+    text-align: center; 
+  }
+  .editando-td {
+    background-color:rgba(0, 0, 0, 0.1); 
+  }
+  
+  .col-nombre-mensual {
+    width: 20%;
+    max-width: 200px;
+    white-space: nowrap;
+  }
+  .col-acciones-mensual {
+    width: 70%;
+  }
+  
+
+
+  
+
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5); /* fondo oscuro */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  .modal {
+    background: #f9f9f9;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+    width: 50%;
+    max-width: 100%;
+    text-align: center;
+  }
+  .modal h2 {
+    margin-bottom: 1.5rem;
+  }
+  .cerrar-modal {
+    background: none;
+    border: none;
+    color: #666;
+    font-size: 0.9rem;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  
+  .botones-tarifa {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    flex-wrap: nowrap;
+    flex-direction: row;
+    flex: 1;
+  }
+  .botones-tarifa button {
+    flex: 1 1 auto;
+    padding: 1.2rem 1.5rem;
+    background: #fff;
+    color: black;
+    font-size: 1.1rem;
+    font-weight: bold;
+    border-radius: 10px;
+    border: 2px solid #ccc;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    white-space: normal;
+    min-width: 140px;
+    max-width: 200px;
+  }
+  .botones-tarifa button strong {
+    display: block;
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 0.3rem;
+  }
+  .botones-tarifa button .subtitulo-tarifa {
+    font-size: 0.85rem;
+    font-weight: 400;
+    color: #555;
+    line-height: 1.2;
+  }
+  
+  

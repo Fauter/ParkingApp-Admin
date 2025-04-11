@@ -1,0 +1,45 @@
+.precios-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: auto;
+  }
+  
+  .precios-table {
+    width: 70%;
+    min-width: 600px;
+    background-color: #f1f6f8;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+  
+  .precios-table th,
+  .precios-table td {
+    padding: 12px;
+    text-align: center;
+    font-size: 14px;
+    color: #0d161c;
+    width: 100px; 
+    max-width: 100px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  
+  .precios-table th {
+    font-weight: bold;
+    background-color: #e5eef3;
+  }
+  
+  .precios-table tr:nth-child(even) {
+    background-color: #eaf3f7;
+  }
+  
+  .precios-table .precio-input {
+    width: 100%;
+    padding: 6px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    box-sizing: border-box;
+  }
