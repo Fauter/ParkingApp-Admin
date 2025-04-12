@@ -8,7 +8,7 @@ const Tarifas = () => {
   const [valorTemporal, setValorTemporal] = useState('');
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/tarifas')
+    fetch('https://parkingapp-back.onrender.com/api/tarifas')
       .then(res => res.json())
       .then(data => setTarifas(data))
       .catch(err => console.error('Error cargando tarifas:', err));
@@ -39,7 +39,7 @@ const Tarifas = () => {
     }
   
     try {
-      const res = await fetch('http://localhost:5000/api/tarifas', {
+      const res = await fetch('https://parkingapp-back.onrender.com/api/tarifas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -55,7 +55,7 @@ const Tarifas = () => {
     if (!window.confirm("¿Estás seguro de que querés eliminar esta tarifa?")) return;
   
     try {
-      await fetch(`http://localhost:5000/api/tarifas/${id}`, {
+      await fetch(`https://parkingapp-back.onrender.com/api/tarifas/${id}`, {
         method: 'DELETE',
       });
       setTarifas(prev => prev.filter(t => t._id !== id));
@@ -76,7 +76,7 @@ const Tarifas = () => {
       const actualizada = { ...tarifa, [editandoCampo.campo]: valorTemporal };
 
       try {
-        const res = await fetch(`http://localhost:5000/api/tarifas/${tarifa._id}`, {
+        const res = await fetch(`https://parkingapp-back.onrender.com/api/tarifas/${tarifa._id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(actualizada),

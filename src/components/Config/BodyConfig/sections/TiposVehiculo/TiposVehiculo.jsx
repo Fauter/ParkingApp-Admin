@@ -8,7 +8,7 @@ const TiposVehiculo = () => {
   const [loading, setLoading] = useState(true);
 
   const fetchTipos = () => {
-    fetch('http://localhost:5000/api/tipos-vehiculo')
+    fetch('https://parkingapp-back.onrender.com/api/tipos-vehiculo')
       .then(res => res.json())
       .then(data => {
         setTipos(data);
@@ -34,7 +34,7 @@ const TiposVehiculo = () => {
   const handleEliminar = async () => {
     if (!selected) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/tipos-vehiculo/${selected}`, {
+      const res = await fetch(`https://parkingapp-back.onrender.com/api/tipos-vehiculo/${selected}`, {
         method: 'DELETE',
       });
       if (res.ok) {
@@ -52,7 +52,7 @@ const TiposVehiculo = () => {
   const handleCrear = async () => {
     const nuevoNombre = 'NuevoTipo';
     try {
-      const res = await fetch(`http://localhost:5000/api/tipos-vehiculo`, {
+      const res = await fetch(`https://parkingapp-back.onrender.com/api/tipos-vehiculo`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -83,7 +83,7 @@ const TiposVehiculo = () => {
     }
 
     try {
-      const res = await fetch(`http://localhost:5000/api/tipos-vehiculo/${editando}`, {
+      const res = await fetch(`https://parkingapp-back.onrender.com/api/tipos-vehiculo/${editando}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
