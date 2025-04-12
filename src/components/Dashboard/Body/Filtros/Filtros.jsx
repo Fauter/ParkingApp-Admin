@@ -8,6 +8,31 @@ function Filtros({ filtros, setFiltros, activeTab, limpiarFiltros }) {
     });
   };
 
+  const rangoFecha = (
+    <div className="filtro-fechas">
+      <div className="fecha-item">
+        <label className="filtro-label">Desde</label>
+        <input
+          type="date"
+          name="fechaDesde"
+          className="filtro-input"
+          value={filtros.fechaDesde || ""}
+          onChange={handleChange}
+        />
+      </div>
+      <div className="fecha-item">
+        <label className="filtro-label">Hasta</label>
+        <input
+          type="date"
+          name="fechaHasta"
+          className="filtro-input"
+          value={filtros.fechaHasta || ""}
+          onChange={handleChange}
+        />
+      </div>
+    </div>
+  );
+
   const renderFiltrosPorTab = () => {
     if (activeTab === "Caja") {
       return (
@@ -25,7 +50,7 @@ function Filtros({ filtros, setFiltros, activeTab, limpiarFiltros }) {
               <option value="Diego">Diego</option>
             </select>
           </div>
-  
+
           <div className="filtro-container">
             <label className="filtro-label">Método de Pago</label>
             <select
@@ -41,7 +66,37 @@ function Filtros({ filtros, setFiltros, activeTab, limpiarFiltros }) {
               <option value="QR">QR</option>
             </select>
           </div>
-  
+
+          <div className="filtro-container">
+            <label className="filtro-label">Tipo de Vehículo</label>
+            <select
+              name="tipoVehiculo"
+              className="filtro-select"
+              onChange={handleChange}
+              value={filtros.tipoVehiculo || ""}
+            >
+              <option value="">Todos</option>
+              <option value="auto">Auto</option>
+              <option value="camioneta">Camioneta</option>
+              <option value="moto">Moto</option>
+            </select>
+          </div>
+
+          <div className="filtro-container">
+            <label className="filtro-label">Tipo de Movimiento</label>
+            <select
+              name="tipoMovimiento"
+              className="filtro-select"
+              onChange={handleChange}
+              value={filtros.tipoMovimiento || ""}
+            >
+              <option value="">Todos</option>
+              <option value="Por Hora">Por Hora</option>
+              <option value="Media Estadía">Media Estadía</option>
+              <option value="Estadía">Estadía</option>
+            </select>
+          </div>
+
           <div className="filtro-container">
             <label className="filtro-label">Hora</label>
             <select
@@ -61,46 +116,20 @@ function Filtros({ filtros, setFiltros, activeTab, limpiarFiltros }) {
               <option value="21-24">21:00 - 00:00</option>
             </select>
           </div>
+
           <div className="filtro-container">
-            <label className="filtro-label">Fecha</label>
+            <label className="filtro-label">Fecha exacta</label>
             <input
               type="date"
               name="fecha"
               className="filtro-input"
-              value={filtros.fecha}
+              value={filtros.fecha || ""}
               onChange={handleChange}
             />
           </div>
-          <div className="filtro-container">
-            <label className="filtro-label">Tipo de Vehículo</label>
-            <select
-              name="tipoVehiculo"
-              className="filtro-select"
-              onChange={handleChange}
-              value={filtros.tipoVehiculo || ""}
-            >
-              <option value="">Todos</option>
-              <option value="auto">Auto</option>
-              <option value="camioneta">Camioneta</option>
-              <option value="moto">Moto</option>
-            </select>
-          </div>
-  
-          <div className="filtro-container">
-            <label className="filtro-label">Tipo de Movimiento</label>
-            <select
-              name="tipoMovimiento"
-              className="filtro-select"
-              onChange={handleChange}
-              value={filtros.tipoMovimiento || ""}
-            >
-              <option value="">Todos</option>
-              <option value="Por Hora">Por Hora</option>
-              <option value="Media Estadía">Media Estadía</option>
-              <option value="Estadía">Estadía</option>
-            </select>
-          </div>
-  
+
+          {rangoFecha}
+
           <button className="btn-limpiar" onClick={limpiarFiltros}>
             Limpiar filtros
           </button>
@@ -122,7 +151,7 @@ function Filtros({ filtros, setFiltros, activeTab, limpiarFiltros }) {
               <option value="Diego">Diego</option>
             </select>
           </div>
-  
+
           <div className="filtro-container">
             <label className="filtro-label">Hora de Entrada</label>
             <select
@@ -142,7 +171,7 @@ function Filtros({ filtros, setFiltros, activeTab, limpiarFiltros }) {
               <option value="21-24">21:00 - 00:00</option>
             </select>
           </div>
-  
+
           <div className="filtro-container">
             <label className="filtro-label">Tipo de Vehículo</label>
             <select
@@ -157,14 +186,16 @@ function Filtros({ filtros, setFiltros, activeTab, limpiarFiltros }) {
               <option value="moto">Moto</option>
             </select>
           </div>
-  
+
+          {rangoFecha}
+
           <button className="btn-limpiar" onClick={limpiarFiltros}>
             Limpiar filtros
           </button>
         </>
       );
     }
-  
+
     return null;
   };
 

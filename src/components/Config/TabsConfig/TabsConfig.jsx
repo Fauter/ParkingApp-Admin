@@ -2,7 +2,7 @@ import React from 'react';
 import './TabsConfig.css';
 
 const TabsConfig = ({ activeTab, onTabChange }) => {
-  const tabs = ['Tipos de Vehículo', 'Tarifas', 'Precios'];
+  const tabs = ['Tipos de Vehículo', 'Tarifas', 'Precios', 'Usuarios'];
 
   return (
     <div className="configTab-container">

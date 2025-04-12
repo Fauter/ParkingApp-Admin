@@ -17,20 +17,28 @@
     cursor: pointer;
     transition: background-color 0.2s, color 0.2s;
 }
+.tipo-item input {
+    width: 100%;
+    border: none;
+    background: transparent;
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+    outline: none;
+}
 .tipo-item:first-child {
     border-top-left-radius: 6px;
     border-top-right-radius: 6px;
 }
-
 .tipo-item:hover {
     background-color: #d5d8db;
 }
-
 .tipo-item.seleccionado {
     background-color: #495057;
     color: #fff;
     font-weight: 500;
 }
+
 
 .acciones {
     display: flex;

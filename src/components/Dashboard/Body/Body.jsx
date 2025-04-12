@@ -52,40 +52,64 @@ function Body() {
 
     // FILTRAR MOVIMIENTOS
     const movimientosFiltrados = movimientos.filter((mov) => {
-        const horaMovimiento = new Date(mov.fecha).getHours();
-        const [desde, hasta] = filtros.hora ? filtros.hora.split("-").map(Number) : [null, null];
+      const horaMovimiento = new Date(mov.fecha).getHours();
+      const [desde, hasta] = filtros.hora ? filtros.hora.split("-").map(Number) : [null, null];
     
-        return (
-          (!filtros.patente || mov.patente.toLowerCase().includes(filtros.patente.toLowerCase())) &&
-          (!filtros.tipoVehiculo || mov.tipoVehiculo === filtros.tipoVehiculo) &&
-          (!filtros.metodoPago || mov.metodoPago === filtros.metodoPago) &&
-          (!filtros.operador || mov.operador.toLowerCase().includes(filtros.operador.toLowerCase())) &&
-          (!filtros.hora || (horaMovimiento >= desde && horaMovimiento < hasta)) &&
+      // Crear fechaHasta +1 día (para incluir todo el día seleccionado)
+      const fechaHastaPlusOne = filtros.fechaHasta
+        ? new Date(new Date(filtros.fechaHasta).setDate(new Date(filtros.fechaHasta).getDate() + 1))
+        : null;
+    
+      return (
+        (!filtros.patente || mov.patente.toLowerCase().includes(filtros.patente.toLowerCase())) &&
+        (!filtros.tipoVehiculo || mov.tipoVehiculo === filtros.tipoVehiculo) &&
+        (!filtros.metodoPago || mov.metodoPago === filtros.metodoPago) &&
+        (!filtros.operador || mov.operador.toLowerCase().includes(filtros.operador.toLowerCase())) &&
+        (!filtros.hora || (horaMovimiento >= desde && horaMovimiento < hasta)) &&
+        (
           (!filtros.fecha || new Date(mov.fecha).toLocaleDateString("sv-SE") === filtros.fecha) &&
-          (
-            !filtros.tipoMovimiento ||
-            (filtros.tipoMovimiento === "Por Hora" && (!mov.tipoMovimiento || mov.tipoMovimiento.toLowerCase() === "por hora")) ||
-            (mov.tipoMovimiento && mov.tipoMovimiento.toLowerCase() === filtros.tipoMovimiento.toLowerCase())
-          )
-        );
+          (!filtros.fechaDesde || new Date(mov.fecha) >= new Date(filtros.fechaDesde)) &&
+          (!filtros.fechaHasta || new Date(mov.fecha) < fechaHastaPlusOne)
+        ) &&
+        (
+          !filtros.tipoMovimiento ||
+          (filtros.tipoMovimiento === "Por Hora" && (!mov.tipoMovimiento || mov.tipoMovimiento.toLowerCase() === "por hora")) ||
+          (filtros.tipoMovimiento === "Media Estadía" && mov.tipoMovimiento && mov.tipoMovimiento.toLowerCase() === "media estadía") ||
+          (filtros.tipoMovimiento === "Estadía" && mov.tipoMovimiento && mov.tipoMovimiento.toLowerCase() === "estadía")
+        )
+      );
     });
     // FILTRAR VEHICULOS DENTRO
     const vehiculosFiltrados = vehiculos.filter((veh) => {
-        const historial = veh.historialEstadias;
-        if (!historial || historial.length === 0) return false;
+      const historial = veh.historialEstadias;
+      if (!historial || historial.length === 0) return false;
     
-        const ultimaEstadia = historial[historial.length - 1];
-        if (!ultimaEstadia.entrada || ultimaEstadia.salida) return false;
+      const ultimaEstadia = historial[historial.length - 1];
+      if (!ultimaEstadia.entrada || ultimaEstadia.salida) return false;
     
-        const entradaDate = new Date(ultimaEstadia.entrada);
-        const horaEntrada = entradaDate.getHours();
-        const [desde, hasta] = filtros.horaEntrada ? filtros.horaEntrada.split("-").map(Number) : [null, null];
+      const entradaDate = new Date(ultimaEstadia.entrada);
+      const salidaDate = ultimaEstadia.salida ? new Date(ultimaEstadia.salida) : null;
+      const horaEntrada = entradaDate.getHours();
+      const [desde, hasta] = filtros.horaEntrada ? filtros.horaEntrada.split("-").map(Number) : [null, null];
     
-        const pasaOperador = !filtros.operador || ultimaEstadia.operador?.toLowerCase().includes(filtros.operador.toLowerCase());
-        const pasaHora = !filtros.horaEntrada || (horaEntrada >= desde && horaEntrada < hasta);
-        const pasaTipoVehiculo = !filtros.tipoVehiculo || veh.tipoVehiculo === filtros.tipoVehiculo;
+      // Filtrar por fecha desde
+      const pasaFechaDesde = !filtros.fechaDesde || entradaDate >= new Date(filtros.fechaDesde);
     
-        return pasaOperador && pasaHora && pasaTipoVehiculo;
+      // Crear fechaHasta +1 día (para incluir todo el día seleccionado)
+      const fechaHastaPlusOne = filtros.fechaHasta
+        ? new Date(new Date(filtros.fechaHasta).setDate(new Date(filtros.fechaHasta).getDate() + 1))
+        : null;
+    
+      // Filtrar por fecha hasta (considerando si la salida existe y usando fechaHastaPlusOne)
+      const pasaFechaHasta =
+        !filtros.fechaHasta ||
+        (salidaDate ? salidaDate <= fechaHastaPlusOne : entradaDate <= fechaHastaPlusOne);
+    
+      const pasaOperador = !filtros.operador || ultimaEstadia.operador?.toLowerCase().includes(filtros.operador.toLowerCase());
+      const pasaHora = !filtros.horaEntrada || (horaEntrada >= desde && horaEntrada < hasta);
+      const pasaTipoVehiculo = !filtros.tipoVehiculo || veh.tipoVehiculo === filtros.tipoVehiculo;
+    
+      return pasaOperador && pasaHora && pasaTipoVehiculo && pasaFechaDesde && pasaFechaHasta;
     });
 
     

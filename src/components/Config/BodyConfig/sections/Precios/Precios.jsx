@@ -4,7 +4,8 @@ import './Precios.css';
 const Precios = () => {
   const [tarifas, setTarifas] = useState([]);
   const [tiposVehiculo, setTiposVehiculo] = useState([]);
-  const [precios, setPrecios] = useState({}); 
+  const [precios, setPrecios] = useState({});
+  const [editing, setEditing] = useState({}); // { vehiculo, tarifa, value }
 
   useEffect(() => {
     const fetchDatos = async () => {
@@ -17,30 +18,64 @@ const Precios = () => {
         const tiposData = await tiposRes.json();
         setTiposVehiculo(tiposData);
 
-        // Inicializar precios vacíos
-        const preciosIniciales = {};
-        tiposData.forEach(tipo => {
-          preciosIniciales[tipo] = {};
-          tarifasData.forEach(tarifa => {
-            preciosIniciales[tipo][tarifa._id] = '';
-          });
-        });
-        setPrecios(preciosIniciales);
+        const preciosRes = await fetch('http://localhost:5000/api/precios');
+        const preciosData = await preciosRes.json();
+        setPrecios(preciosData);
       } catch (error) {
         console.error('Error cargando datos:', error);
       }
     };
+
     fetchDatos();
   }, []);
 
-  const handleChange = (tipo, tarifaId, valor) => {
-    setPrecios(prev => ({
-      ...prev,
-      [tipo]: {
-        ...prev[tipo],
-        [tarifaId]: valor
+  const handleCellClick = (vehiculo, tarifa) => {
+    const valorActual = precios[vehiculo]?.[tarifa] ?? '';
+    setEditing({ vehiculo, tarifa, value: valorActual });
+  };
+
+  const handleInputChange = (e) => {
+    setEditing(prev => ({ ...prev, value: e.target.value }));
+  };
+
+  const handleInputKeyDown = async (e, vehiculo) => {
+    if (e.key === 'Enter') {
+      const { tarifa, value } = editing;
+      const valorNumerico = parseFloat(value);
+
+      if (isNaN(valorNumerico)) {
+        alert('Debe ingresar un número válido.');
+        return;
       }
-    }));
+
+      const nuevosPreciosVehiculo = {
+        ...precios[vehiculo],
+        [tarifa]: valorNumerico,
+      };
+
+      try {
+        const res = await fetch(`http://localhost:5000/api/precios/${vehiculo}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(nuevosPreciosVehiculo),
+        });
+
+        if (!res.ok) {
+          throw new Error('Error al actualizar precio');
+        }
+
+        setPrecios(prev => ({
+          ...prev,
+          [vehiculo]: nuevosPreciosVehiculo,
+        }));
+
+        setEditing({});
+      } catch (error) {
+        console.error('Error al actualizar:', error);
+      }
+    } else if (e.key === 'Escape') {
+      setEditing({});
+    }
   };
 
   return (
@@ -56,17 +91,45 @@ const Precios = () => {
           </tr>
         </thead>
         <tbody>
-          {tiposVehiculo.map(tipo => (
-            <tr key={tipo}>
-              <th style={{ textAlign: 'left' }}>
-                {tipo.charAt(0).toUpperCase() + tipo.slice(1)}
-              </th>
-              {tarifas.map(tarifa => (
-                <td key={tarifa._id}>
-                </td>
-              ))}
-            </tr>
-          ))}
+          {tiposVehiculo.map(tipo => {
+            const vehiculo = tipo.toLowerCase();
+
+            return (
+              <tr key={vehiculo}>
+                <th style={{ textAlign: 'left' }}>
+                  {tipo.charAt(0).toUpperCase() + tipo.slice(1)}
+                </th>
+                {tarifas.map(tarifa => {
+                  const nombreTarifa = tarifa.nombre.toLowerCase();
+                  const esEditando =
+                    editing.vehiculo === vehiculo && editing.tarifa === nombreTarifa;
+                  const valor = precios[vehiculo]?.[nombreTarifa] ?? 'N/A';
+
+                  return (
+                    <td
+                      key={tarifa._id}
+                      onClick={() => handleCellClick(vehiculo, nombreTarifa)}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      {esEditando ? (
+                        <input
+                          type="number"
+                          autoFocus
+                          value={editing.value}
+                          onChange={handleInputChange}
+                          onKeyDown={(e) => handleInputKeyDown(e, vehiculo)}
+                          onBlur={() => setEditing({})}
+                          style={{ width: '70px' }}
+                        />
+                      ) : (
+                        valor
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
