@@ -50,48 +50,49 @@ const Caja = ({ activeTab, setActiveTab, movimientos, vehiculos, limpiarFiltros 
         </div>
       );
     } else if (activeTab === 'Ingresos') {
-      const vehiculosOrdenados = [...vehiculos]
-        .sort((a, b) => {
-          const entradaA = new Date(a.historialEstadias[a.historialEstadias.length - 1].entrada);
-          const entradaB = new Date(b.historialEstadias[b.historialEstadias.length - 1].entrada);
-          return entradaB - entradaA;
-        })
-        .filter((veh) =>
-          veh.patente.toUpperCase().startsWith(term)
-        );
+      const vehiculosEnCurso = [...vehiculos]
+      .filter((veh) => {
+        const tieneEstadia = veh.estadiaActual !== null && veh.estadiaActual !== undefined;
+        const entradaValida = tieneEstadia && veh.estadiaActual.entrada !== null;
 
-      return (
-        <div className="table-container">
-          <div className="table-wrapper">
-            <table className="transaction-table">
-              <thead>
-                <tr>
-                  <th>Patente</th>
-                  <th>Fecha</th>
-                  <th>Hora Entrada</th>
-                  <th>Operador</th>
-                  <th>Tipo de Vehículo</th>
-                </tr>
-              </thead>
-              <tbody>
-                {vehiculosOrdenados.map((veh) => {
-                  const ultimaEstadia = veh.historialEstadias[veh.historialEstadias.length - 1];
-                  const entrada = new Date(ultimaEstadia.entrada);
-                  return (
-                    <tr key={veh._id}>
-                      <td>{veh.patente.toUpperCase()}</td>
-                      <td>{entrada.toLocaleDateString()}</td>
-                      <td>{entrada.toLocaleTimeString()}</td>
-                      <td>Carlos</td>
-                      <td>{veh.tipoVehiculo.charAt(0).toUpperCase() + veh.tipoVehiculo.slice(1)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+        return tieneEstadia && entradaValida;
+      })
+      .sort((a, b) => new Date(b.estadiaActual.entrada) - new Date(a.estadiaActual.entrada))
+      .filter((veh) => veh.patente.toUpperCase().startsWith(term));
+
+    console.log('"vehículos":', vehiculos);
+
+    return (
+      <div className="table-container">
+        <div className="table-wrapper">
+          <table className="transaction-table">
+            <thead>
+              <tr>
+                <th>Patente</th>
+                <th>Fecha</th>
+                <th>Hora Entrada</th>
+                <th>Operador</th>
+                <th>Tipo de Vehículo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {vehiculosEnCurso.map((veh) => {
+                const entrada = new Date(veh.estadiaActual.entrada);
+                return (
+                  <tr key={veh._id}>
+                    <td>{veh.patente.toUpperCase()}</td>
+                    <td>{entrada.toLocaleDateString()}</td>
+                    <td>{entrada.toLocaleTimeString()}</td>
+                    <td>Carlos</td>
+                    <td>{veh.tipoVehiculo.charAt(0).toUpperCase() + veh.tipoVehiculo.slice(1)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
-      );
+      </div>
+    );
     } else {
       return <p style={{ padding: '1rem' }}>Contenido para la pestaña "{activeTab}" próximamente...</p>;
     }
