@@ -138,7 +138,7 @@ const Usuarios = () => {
 
       {/* Modal para Crear Usuario */}
       {modalOpen && (
-        <div className="modal">
+        <div className="modalUsers">
           <div className="modal-content">
             <h3>Crear Usuario</h3>
             <form>

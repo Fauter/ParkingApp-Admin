@@ -117,8 +117,8 @@
     align-items: center;
     z-index: 1000;
   }
-  .modal {
-    background: #f9f9f9;
+  .modalTarifas {
+    background-color: white;
     padding: 2rem;
     border-radius: 12px;
     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);

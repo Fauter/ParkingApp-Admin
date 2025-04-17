@@ -9,6 +9,7 @@
     border-radius: 8px;
     overflow: hidden;
     width: 99%;
+    min-height: 400px;
   }
   
   .table-wrapper {
@@ -37,3 +38,22 @@
   .transaction-table tr:nth-child(even) {
     background-color: #eaf3f7;
   }
+
+  .paginado {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border-top: 1px solid #ccc;
+    background-color: #f8f9fa;
+  }
+  .paginado button {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+  }
+  .paginado button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  

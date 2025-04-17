@@ -15,6 +15,7 @@ const Tarifas = () => {
   }, []);
 
   const tarifasHora = tarifas.filter(t => t.tipo === 'hora');
+  const tarifasTurno = tarifas.filter(t => t.tipo === 'turno');
   const tarifasEstadia = tarifas.filter(t => t.tipo === 'estadia');
   const tarifasMensual = tarifas.filter(t => t.tipo === 'mensual');
 
@@ -127,7 +128,7 @@ const Tarifas = () => {
       </div>
       {showModal && (
         <div className="modal-overlay">
-          <div className="modal">
+          <div className="modalTarifas">
             <h2>Crear nueva tarifa</h2>
             <div className="botones-tarifa">
               <button onClick={() => crearTarifa('hora')}>
@@ -171,6 +172,41 @@ const Tarifas = () => {
               <tr><td colSpan="6" className="empty-row">Sin tarifas de tipo hora</td></tr>
             ) : (
               tarifasHora.map(tarifa => (
+                <tr key={tarifa._id}>
+                  {renderCelda(tarifa, 'nombre')}
+                  {renderCelda(tarifa, 'dias')}
+                  {renderCelda(tarifa, 'horas')}
+                  {renderCelda(tarifa, 'minutos')}
+                  {renderCelda(tarifa, 'tolerancia')}
+                  <td>
+                    <button className="eliminar-tarifa-btn" onClick={() => eliminarTarifa(tarifa._id)}>Eliminar</button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Tipo Turno */}
+      <div className="tarifa-section">
+        <h2>Tipo Turno</h2>
+        <table className="tarifa-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Días</th>
+              <th>Horas</th>
+              <th>Minutos</th>
+              <th>Tolerancia (mins)</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {tarifasTurno.length === 0 ? (
+              <tr><td colSpan="6" className="empty-row">Sin tarifas de tipo turno</td></tr>
+            ) : (
+              tarifasTurno.map(tarifa => (
                 <tr key={tarifa._id}>
                   {renderCelda(tarifa, 'nombre')}
                   {renderCelda(tarifa, 'dias')}

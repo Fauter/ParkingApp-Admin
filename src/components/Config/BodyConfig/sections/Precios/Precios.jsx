@@ -5,7 +5,7 @@ const Precios = () => {
   const [tarifas, setTarifas] = useState([]);
   const [tiposVehiculo, setTiposVehiculo] = useState([]);
   const [precios, setPrecios] = useState({});
-  const [editing, setEditing] = useState({}); // { vehiculo, tarifa, value }
+  const [editing, setEditing] = useState({});
 
   useEffect(() => {
     const fetchDatos = async () => {
@@ -60,9 +60,7 @@ const Precios = () => {
           body: JSON.stringify(nuevosPreciosVehiculo),
         });
 
-        if (!res.ok) {
-          throw new Error('Error al actualizar precio');
-        }
+        if (!res.ok) throw new Error('Error al actualizar precio');
 
         setPrecios(prev => ({
           ...prev,
@@ -78,60 +76,76 @@ const Precios = () => {
     }
   };
 
+  const normalizar = (str) => str?.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+  const tiposTarifa = ['hora', 'turno', 'estadia', 'mensual'];
+
+  const renderTablaPorTipo = (tipoTarifa) => {
+    const tarifasFiltradas = tarifas.filter(t => normalizar(t.tipo) === normalizar(tipoTarifa));
+
+    if (tarifasFiltradas.length === 0) return null;
+
+    return (
+      <div key={tipoTarifa} style={{ margin: '20px 0' }}>
+        <h3 style={{ textAlign: 'center' }}>Tarifas x {tipoTarifa.charAt(0).toUpperCase() + tipoTarifa.slice(1)}</h3>
+        <table className="precios-table" border="1" cellPadding="8">
+          <thead>
+            <tr>
+              <th></th>
+              {tiposVehiculo.map(tipo => (
+                <th key={tipo}>{tipo.charAt(0).toUpperCase() + tipo.slice(1)}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {tarifasFiltradas.map(tarifa => {
+              const nombreTarifa = tarifa.nombre.toLowerCase();
+              return (
+                <tr key={tarifa._id}>
+                  <th style={{ textAlign: 'left' }}>
+                    {tarifa.nombre}
+                  </th>
+                  {tiposVehiculo.map(tipo => {
+                    const vehiculo = tipo.toLowerCase();
+                    const esEditando =
+                      editing.vehiculo === vehiculo && editing.tarifa === nombreTarifa;
+                    const valor = precios[vehiculo]?.[nombreTarifa] ?? 'N/A';
+
+                    return (
+                      <td
+                        key={vehiculo}
+                        onClick={() => handleCellClick(vehiculo, nombreTarifa)}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        {esEditando ? (
+                          <input
+                            type="number"
+                            autoFocus
+                            value={editing.value}
+                            onChange={handleInputChange}
+                            onKeyDown={(e) => handleInputKeyDown(e, vehiculo)}
+                            onBlur={() => setEditing({})}
+                            style={{ width: '70px' }}
+                          />
+                        ) : (
+                          valor
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
   return (
     <div className="precios-container">
       <h2>Configuración de Precios</h2>
-      <table className="precios-table" border="1" cellPadding="8">
-        <thead>
-          <tr>
-            <th></th>
-            {tarifas.map(tarifa => (
-              <th key={tarifa._id}>{tarifa.nombre}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {tiposVehiculo.map(tipo => {
-            const vehiculo = tipo.toLowerCase();
-
-            return (
-              <tr key={vehiculo}>
-                <th style={{ textAlign: 'left' }}>
-                  {tipo.charAt(0).toUpperCase() + tipo.slice(1)}
-                </th>
-                {tarifas.map(tarifa => {
-                  const nombreTarifa = tarifa.nombre.toLowerCase();
-                  const esEditando =
-                    editing.vehiculo === vehiculo && editing.tarifa === nombreTarifa;
-                  const valor = precios[vehiculo]?.[nombreTarifa] ?? 'N/A';
-
-                  return (
-                    <td
-                      key={tarifa._id}
-                      onClick={() => handleCellClick(vehiculo, nombreTarifa)}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      {esEditando ? (
-                        <input
-                          type="number"
-                          autoFocus
-                          value={editing.value}
-                          onChange={handleInputChange}
-                          onKeyDown={(e) => handleInputKeyDown(e, vehiculo)}
-                          onBlur={() => setEditing({})}
-                          style={{ width: '70px' }}
-                        />
-                      ) : (
-                        valor
-                      )}
-                    </td>
-                  );
-                })}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+      {tiposTarifa.map(renderTablaPorTipo)}
     </div>
   );
 };
