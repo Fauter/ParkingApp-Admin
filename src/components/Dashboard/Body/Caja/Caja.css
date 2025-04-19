@@ -39,6 +39,7 @@
     background-color: #eaf3f7;
   }
 
+  
   .paginado {
     display: flex;
     justify-content: center;
@@ -47,10 +48,20 @@
     padding: 1rem;
     border-top: 1px solid #ccc;
     background-color: #f8f9fa;
+    font-weight: bold;
+    color: #333; /* Más contraste en el texto */
   }
   .paginado button {
     padding: 0.5rem 1rem;
     cursor: pointer;
+    border: none;
+    background-color: #dce3e7;
+    color: #0d161c;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+  }
+  .paginado button:hover:not(:disabled) {
+    background-color: #c0cbd1;
   }
   .paginado button:disabled {
     opacity: 0.5;

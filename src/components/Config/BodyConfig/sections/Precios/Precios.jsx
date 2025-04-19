@@ -31,11 +31,19 @@ const Precios = () => {
 
   const handleCellClick = (vehiculo, tarifa) => {
     const valorActual = precios[vehiculo]?.[tarifa] ?? '';
-    setEditing({ vehiculo, tarifa, value: valorActual });
+    setEditing({ vehiculo, tarifa, value: valorActual.toString() });
+  };
+
+  const formatPrecioLive = (value) => {
+    const soloNumeros = value.replace(/\D/g, '');
+    return soloNumeros
+      ? new Intl.NumberFormat('es-AR').format(parseInt(soloNumeros))
+      : '';
   };
 
   const handleInputChange = (e) => {
-    setEditing(prev => ({ ...prev, value: e.target.value }));
+    const rawValue = e.target.value.replace(/\D/g, '');
+    setEditing(prev => ({ ...prev, value: rawValue }));
   };
 
   const handleInputKeyDown = async (e, vehiculo) => {
@@ -80,6 +88,17 @@ const Precios = () => {
 
   const tiposTarifa = ['hora', 'turno', 'estadia', 'mensual'];
 
+  const formatPrecio = (precio) => {
+    if (precio !== 'N/A') {
+      return new Intl.NumberFormat('es-AR', {
+        style: 'decimal',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      }).format(precio);
+    }
+    return precio;
+  };
+
   const renderTablaPorTipo = (tipoTarifa) => {
     const tarifasFiltradas = tarifas.filter(t => normalizar(t.tipo) === normalizar(tipoTarifa));
 
@@ -115,20 +134,23 @@ const Precios = () => {
                       <td
                         key={vehiculo}
                         onClick={() => handleCellClick(vehiculo, nombreTarifa)}
-                        style={{ cursor: 'pointer' }}
+                        className={esEditando ? 'editing' : ''}
                       >
                         {esEditando ? (
-                          <input
-                            type="number"
-                            autoFocus
-                            value={editing.value}
-                            onChange={handleInputChange}
-                            onKeyDown={(e) => handleInputKeyDown(e, vehiculo)}
-                            onBlur={() => setEditing({})}
-                            style={{ width: '70px' }}
-                          />
+                          <div style={{ position: 'relative' }}>
+                            <span className="input-prefix">$</span>
+                            <input
+                              type="text"
+                              autoFocus
+                              value={formatPrecioLive(editing.value)}
+                              onChange={handleInputChange}
+                              onKeyDown={(e) => handleInputKeyDown(e, vehiculo)}
+                              onBlur={() => setEditing({})}
+                              className="precio-input with-prefix"
+                            />
+                          </div>
                         ) : (
-                          valor
+                          <span className="precio-format">{`$${formatPrecio(valor)}`}</span>
                         )}
                       </td>
                     );

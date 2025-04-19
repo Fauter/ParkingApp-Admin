@@ -1,6 +1,23 @@
+import { useEffect, useState } from "react";
 import "./Filtros.css";
 
 function Filtros({ filtros, setFiltros, activeTab, limpiarFiltros }) {
+  const [tiposVehiculo, setTiposVehiculo] = useState([]);
+
+  useEffect(() => {
+    const fetchTiposVehiculo = async () => {
+      try {
+        const response = await fetch("https://parkingapp-back.onrender.com/api/tipos-vehiculo");
+        const data = await response.json();
+        setTiposVehiculo(data);
+      } catch (error) {
+        console.error("Error al obtener tipos de vehículo:", error);
+      }
+    };
+  
+    fetchTiposVehiculo();
+  }, []);
+
   const handleChange = (e) => {
     setFiltros({
       ...filtros,
@@ -76,9 +93,11 @@ function Filtros({ filtros, setFiltros, activeTab, limpiarFiltros }) {
               value={filtros.tipoVehiculo || ""}
             >
               <option value="">Todos</option>
-              <option value="auto">Auto</option>
-              <option value="camioneta">Camioneta</option>
-              <option value="moto">Moto</option>
+              {tiposVehiculo.map((tipo, i) => (
+                <option key={i} value={tipo}>
+                  {tipo.charAt(0).toUpperCase() + tipo.slice(1)}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -181,9 +200,11 @@ function Filtros({ filtros, setFiltros, activeTab, limpiarFiltros }) {
               value={filtros.tipoVehiculo || ""}
             >
               <option value="">Todos</option>
-              <option value="auto">Auto</option>
-              <option value="camioneta">Camioneta</option>
-              <option value="moto">Moto</option>
+              {tiposVehiculo.map((tipo, i) => (
+                <option key={i} value={tipo}>
+                  {tipo.charAt(0).toUpperCase() + tipo.slice(1)}
+                </option>
+              ))}
             </select>
           </div>
 

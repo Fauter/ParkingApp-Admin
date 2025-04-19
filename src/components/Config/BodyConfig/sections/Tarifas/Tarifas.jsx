@@ -14,14 +14,16 @@ const Tarifas = () => {
       .catch(err => console.error('Error cargando tarifas:', err));
   }, []);
 
-  const tarifasHora = tarifas.filter(t => t.tipo === 'hora');
-  const tarifasTurno = tarifas.filter(t => t.tipo === 'turno');
-  const tarifasEstadia = tarifas.filter(t => t.tipo === 'estadia');
-  const tarifasMensual = tarifas.filter(t => t.tipo === 'mensual');
+  const tarifasPorTipo = {
+    hora: tarifas.filter(t => t.tipo === 'hora'),
+    turno: tarifas.filter(t => t.tipo === 'turno'),
+    estadia: tarifas.filter(t => t.tipo === 'estadia'),
+    mensual: tarifas.filter(t => t.tipo === 'mensual'),
+  };
 
   const crearTarifa = async (tipo) => {
     let data;
-  
+
     switch (tipo) {
       case 'hora':
         data = { nombre: 'Hora', tipo: 'hora', horas: 1, tolerancia: 5 };
@@ -38,7 +40,7 @@ const Tarifas = () => {
       default:
         return;
     }
-  
+
     try {
       const res = await fetch('https://parkingapp-back.onrender.com/api/tarifas', {
         method: 'POST',
@@ -52,9 +54,10 @@ const Tarifas = () => {
       console.error('Error creando tarifa:', err);
     }
   };
+
   const eliminarTarifa = async (id) => {
     if (!window.confirm("¿Estás seguro de que querés eliminar esta tarifa?")) return;
-  
+
     try {
       await fetch(`https://parkingapp-back.onrender.com/api/tarifas/${id}`, {
         method: 'DELETE',
@@ -69,9 +72,11 @@ const Tarifas = () => {
     setEditandoCampo({ id, campo });
     setValorTemporal(valorActual);
   };
+
   const manejarCambio = (e) => {
     setValorTemporal(e.target.value);
   };
+
   const manejarTecla = async (e, tarifa) => {
     if (e.key === 'Enter') {
       const actualizada = { ...tarifa, [editandoCampo.campo]: valorTemporal };
@@ -94,6 +99,7 @@ const Tarifas = () => {
       setValorTemporal('');
     }
   };
+
   const renderCelda = (tarifa, campo) => {
     const valor = tarifa[campo] ?? '';
     const esEditando = editandoCampo.id === tarifa._id && editandoCampo.campo === campo;
@@ -119,6 +125,38 @@ const Tarifas = () => {
     );
   };
 
+  const renderTabla = (tipo, headers, campos) => {
+    const tarifasFiltradas = tarifasPorTipo[tipo];
+
+    return (
+      <div className="tarifa-section">
+        <h2>{`Tipo ${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`}</h2>
+        <table className="tarifa-table">
+          <thead>
+            <tr>
+              {headers.map((header, idx) => (
+                <th key={idx}>{header}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {tarifasFiltradas.length === 0 ? (
+              <tr><td colSpan={headers.length} className="empty-row">Sin tarifas de tipo {tipo}</td></tr>
+            ) : (
+              tarifasFiltradas.map(tarifa => (
+                <tr key={tarifa._id}>
+                  {campos.map((campo, idx) => renderCelda(tarifa, campo))}
+                  <td>
+                    <button className="eliminar-tarifa-btn" onClick={() => eliminarTarifa(tarifa._id)}>Eliminar</button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
 
   return (
     <div className="tarifas-container">
@@ -153,128 +191,10 @@ const Tarifas = () => {
         </div>
       )}
 
-      {/* Tipo Hora */}
-      <div className="tarifa-section">
-        <h2>Tipo Hora</h2>
-        <table className="tarifa-table">
-          <thead>
-            <tr>
-              <th></th>
-              <th>Días</th>
-              <th>Horas</th>
-              <th>Minutos</th>
-              <th>Tolerancia (mins)</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tarifasHora.length === 0 ? (
-              <tr><td colSpan="6" className="empty-row">Sin tarifas de tipo hora</td></tr>
-            ) : (
-              tarifasHora.map(tarifa => (
-                <tr key={tarifa._id}>
-                  {renderCelda(tarifa, 'nombre')}
-                  {renderCelda(tarifa, 'dias')}
-                  {renderCelda(tarifa, 'horas')}
-                  {renderCelda(tarifa, 'minutos')}
-                  {renderCelda(tarifa, 'tolerancia')}
-                  <td>
-                    <button className="eliminar-tarifa-btn" onClick={() => eliminarTarifa(tarifa._id)}>Eliminar</button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Tipo Turno */}
-      <div className="tarifa-section">
-        <h2>Tipo Turno</h2>
-        <table className="tarifa-table">
-          <thead>
-            <tr>
-              <th></th>
-              <th>Días</th>
-              <th>Horas</th>
-              <th>Minutos</th>
-              <th>Tolerancia (mins)</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tarifasTurno.length === 0 ? (
-              <tr><td colSpan="6" className="empty-row">Sin tarifas de tipo turno</td></tr>
-            ) : (
-              tarifasTurno.map(tarifa => (
-                <tr key={tarifa._id}>
-                  {renderCelda(tarifa, 'nombre')}
-                  {renderCelda(tarifa, 'dias')}
-                  {renderCelda(tarifa, 'horas')}
-                  {renderCelda(tarifa, 'minutos')}
-                  {renderCelda(tarifa, 'tolerancia')}
-                  <td>
-                    <button className="eliminar-tarifa-btn" onClick={() => eliminarTarifa(tarifa._id)}>Eliminar</button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Tipo Estadía */}
-      <div className="tarifa-section">
-        <h2>Tipo Estadía</h2>
-        <table className="tarifa-table">
-          <thead>
-            <tr>
-              <th></th>
-              <th>Días</th>
-              <th>Tolerancia (mins)</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tarifasEstadia.length === 0 ? (
-              <tr><td colSpan="4" className="empty-row">Sin tarifas de tipo estadía</td></tr>
-            ) : (
-              tarifasEstadia.map(tarifa => (
-                <tr key={tarifa._id}>
-                  {renderCelda(tarifa, 'nombre')}
-                  {renderCelda(tarifa, 'dias')}
-                  {renderCelda(tarifa, 'tolerancia')}
-                  <td>
-                    <button className="eliminar-tarifa-btn" onClick={() => eliminarTarifa(tarifa._id)}>Eliminar</button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-      {/* Tipo Mensual */}
-      <div className="tarifa-section">
-        <h2>Tipo Mensual</h2>
-        <table className="tarifa-table">
-        <thead>
-          <tr>
-            <th className="col-nombre-mensual"></th>
-            <th className="col-acciones-mensual">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {tarifasMensual.map(tarifa => (
-            <tr key={tarifa._id}>
-              <td className="col-nombre-mensual primera-columna">{tarifa.nombre}</td>
-              <td className="col-acciones-mensual">
-                <button className="eliminar-tarifa-btn" onClick={() => eliminarTarifa(tarifa._id)}>Eliminar</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-        </table>
-      </div>
+      {renderTabla('hora', ['', 'Días', 'Horas', 'Minutos', 'Tolerancia (mins)', 'Acciones'], ['nombre', 'dias', 'horas', 'minutos', 'tolerancia'])}
+      {renderTabla('turno', ['', 'Días', 'Horas', 'Minutos', 'Tolerancia (mins)', 'Acciones'], ['nombre', 'dias', 'horas', 'minutos', 'tolerancia'])}
+      {renderTabla('estadia', ['', 'Días', 'Tolerancia (mins)', 'Acciones'], ['nombre', 'dias', 'tolerancia'])}
+      {renderTabla('mensual', ['', 'Acciones'], ['nombre'])}
     </div>
   );
 };

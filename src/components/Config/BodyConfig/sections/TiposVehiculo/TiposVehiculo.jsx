@@ -6,6 +6,7 @@ const TiposVehiculo = () => {
   const [selected, setSelected] = useState(null);
   const [editando, setEditando] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [nuevoTemporal, setNuevoTemporal] = useState(false);
 
   const fetchTipos = () => {
     fetch('https://parkingapp-back.onrender.com/api/tipos-vehiculo')
@@ -49,26 +50,12 @@ const TiposVehiculo = () => {
     }
   };
 
-  const handleCrear = async () => {
-    const nuevoNombre = 'NuevoTipo';
-    try {
-      const res = await fetch(`https://parkingapp-back.onrender.com/api/tipos-vehiculo`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ nombre: nuevoNombre }),
-      });
-
-      const data = await res.json();
-      if (res.status === 201 || res.status === 200) {
-        setTipos([...tipos, nuevoNombre]);
-      } else {
-        alert(data.msg || 'Error al crear tipo');
-      }
-    } catch (err) {
-      console.error('Error al crear tipo:', err);
-    }
+  const handleCrear = () => {
+    const nombreTemporal = '---temp---' + Date.now();
+    setTipos([...tipos, nombreTemporal]);
+    setSelected(nombreTemporal);
+    setEditando(nombreTemporal);
+    setNuevoTemporal(true);
   };
 
   const handleModificar = () => {
@@ -77,33 +64,62 @@ const TiposVehiculo = () => {
   };
 
   const guardarModificacion = async (nuevoNombre) => {
-    if (!editando || nuevoNombre.trim() === '' || nuevoNombre === editando) {
+    if (!editando || nuevoNombre.trim() === '') {
+      if (nuevoTemporal) {
+        setTipos(tipos.filter(t => t !== editando));
+      }
       setEditando(null);
+      setNuevoTemporal(false);
       return;
     }
 
-    try {
-      const res = await fetch(`https://parkingapp-back.onrender.com/api/tipos-vehiculo/${editando}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ nuevoNombre }),
-      });
+    if (nuevoTemporal) {
+      try {
+        const res = await fetch(`https://parkingapp-back.onrender.com/api/tipos-vehiculo`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ nombre: nuevoNombre }),
+        });
 
-      const data = await res.json();
+        const data = await res.json();
 
-      if (res.ok) {
-        setTipos(tipos.map(t => (t === editando ? nuevoNombre : t)));
-        setSelected(null);
-      } else {
-        alert(data.msg || 'Error al modificar tipo');
+        if (res.status === 201 || res.status === 200) {
+          setTipos(tipos.map(t => (t === editando ? nuevoNombre : t)));
+          setSelected(nuevoNombre);
+        } else {
+          alert(data.msg || 'Error al crear tipo');
+          setTipos(tipos.filter(t => t !== editando));
+        }
+      } catch (err) {
+        console.error('Error al crear tipo:', err);
       }
-    } catch (err) {
-      console.error('Error al modificar tipo:', err);
-    } finally {
-      setEditando(null);
+    } else {
+      try {
+        const res = await fetch(`https://parkingapp-back.onrender.com/api/tipos-vehiculo/${editando}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ nuevoNombre }),
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          setTipos(tipos.map(t => (t === editando ? nuevoNombre : t)));
+          setSelected(null);
+        } else {
+          alert(data.msg || 'Error al modificar tipo');
+        }
+      } catch (err) {
+        console.error('Error al modificar tipo:', err);
+      }
     }
+
+    setEditando(null);
+    setNuevoTemporal(false);
   };
 
   if (loading) return <p className="cargando">Cargando tipos de vehículo...</p>;
@@ -121,11 +137,18 @@ const TiposVehiculo = () => {
               <input
                 type="text"
                 autoFocus
-                defaultValue={tipo}
+                placeholder={nuevoTemporal ? 'Nuevo Tipo' : ''}
+                defaultValue={nuevoTemporal ? '' : tipo}
                 onBlur={(e) => guardarModificacion(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') guardarModificacion(e.target.value);
-                  else if (e.key === 'Escape') setEditando(null);
+                  else if (e.key === 'Escape') {
+                    if (nuevoTemporal) {
+                      setTipos(tipos.filter(t => t !== tipo));
+                    }
+                    setEditando(null);
+                    setNuevoTemporal(false);
+                  }
                 }}
               />
             ) : (
