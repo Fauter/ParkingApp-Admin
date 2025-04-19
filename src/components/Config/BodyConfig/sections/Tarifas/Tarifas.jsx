@@ -165,31 +165,34 @@ const Tarifas = () => {
         <button className="crear-tarifa-btn" onClick={() => setShowModal(true)}>+ Nueva Tarifa</button>
       </div>
       {showModal && (
-        <div className="modal-overlay">
-          <div className="modalTarifas">
+        <div className="tarifasModal-overlay">
+          <div className="tarifasModal-contenido">
             <h2>Crear nueva tarifa</h2>
-            <div className="botones-tarifa">
+            <div className="tarifasModal-botones">
               <button onClick={() => crearTarifa('hora')}>
                 <strong>Hora</strong>
-                <span className="subtitulo-tarifa">Estacionamiento x hora</span>
+                <span className="tarifasModal-subtitulo">Estacionamiento x hora</span>
               </button>
               <button onClick={() => crearTarifa('turno')}>
                 <strong>Turno</strong>
-                <span className="subtitulo-tarifa">Estacionamiento x turno</span>
+                <span className="tarifasModal-subtitulo">Estacionamiento x turno</span>
               </button>
               <button onClick={() => crearTarifa('estadia')}>
                 <strong>Estadía</strong>
-                <span className="subtitulo-tarifa">Estacionamiento diario</span>
+                <span className="tarifasModal-subtitulo">Estacionamiento diario</span>
               </button>
               <button onClick={() => crearTarifa('mensual')}>
                 <strong>Mensual</strong>
-                <span className="subtitulo-tarifa">Estacionamiento mensual</span>
+                <span className="tarifasModal-subtitulo">Estacionamiento mensual</span>
               </button>
             </div>
-            <button className="cerrar-modal" onClick={() => setShowModal(false)}>Cancelar</button>
+            <button className="tarifasModal-cerrar" onClick={() => setShowModal(false)}>
+              Cancelar
+            </button>
           </div>
         </div>
       )}
+
 
       {renderTabla('hora', ['', 'Días', 'Horas', 'Minutos', 'Tolerancia (mins)', 'Acciones'], ['nombre', 'dias', 'horas', 'minutos', 'tolerancia'])}
       {renderTabla('turno', ['', 'Días', 'Horas', 'Minutos', 'Tolerancia (mins)', 'Acciones'], ['nombre', 'dias', 'horas', 'minutos', 'tolerancia'])}
