@@ -4,11 +4,13 @@ import './Tarifas.css';
 const Tarifas = () => {
   const [tarifas, setTarifas] = useState([]);
   const [showModal, setShowModal] = useState(false);
+  const [selectedTipo, setSelectedTipo] = useState(null);
+  const [nuevoInput, setNuevoInput] = useState({});
   const [editandoCampo, setEditandoCampo] = useState({ id: null, campo: null });
   const [valorTemporal, setValorTemporal] = useState('');
 
   useEffect(() => {
-    fetch('https://parkingapp-back.onrender.com/api/tarifas')
+    fetch('http://localhost:5000/api/tarifas')
       .then(res => res.json())
       .then(data => setTarifas(data))
       .catch(err => console.error('Error cargando tarifas:', err));
@@ -21,28 +23,23 @@ const Tarifas = () => {
     mensual: tarifas.filter(t => t.tipo === 'mensual'),
   };
 
-  const crearTarifa = async (tipo) => {
-    let data;
+  const handleTipoSeleccionado = (tipo) => {
+    setSelectedTipo(tipo);
+    setNuevoInput({});
+  };
 
-    switch (tipo) {
-      case 'hora':
-        data = { nombre: 'Hora', tipo: 'hora', horas: 1, tolerancia: 5 };
-        break;
-      case 'turno':
-        data = { nombre: 'Turno', tipo: 'turno', horas: 6, tolerancia: 10 };
-        break;
-      case 'estadia':
-        data = { nombre: 'Día', tipo: 'estadia', dias: 1, tolerancia: 60 };
-        break;
-      case 'mensual':
-        data = { nombre: 'Mensual', tipo: 'mensual', dias: 30, tolerancia: 1440 };
-        break;
-      default:
-        return;
-    }
+  const crearTarifaFinal = async () => {
+    const defaults = {
+      hora: { nombre: 'Hora', tipo: 'hora' },
+      turno: { nombre: 'Turno', tipo: 'turno' },
+      estadia: { nombre: 'Día', tipo: 'estadia' },
+      mensual: { nombre: 'Mensual', tipo: 'mensual' }
+    };
+
+    const data = { ...defaults[selectedTipo], ...nuevoInput };
 
     try {
-      const res = await fetch('https://parkingapp-back.onrender.com/api/tarifas', {
+      const res = await fetch('http://localhost:5000/api/tarifas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -50,6 +47,7 @@ const Tarifas = () => {
       const nueva = await res.json();
       setTarifas(prev => [...prev, nueva]);
       setShowModal(false);
+      setSelectedTipo(null);
     } catch (err) {
       console.error('Error creando tarifa:', err);
     }
@@ -59,7 +57,7 @@ const Tarifas = () => {
     if (!window.confirm("¿Estás seguro de que querés eliminar esta tarifa?")) return;
 
     try {
-      await fetch(`https://parkingapp-back.onrender.com/api/tarifas/${id}`, {
+      await fetch(`http://localhost:5000/api/tarifas/${id}`, {
         method: 'DELETE',
       });
       setTarifas(prev => prev.filter(t => t._id !== id));
@@ -79,10 +77,10 @@ const Tarifas = () => {
 
   const manejarTecla = async (e, tarifa) => {
     if (e.key === 'Enter') {
-      const actualizada = { ...tarifa, [editandoCampo.campo]: valorTemporal };
+      const actualizada = { ...tarifa, [editandoCampo.campo]: editandoCampo.campo === 'nombre' ? valorTemporal : parseInt(valorTemporal) || 0 };
 
       try {
-        const res = await fetch(`https://parkingapp-back.onrender.com/api/tarifas/${tarifa._id}`, {
+        const res = await fetch(`http://localhost:5000/api/tarifas/${tarifa._id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(actualizada),
@@ -98,6 +96,49 @@ const Tarifas = () => {
       setEditandoCampo({ id: null, campo: null });
       setValorTemporal('');
     }
+  };
+
+  const renderInputField = (label, field) => (
+    <div className="input-group">
+      <label>{label}</label>
+      <input
+        type={field === 'nombre' ? 'text' : 'number'}
+        value={nuevoInput[field] || ''}
+        onChange={(e) =>
+          setNuevoInput(prev => ({
+            ...prev,
+            [field]: field === 'nombre' ? e.target.value : parseInt(e.target.value) || 0
+          }))
+        }
+      />
+    </div>
+  );
+
+  const renderNuevoModal = () => {
+    const campos = {
+      hora: ['nombre', 'dias', 'horas', 'minutos', 'tolerancia'],
+      turno: ['nombre', 'dias', 'horas', 'minutos', 'tolerancia'],
+      estadia: ['nombre', 'dias', 'tolerancia'],
+      mensual: ['nombre'],
+    };
+
+    return (
+      <div className="tarifasModal-overlay">
+        <div className="crear-tarifa-modal">
+          <h2>Crear tarifa tipo {selectedTipo}</h2>
+          {campos[selectedTipo].map(campo =>
+            renderInputField(
+              campo === 'nombre'
+                ? 'Etiqueta'
+                : campo.charAt(0).toUpperCase() + campo.slice(1) + (campo === 'tolerancia' ? ' (mins)' : ''),
+              campo
+            )
+          )}
+          <button onClick={crearTarifaFinal}>Crear</button>
+          <button onClick={() => setSelectedTipo(null)}>Cancelar</button>
+        </div>
+      </div>
+    );
   };
 
   const renderCelda = (tarifa, campo) => {
@@ -164,24 +205,25 @@ const Tarifas = () => {
         <h1>Bloques de tiempo</h1>
         <button className="crear-tarifa-btn" onClick={() => setShowModal(true)}>+ Nueva Tarifa</button>
       </div>
-      {showModal && (
+
+      {showModal && !selectedTipo && (
         <div className="tarifasModal-overlay">
           <div className="tarifasModal-contenido">
-            <h2>Crear nueva tarifa</h2>
+            <h2>Seleccioná el tipo de tarifa</h2>
             <div className="tarifasModal-botones">
-              <button onClick={() => crearTarifa('hora')}>
+              <button onClick={() => handleTipoSeleccionado('hora')}>
                 <strong>Hora</strong>
                 <span className="tarifasModal-subtitulo">Estacionamiento x hora</span>
               </button>
-              <button onClick={() => crearTarifa('turno')}>
+              <button onClick={() => handleTipoSeleccionado('turno')}>
                 <strong>Turno</strong>
                 <span className="tarifasModal-subtitulo">Estacionamiento x turno</span>
               </button>
-              <button onClick={() => crearTarifa('estadia')}>
+              <button onClick={() => handleTipoSeleccionado('estadia')}>
                 <strong>Estadía</strong>
                 <span className="tarifasModal-subtitulo">Estacionamiento diario</span>
               </button>
-              <button onClick={() => crearTarifa('mensual')}>
+              <button onClick={() => handleTipoSeleccionado('mensual')}>
                 <strong>Mensual</strong>
                 <span className="tarifasModal-subtitulo">Estacionamiento mensual</span>
               </button>
@@ -193,11 +235,12 @@ const Tarifas = () => {
         </div>
       )}
 
+      {selectedTipo && renderNuevoModal()}
 
-      {renderTabla('hora', ['', 'Días', 'Horas', 'Minutos', 'Tolerancia (mins)', 'Acciones'], ['nombre', 'dias', 'horas', 'minutos', 'tolerancia'])}
-      {renderTabla('turno', ['', 'Días', 'Horas', 'Minutos', 'Tolerancia (mins)', 'Acciones'], ['nombre', 'dias', 'horas', 'minutos', 'tolerancia'])}
-      {renderTabla('estadia', ['', 'Días', 'Tolerancia (mins)', 'Acciones'], ['nombre', 'dias', 'tolerancia'])}
-      {renderTabla('mensual', ['', 'Acciones'], ['nombre'])}
+      {renderTabla('hora', ['Etiqueta', 'Días', 'Horas', 'Minutos', 'Tolerancia (mins)', 'Acciones'], ['nombre', 'dias', 'horas', 'minutos', 'tolerancia'])}
+      {renderTabla('turno', ['Etiqueta', 'Días', 'Horas', 'Minutos', 'Tolerancia (mins)', 'Acciones'], ['nombre', 'dias', 'horas', 'minutos', 'tolerancia'])}
+      {renderTabla('estadia', ['Etiqueta', 'Días', 'Tolerancia (mins)', 'Acciones'], ['nombre', 'dias', 'tolerancia'])}
+      {renderTabla('mensual', ['Etiqueta', 'Acciones'], ['nombre'])}
     </div>
   );
 };

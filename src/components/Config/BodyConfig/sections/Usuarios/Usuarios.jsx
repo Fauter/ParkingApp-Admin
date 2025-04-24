@@ -18,7 +18,7 @@ const Usuarios = () => {
   useEffect(() => {
     const obtenerUsuarios = async () => {
       try {
-        const response = await fetch('https://parkingapp-back.onrender.com/api/auth/');
+        const response = await fetch('http://localhost:5000/api/auth/');
         if (!response.ok) throw new Error('Error al obtener usuarios');
         const data = await response.json();
         setUsuarios(data);
@@ -45,7 +45,7 @@ const Usuarios = () => {
 
   const handleCrearUsuario = async () => {
     try {
-      const res = await fetch('https://parkingapp-back.onrender.com/api/auth/register', {
+      const res = await fetch('http://localhost:5000/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

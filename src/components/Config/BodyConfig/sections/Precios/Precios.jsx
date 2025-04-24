@@ -10,15 +10,15 @@ const Precios = () => {
   useEffect(() => {
     const fetchDatos = async () => {
       try {
-        const tarifasRes = await fetch('https://parkingapp-back.onrender.com/api/tarifas/');
+        const tarifasRes = await fetch('http://localhost:5000/api/tarifas/');
         const tarifasData = await tarifasRes.json();
         setTarifas(tarifasData);
 
-        const tiposRes = await fetch('https://parkingapp-back.onrender.com/api/tipos-vehiculo');
+        const tiposRes = await fetch('http://localhost:5000/api/tipos-vehiculo');
         const tiposData = await tiposRes.json();
         setTiposVehiculo(tiposData);
 
-        const preciosRes = await fetch('https://parkingapp-back.onrender.com/api/precios');
+        const preciosRes = await fetch('http://localhost:5000/api/precios');
         const preciosData = await preciosRes.json();
         setPrecios(preciosData);
       } catch (error) {
@@ -62,7 +62,7 @@ const Precios = () => {
       };
 
       try {
-        const res = await fetch(`https://parkingapp-back.onrender.com/api/precios/${vehiculo}`, {
+        const res = await fetch(`http://localhost:5000/api/precios/${vehiculo}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(nuevosPreciosVehiculo),

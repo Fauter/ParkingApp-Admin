@@ -23,7 +23,7 @@ function Body() {
   useEffect(() => {
     const fetchMovimientos = async () => {
       try {
-        const response = await fetch("https://parkingapp-back.onrender.com/api/movimientos");
+        const response = await fetch("http://localhost:5000/api/movimientos");
         const data = await response.json();
         setMovimientos(data);
       } catch (error) {
@@ -39,7 +39,7 @@ function Body() {
   useEffect(() => {
     const fetchVehiculos = async () => {
       try {
-        const response = await fetch("https://parkingapp-back.onrender.com/api/vehiculos");
+        const response = await fetch("http://localhost:5000/api/vehiculos");
         const data = await response.json();
         setVehiculos(data);
       } catch (error) {
@@ -74,12 +74,7 @@ function Body() {
       (!filtros.fecha || fechaMovimientoStr === filtros.fecha) &&
       (!filtros.fechaDesde || fechaMovimiento >= fechaDesdeDate) &&
       (!filtros.fechaHasta || fechaMovimiento < fechaHastaDate) &&
-      (
-        !filtros.tipoMovimiento ||
-        (filtros.tipoMovimiento === "Por Hora" && (!mov.tipoMovimiento || mov.tipoMovimiento.toLowerCase() === "por hora")) ||
-        (filtros.tipoMovimiento === "Media Estadía" && mov.tipoMovimiento?.toLowerCase() === "media estadía") ||
-        (filtros.tipoMovimiento === "Estadía" && mov.tipoMovimiento?.toLowerCase() === "estadía")
-      )
+      (!filtros.tipoMovimiento || mov.tipoTarifa?.toLowerCase() === filtros.tipoMovimiento.toLowerCase())
     );
   });
   const vehiculosFiltrados = vehiculos

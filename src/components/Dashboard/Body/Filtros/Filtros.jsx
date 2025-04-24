@@ -3,19 +3,32 @@ import "./Filtros.css";
 
 function Filtros({ filtros, setFiltros, activeTab, limpiarFiltros }) {
   const [tiposVehiculo, setTiposVehiculo] = useState([]);
+  const [tiposTarifa, setTiposTarifa] = useState([]);
 
   useEffect(() => {
     const fetchTiposVehiculo = async () => {
       try {
-        const response = await fetch("https://parkingapp-back.onrender.com/api/tipos-vehiculo");
+        const response = await fetch("http://localhost:5000/api/tipos-vehiculo");
         const data = await response.json();
         setTiposVehiculo(data);
       } catch (error) {
         console.error("Error al obtener tipos de vehículo:", error);
       }
     };
-  
+
+    const fetchTiposTarifa = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/tarifas");
+        const data = await response.json();
+        const tiposUnicos = [...new Set(data.map((tarifa) => tarifa.tipo))];
+        setTiposTarifa(tiposUnicos);
+      } catch (error) {
+        console.error("Error al obtener tipos de tarifa:", error);
+      }
+    };
+
     fetchTiposVehiculo();
+    fetchTiposTarifa();
   }, []);
 
   const handleChange = (e) => {
@@ -23,6 +36,21 @@ function Filtros({ filtros, setFiltros, activeTab, limpiarFiltros }) {
       ...filtros,
       [e.target.name]: e.target.value,
     });
+  };
+
+  const formatTipoTarifa = (tipo) => {
+    switch (tipo.toLowerCase()) {
+      case "hora":
+        return "Tipo Hora";
+      case "estadia":
+        return "Tipo Estadía";
+      case "turno":
+        return "Tipo Turno";
+      case "mensual":
+        return "Tipo Mensual";
+      default:
+        return tipo;
+    }
   };
 
   const rangoFecha = (
@@ -102,7 +130,7 @@ function Filtros({ filtros, setFiltros, activeTab, limpiarFiltros }) {
           </div>
 
           <div className="filtro-container">
-            <label className="filtro-label">Tipo de Movimiento</label>
+            <label className="filtro-label">Tipo de Tarifa</label>
             <select
               name="tipoMovimiento"
               className="filtro-select"
@@ -110,9 +138,11 @@ function Filtros({ filtros, setFiltros, activeTab, limpiarFiltros }) {
               value={filtros.tipoMovimiento || ""}
             >
               <option value="">Todos</option>
-              <option value="Por Hora">Por Hora</option>
-              <option value="Media Estadía">Media Estadía</option>
-              <option value="Estadía">Estadía</option>
+              {tiposTarifa.map((tipo, i) => (
+                <option key={i} value={tipo}>
+                  {formatTipoTarifa(tipo)}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -154,7 +184,9 @@ function Filtros({ filtros, setFiltros, activeTab, limpiarFiltros }) {
           </button>
         </>
       );
-    } else if (activeTab === "Ingresos") {
+    }
+
+    if (activeTab === "Ingresos") {
       return (
         <>
           <div className="filtro-container">

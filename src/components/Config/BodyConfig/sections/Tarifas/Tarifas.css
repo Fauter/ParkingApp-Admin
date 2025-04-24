@@ -192,3 +192,65 @@
   cursor: pointer;
   align-self: center;
 }
+
+.crear-tarifa-modal {
+  background-color: #fff;
+  border-radius: 10px;
+  padding: 1.2rem 1.5rem;
+  max-width: 450px;
+  width: 100%;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  font-family: 'Segoe UI', sans-serif;
+}
+.crear-tarifa-modal h2 {
+  font-size: 1.25rem;
+  color: #1f1f1f;
+  margin-bottom: 0.5rem;
+}
+.crear-tarifa-modal p {
+  font-size: 0.9rem;
+  color: #444;
+  margin: 0.2rem 0 1rem;
+}
+.crear-tarifa-modal input {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #bbb;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background-color: #fafafa;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border 0.2s ease;
+}
+.crear-tarifa-modal input:focus {
+  border-color: #5a8dbd;
+  outline: none;
+  background-color: #f1f6f8;
+}
+.crear-tarifa-modal button {
+  padding: 0.5rem 0.9rem;
+  font-size: 0.95rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-weight: 500;
+  border: none;
+}
+.crear-tarifa-modal button:first-of-type {
+  background-color: #3e7cb1;
+  color: #fff;
+}
+.crear-tarifa-modal button:first-of-type:hover {
+  background-color: #345f88;
+}
+.crear-tarifa-modal button:last-of-type {
+  background-color: transparent;
+  color: #6c757d;
+  border: 1px solid #ccc;
+}
+.crear-tarifa-modal button:last-of-type:hover {
+  background-color: #e9ecef;
+}
