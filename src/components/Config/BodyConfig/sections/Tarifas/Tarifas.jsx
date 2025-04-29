@@ -8,12 +8,25 @@ const Tarifas = () => {
   const [nuevoInput, setNuevoInput] = useState({});
   const [editandoCampo, setEditandoCampo] = useState({ id: null, campo: null });
   const [valorTemporal, setValorTemporal] = useState('');
+  const [cargandoParametros, setCargandoParametros] = useState(true);
   const [parametros, setParametros] = useState({
+    // Para tipo "hora"
     fraccionarDesde: "0",
     toleranciaInicial: 0,
-    permitirCobroAnticipado: false
+    permitirCobroAnticipadoHora: false,
+    // Para tipo "turno"
+    calcularExcedenteTurno: false,
+    permitirReservaTurno: false,
+    permitirCobroAnticipadoTurno: false,
+    // Para tipo "estadia"
+    horarioFinalizacionEstadia: {
+      habilitado: false,
+      hora: "10:00"
+    },
+    registrarPresencia: false,
+    calcularExcedentePorHoraEstadia: false,
+    permitirCobroAnticipadoEstadia: false
   });
-  const [cargandoParametros, setCargandoParametros] = useState(true);
 
   useEffect(() => {
     // Cargar las tarifas desde la API
@@ -154,33 +167,6 @@ const Tarifas = () => {
     </div>
   );
 
-  const renderNuevoModal = () => {
-    const campos = {
-      hora: ['nombre', 'dias', 'horas', 'minutos', 'tolerancia'],
-      turno: ['nombre', 'dias', 'horas', 'minutos', 'tolerancia'],
-      estadia: ['nombre', 'dias', 'tolerancia'],
-      mensual: ['nombre'],
-    };
-
-    return (
-      <div className="tarifasModal-overlay">
-        <div className="crear-tarifa-modal">
-          <h2>Crear tarifa tipo {selectedTipo}</h2>
-          {campos[selectedTipo].map(campo =>
-            renderInputField(
-              campo === 'nombre'
-                ? 'Etiqueta'
-                : campo.charAt(0).toUpperCase() + campo.slice(1) + (campo === 'tolerancia' ? ' (mins)' : ''),
-              campo
-            )
-          )}
-          <button onClick={crearTarifaFinal}>Crear</button>
-          <button onClick={() => setSelectedTipo(null)}>Cancelar</button>
-        </div>
-      </div>
-    );
-  };
-
   const renderCelda = (tarifa, campo) => {
     const valor = tarifa[campo] ?? '';
     const esEditando = editandoCampo.id === tarifa._id && editandoCampo.campo === campo;
@@ -262,14 +248,154 @@ const Tarifas = () => {
               <label>
                 <input
                   type="checkbox"
-                  checked={parametros.permitirCobroAnticipado || false}
-                  onChange={(e) => setParametros(prev => ({ ...prev, permitirCobroAnticipado: e.target.checked }))}
+                  checked={parametros.permitirCobroAnticipadoHora || false}
+                  onChange={(e) => setParametros(prev => ({ ...prev, permitirCobroAnticipadoHora: e.target.checked }))}
                 />
                 Permitir cobro anticipado
               </label>
             </div>
           </div>
         )}
+        {tipo === 'turno' && (
+          <div className="configuracion-turno">
+            <div className="config-wrapper-turno">
+              <div className="lado-izquierdo-turno">
+                <div className="config-item-turno">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={parametros.calcularExcedenteTurno || false}
+                      onChange={(e) => setParametros(prev => ({ ...prev, calcularExcedenteTurno: e.target.checked }))}
+                    />
+                    Calcular excedente por hora
+                  </label>
+                </div>
+              </div>
+              <div className="lado-derecho-turno">
+                <div className="config-item-turno">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={parametros.permitirReservaTurno || false}
+                      onChange={(e) => setParametros(prev => ({ ...prev, permitirReservaTurno: e.target.checked }))}
+                    />
+                    Permitir reserva
+                  </label>
+                </div>
+                <div className="config-item-turno">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={parametros.permitirCobroAnticipadoTurno || false}
+                      onChange={(e) => setParametros(prev => ({ ...prev, permitirCobroAnticipadoTurno: e.target.checked }))}
+                    />
+                    Permitir cobro anticipado
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        {tipo === 'estadia' && (
+          <div className="configuracion-estadia">
+            <div className="config-wrapper">
+              <div className="config-item-estadia">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={parametros.horarioFinalizacionEstadia?.habilitado || false}
+                    onChange={(e) =>
+                      setParametros(prev => ({
+                        ...prev,
+                        horarioFinalizacionEstadia: {
+                          ...prev.horarioFinalizacionEstadia,
+                          habilitado: e.target.checked,
+                        },
+                      }))
+                    }
+                  />
+                  Horario de finalización de estadía
+                </label>
+                <div className="input-hora-wrapper">
+                  {parametros.horarioFinalizacionEstadia?.habilitado && (
+                    <input
+                      type="time"
+                      value={parametros.horarioFinalizacionEstadia?.hora || "10:00"}
+                      onChange={(e) =>
+                        setParametros(prev => ({
+                          ...prev,
+                          horarioFinalizacionEstadia: {
+                            ...prev.horarioFinalizacionEstadia,
+                            hora: e.target.value,
+                            habilitado: true,
+                          },
+                        }))
+                      }
+                    />
+                  )}
+                </div>
+              </div>
+              <div className="config-item-estadia">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={parametros.registrarPresencia || false}
+                    onChange={(e) => setParametros(prev => ({ ...prev, registrarPresencia: e.target.checked }))}
+                  />
+                  Registrar presencia
+                </label>
+              </div>
+              <div className="config-item-estadia">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={parametros.calcularExcedentePorHoraEstadia || false}
+                    onChange={(e) => setParametros(prev => ({ ...prev, calcularExcedentePorHoraEstadia: e.target.checked }))}
+                  />
+                  Calcular excedente por hora
+                </label>
+              </div>
+              <div className="config-item-estadia">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={parametros.permitirCobroAnticipadoEstadia || false}
+                    onChange={(e) => setParametros(prev => ({ ...prev, permitirCobroAnticipadoEstadia: e.target.checked }))}
+                  />
+                  Permitir cobro anticipado
+                </label>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+  
+
+  const renderNuevoModal = () => {
+    const campos = {
+      hora: ['nombre', 'dias', 'horas', 'minutos', 'tolerancia'],
+      turno: ['nombre', 'dias', 'horas', 'minutos', 'tolerancia'],
+      estadia: ['nombre', 'dias', 'tolerancia'],
+      mensual: ['nombre'],
+    };
+
+    return (
+      <div className="tarifasModal-overlay">
+        <div className="crear-tarifa-modal">
+          <h2>Crear tarifa tipo {selectedTipo}</h2>
+          {campos[selectedTipo].map(campo =>
+            renderInputField(
+              campo === 'nombre'
+                ? 'Etiqueta'
+                : campo.charAt(0).toUpperCase() + campo.slice(1) + (campo === 'tolerancia' ? ' (mins)' : ''),
+              campo
+            )
+          )}
+          <button onClick={crearTarifaFinal}>Crear</button>
+          <button onClick={() => setSelectedTipo(null)}>Cancelar</button>
+        </div>
       </div>
     );
   };

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './TabsConfig.css';
 
+
 const TabsConfig = ({ activeTab, onTabChange, fraccionarDesde }) => {
   const tabs = ['Tipos de Vehículo', 'Tarifas', 'Precios', 'Usuarios'];
   const [modalAbierto, setModalAbierto] = useState(false);
@@ -15,6 +16,11 @@ const TabsConfig = ({ activeTab, onTabChange, fraccionarDesde }) => {
   const [tarifas, setTarifas] = useState([]);
   const [precios, setPrecios] = useState({});
   const [tiposVehiculo, setTiposVehiculo] = useState([]);
+  const [parametros, setParametros] = useState({ 
+    fraccionarDesde: 0, 
+    toleranciaInicial: 0, 
+    permitirCobroAnticipado: false 
+  });
 
   useEffect(() => {
     fetch('http://localhost:5000/api/tarifas')
@@ -31,6 +37,9 @@ const TabsConfig = ({ activeTab, onTabChange, fraccionarDesde }) => {
     fetch('http://localhost:5000/api/tipos-vehiculo')
       .then(res => res.json())
       .then(data => setTiposVehiculo(data));
+    fetch('http://localhost:5000/api/parametros')
+      .then(res => res.json())
+      .then(data => setParametros(data));
   }, []);
 
   const handleChange = (e) => {
@@ -53,8 +62,9 @@ const TabsConfig = ({ activeTab, onTabChange, fraccionarDesde }) => {
   
     const msTotal = tiempoTotal - entrada;
     let minutosTotales = Math.ceil(msTotal / 1000 / 60);
-    if (fraccionarDesde && minutosTotales < Number(fraccionarDesde)) {
-      minutosTotales = Number(fraccionarDesde);
+    const fraccionarDesdeMinutos = Number(parametros.fraccionarDesde || 0);
+    if (fraccionarDesdeMinutos > 0 && minutosTotales < fraccionarDesdeMinutos) {
+      minutosTotales = fraccionarDesdeMinutos;
     }
     if (minutosTotales <= 0) return 'Duración inválida';
   

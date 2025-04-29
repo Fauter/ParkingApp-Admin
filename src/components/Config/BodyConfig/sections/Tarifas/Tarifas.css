@@ -1,3 +1,9 @@
+input[type="checkbox"] {
+  margin: 0;
+  margin-right: 5px; 
+  cursor: pointer; 
+}
+
 .tarifas-container {
   min-width: 60%;
   max-width: 80%;
@@ -45,6 +51,9 @@
   padding: 20px 20px 0px 20px;
   margin-bottom: 20px;
   border-radius: 8px; 
+}
+.tarifa-section h2{
+  margin: 0px 0px 5px 5px;
 }
 
 .tarifa-table {
@@ -263,11 +272,11 @@
   align-items: center;
   justify-content: center;
   gap: 1rem;
+  font-size: 0.95rem;
   background-color:rgb(244, 244, 245);
   padding: 20px 0px 20px 0px;
 }
 .configuracion-hora-extra label {
-  font-size: 0.95rem;
   color: #333;
   font-weight: bold;
   margin-right: 0.2rem;
@@ -294,3 +303,86 @@
   gap: 0.5rem;
 }
 
+.configuracion-estadia {
+  display: flex;
+  justify-content: center;
+  background-color: rgb(244, 244, 245);
+  padding: 20px 0;
+  font-size: 0.95rem;
+}
+.config-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  max-width: 800px;
+  justify-content: center;
+  gap: 0rem 6rem;
+  padding-left: 80px;
+}
+.config-item-estadia {
+  display: flex;
+  align-items: center;
+  width: 350px; 
+  min-height: 35px; 
+  justify-content: space-between; 
+  position: relative;
+}
+.config-item-estadia label {
+  display: flex;
+  align-items: center;
+  font-weight: bold;
+  color: #333;
+  flex-shrink: 0; /* que el label no se achique nunca */
+}
+.input-hora-wrapper {
+  width: 100px; /* espacio reservado siempre, aunque no esté visible */
+}
+.input-hora-wrapper input[type="time"] {
+  width: 90%;
+  height: 30px;
+  border: 1px solid #bbb;
+  border-radius: 6px;
+  font-size: 1rem;
+  background-color: #fafafa;
+  box-sizing: border-box;
+  transition: border 0.2s ease;
+  margin-left: 10px;
+  text-align: center;
+}
+.input-hora-wrapper input[type="time"]:focus {
+  background-color: #f1f6f8;
+  outline: none;
+}
+
+.configuracion-turno {
+  display: flex;
+  justify-content: center;
+  background-color: rgb(244, 244, 245);
+  padding: 20px 0;
+  font-size: 0.95rem;
+}
+.config-wrapper-turno {
+  display: flex;
+  max-width: 800px;
+  width: 100%;
+  justify-content: space-between;
+}
+.lado-izquierdo-turno,
+.lado-derecho-turno {
+  display: flex;
+  align-items: center;
+}
+.lado-derecho-turno {
+  gap: 2rem; /* espacio entre los dos checkbox derechos */
+}
+.config-item-turno {
+  display: flex;
+  align-items: center;
+  min-height: 35px;
+}
+.config-item-turno label {
+  display: flex;
+  align-items: center;
+  font-weight: bold;
+  color: #333;
+  flex-shrink: 0; /* que el label no se achique nunca */
+}
