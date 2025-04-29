@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import './TabsConfig.css';
 
-
 const TabsConfig = ({ activeTab, onTabChange, fraccionarDesde }) => {
   const tabs = ['Tipos de Vehículo', 'Tarifas', 'Precios', 'Usuarios'];
   const [modalAbierto, setModalAbierto] = useState(false);
   const [form, setForm] = useState({
     tipoTarifa: 'hora',
     tipoVehiculo: 'auto',
-    inicio: '',
+    inicio: '',  // Este valor se va a actualizar a la fecha actual
     dias: '',
     hora: '00:00'
   });
@@ -23,149 +22,93 @@ const TabsConfig = ({ activeTab, onTabChange, fraccionarDesde }) => {
   });
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/tarifas')
-      .then(res => res.json())
-      .then(data => {
-        const tarifasFiltradas = data.filter(t => t.tipo !== 'mensual' && t.tipo !== 'turno');
-        setTarifas(tarifasFiltradas);
-      });
+    fetch('https://parkingapp-back.onrender.com/api/tarifas')
+    .then(res => res.json())
+    .then(data => {
+      const tarifasFiltradas = data.filter(t => t.tipo === 'hora');
+      setTarifas(tarifasFiltradas);
+    });
 
-    fetch('http://localhost:5000/api/precios')
+    fetch('https://parkingapp-back.onrender.com/api/precios')
       .then(res => res.json())
       .then(data => setPrecios(data));
 
-    fetch('http://localhost:5000/api/tipos-vehiculo')
+    fetch('https://parkingapp-back.onrender.com/api/tipos-vehiculo')
       .then(res => res.json())
       .then(data => setTiposVehiculo(data));
-    fetch('http://localhost:5000/api/parametros')
+
+    fetch('https://parkingapp-back.onrender.com/api/parametros')
       .then(res => res.json())
-      .then(data => setParametros(data));
+      .then(data => setParametros(data))
+      .catch(error => console.error('Error al obtener parámetros:', error));
   }, []);
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  // Función para obtener la fecha y hora local actual en el formato correcto
+  const getCurrentDateTimeLocal = () => {
+    const now = new Date();
+    const offset = now.getTimezoneOffset();
+    const localDate = new Date(now.getTime() - offset * 60 * 1000);
+    return localDate.toISOString().slice(0, 16); // YYYY-MM-DDTHH:MM
   };
 
-  const obtenerDetalleCliente = () => {
-    const { tipoVehiculo, inicio, dias, hora } = form;
-    if (!tipoVehiculo || !hora || !inicio) return 'Complete todos los campos.';
-  
-    const entrada = new Date(inicio);
-    if (isNaN(entrada)) return 'Fecha de inicio inválida';
-  
-    const tiempoTotal = new Date(inicio);
-    tiempoTotal.setDate(tiempoTotal.getDate() + Number(dias || 0));
-  
-    const [h, m] = hora.split(':').map(Number);
-    tiempoTotal.setHours(tiempoTotal.getHours() + h);
-    tiempoTotal.setMinutes(tiempoTotal.getMinutes() + m);
-  
-    const msTotal = tiempoTotal - entrada;
-    let minutosTotales = Math.ceil(msTotal / 1000 / 60);
-    const fraccionarDesdeMinutos = Number(parametros.fraccionarDesde || 0);
-    if (fraccionarDesdeMinutos > 0 && minutosTotales < fraccionarDesdeMinutos) {
-      minutosTotales = fraccionarDesdeMinutos;
-    }
-    if (minutosTotales <= 0) return 'Duración inválida';
-  
-    // Ordenar tarifas por duración total (minutos) ASCENDENTE
-    const tarifasOrdenadas = tarifas
-      .map(t => {
-        const totalMin = t.dias * 1440 + t.horas * 60 + t.minutos;
-        return { ...t, totalMin };
-      })
-      .sort((a, b) => a.totalMin - b.totalMin);
-  
-    let tiempoRestante = minutosTotales;
-    const tipoVehiculoKey = tipoVehiculo.toLowerCase();
-    let resumen = '';
-    let costoTotal = 0;
-    const tarifasUsadas = {};
-  
-    for (let i = tarifasOrdenadas.length - 1; i >= 0; i--) {
-      const tarifa = tarifasOrdenadas[i];
-      const { totalMin, tolerancia } = tarifa;
-      const nombre = tarifa.nombre.toLowerCase();
-      const precio = precios[tipoVehiculoKey]?.[nombre] ?? 0;
-  
-      // Verificar si el tiempo restante supera el tiempo total de la tarifa + tolerancia
-      while (
-        tiempoRestante >= totalMin + tolerancia ||
-        (tiempoRestante >= totalMin && tolerancia === 0)
-      ) {
-        if (!tarifasUsadas[nombre]) {
-          tarifasUsadas[nombre] = { cantidad: 0, precio };
-        }
-        tarifasUsadas[nombre].cantidad += 1;
-        costoTotal += precio;
-        tiempoRestante -= totalMin;
-      }
-  
-      // Agregar al siguiente ciclo la tolerancia
-      if (tiempoRestante >= totalMin) {
-        const diferencia = tiempoRestante - totalMin;
-        // Si la diferencia es menor o igual a la tolerancia, no cobramos la tarifa adicional
-        if (diferencia <= tolerancia) {
-          // No cobrar tarifa adicional, pero reducir el tiempo restante
-          tiempoRestante = 0;
-        } else {
-          // Si la diferencia supera la tolerancia, cobrar la tarifa adicional
-          if (!tarifasUsadas[nombre]) {
-            tarifasUsadas[nombre] = { cantidad: 0, precio };
-          }
-          tarifasUsadas[nombre].cantidad += 1;
-          costoTotal += precio;
-          tiempoRestante -= totalMin;
-        }
-      }
-    }
-  
-    // Intentar cobrar lo que quede con la menor tarifa disponible
-    if (tiempoRestante > 0) {
-      const tarifaMin = tarifasOrdenadas[0];
-      const nombre = tarifaMin.nombre.toLowerCase();
-      const precio = precios[tipoVehiculoKey]?.[nombre] ?? 0;
-  
-      const cantidad = Math.ceil((tiempoRestante - tarifaMin.tolerancia) / tarifaMin.totalMin);
-      if (cantidad > 0) {
-        if (!tarifasUsadas[nombre]) {
-          tarifasUsadas[nombre] = { cantidad: 0, precio };
-        }
-        tarifasUsadas[nombre].cantidad += cantidad;
-        costoTotal += precio * cantidad;
-      }
-    }
-  
-    // Generar el resumen de tarifas usadas
-    for (let nombre in tarifasUsadas) {
-      const { cantidad, precio } = tarifasUsadas[nombre];
-      resumen += `${cantidad} x ${nombre.charAt(0).toUpperCase() + nombre.slice(1)} = $${precio * cantidad}\n`;
-    }
-  
-    return resumen.trim() + `\n\nTotal: $${costoTotal}`;
-  };  
-
+  // Actualizar la fecha y hora actual cuando el modal se abre
   useEffect(() => {
     if (modalAbierto) {
-      const ahora = new Date();
-      const pad = (n) => String(n).padStart(2, '0');
-      const fechaLocal = `${ahora.getFullYear()}-${pad(ahora.getMonth() + 1)}-${pad(ahora.getDate())}T${pad(ahora.getHours())}:${pad(ahora.getMinutes())}`;
-
-      setForm(prev => ({
-        ...prev,
-        inicio: fechaLocal,
-        hora: '00:00'
+      setForm((prevForm) => ({
+        ...prevForm,
+        inicio: getCurrentDateTimeLocal()  // Establece la fecha y hora actual al abrir el modal
       }));
-
-      setDetalle(obtenerDetalleCliente());
     }
   }, [modalAbierto]);
 
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm({
+      ...form,
+      [name]: value
+    });
+  };
+
+  const actualizarDetalle = async () => {
+    const { tipoVehiculo, inicio, dias, hora } = form;
+    
+    try {
+      const res = await fetch('https://parkingapp-back.onrender.com/api/calcular-tarifa', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          detalle: {
+            tipoVehiculo,
+            inicio,
+            dias: Number(dias || 0),
+            hora
+          },
+          tarifas,
+          precios,
+          parametros
+        })
+      });
+  
+      const data = await res.json();
+  
+      if (res.ok) {
+        setDetalle(data.detalle || 'Cálculo realizado.');
+      } else {
+        setDetalle(data.error || 'Error al calcular tarifa.');
+      }
+    } catch (err) {
+      console.error('Error en fetch:', err);
+      setDetalle('Error de conexión con el servidor.');
+    }
+  };
+
   useEffect(() => {
     if (modalAbierto) {
-      setDetalle(obtenerDetalleCliente());
+      actualizarDetalle();
     }
-  }, [form, tarifas, precios]);
+  }, [modalAbierto, form, tarifas, precios, parametros]);
 
   return (
     <div className="configTab-container">
@@ -219,7 +162,13 @@ const TabsConfig = ({ activeTab, onTabChange, fraccionarDesde }) => {
 
               <div className="modal-simulador-field">
                 <label>Inicio</label>
-                <input type="datetime-local" name="inicio" value={form.inicio} onChange={handleChange} />
+                <input 
+                  type="datetime-local" 
+                  name="inicio" 
+                  value={form.inicio} 
+                  onChange={handleChange} 
+                  placeholder={form.inicio}  // Usamos form.inicio como placeholder
+                />
               </div>
 
               <div className="modal-simulador-field">

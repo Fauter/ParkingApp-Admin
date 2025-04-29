@@ -13,7 +13,6 @@
   table-layout: fixed;
   margin: 0 auto;  /* Centramos la tabla */
 }
-
 .precios-table th,
 .precios-table td {
   padding: 8px;  /* Reducimos el padding para que sea más compacto */
@@ -27,20 +26,16 @@
   text-overflow: ellipsis;
   border: 1px solid #ddd;
 }
-
 .precios-table th {
   font-weight: bold;
   background-color: #e5eef3;
 }
-
 .precios-table tr:nth-child(even) {
   background-color: #eaf3f7;
 }
-
 .precios-table td.editing {
   background-color: rgba(0, 0, 0, 0.1);  /* Sombra suave en el campo seleccionado */
 }
-
 .precios-table .precio-input {
   width: 80%;  /* Ajustamos el ancho de los inputs para que queden más pequeños */
   padding: 6px;
