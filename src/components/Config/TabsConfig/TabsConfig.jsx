@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './TabsConfig.css';
 
-const TabsConfig = ({ activeTab, onTabChange }) => {
+const TabsConfig = ({ activeTab, onTabChange, fraccionarDesde }) => {
   const tabs = ['Tipos de Vehículo', 'Tarifas', 'Precios', 'Usuarios'];
   const [modalAbierto, setModalAbierto] = useState(false);
   const [form, setForm] = useState({
@@ -52,7 +52,10 @@ const TabsConfig = ({ activeTab, onTabChange }) => {
     tiempoTotal.setMinutes(tiempoTotal.getMinutes() + m);
   
     const msTotal = tiempoTotal - entrada;
-    const minutosTotales = Math.ceil(msTotal / 1000 / 60);
+    let minutosTotales = Math.ceil(msTotal / 1000 / 60);
+    if (fraccionarDesde && minutosTotales < Number(fraccionarDesde)) {
+      minutosTotales = Number(fraccionarDesde);
+    }
     if (minutosTotales <= 0) return 'Duración inválida';
   
     // Ordenar tarifas por duración total (minutos) ASCENDENTE

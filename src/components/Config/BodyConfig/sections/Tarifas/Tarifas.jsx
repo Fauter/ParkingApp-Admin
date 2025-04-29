@@ -8,13 +8,40 @@ const Tarifas = () => {
   const [nuevoInput, setNuevoInput] = useState({});
   const [editandoCampo, setEditandoCampo] = useState({ id: null, campo: null });
   const [valorTemporal, setValorTemporal] = useState('');
+  const [parametros, setParametros] = useState({
+    fraccionarDesde: "0",
+    toleranciaInicial: 0,
+    permitirCobroAnticipado: false
+  });
+  const [cargandoParametros, setCargandoParametros] = useState(true);
 
   useEffect(() => {
+    // Cargar las tarifas desde la API
     fetch('http://localhost:5000/api/tarifas')
       .then(res => res.json())
       .then(data => setTarifas(data))
       .catch(err => console.error('Error cargando tarifas:', err));
+
+    // Cargar los parámetros por defecto desde el servidor o archivo JSON
+    fetch('http://localhost:5000/api/parametros')
+      .then(res => res.json())
+      .then(data => {
+        const newParametros = {
+          fraccionarDesde: data.fraccionarDesde || "0",
+          toleranciaInicial: data.toleranciaInicial || 0,
+          permitirCobroAnticipado: data.permitirCobroAnticipado || false
+        };
+        setParametros(newParametros);
+        setCargandoParametros(false);
+      })
+      .catch(err => console.error('Error cargando parámetros:', err));
   }, []);
+  useEffect(() => {
+    // Solo guardar los parámetros cuando se haya terminado de cargar los parámetros
+    if (!cargandoParametros) {
+      guardarParametros();
+    }
+  }, [parametros, cargandoParametros]);
 
   const tarifasPorTipo = {
     hora: tarifas.filter(t => t.tipo === 'hora'),
@@ -64,6 +91,19 @@ const Tarifas = () => {
     } catch (err) {
       console.error('Error eliminando tarifa:', err);
     }
+  };
+
+  const guardarParametros = () => {
+    fetch('http://localhost:5000/api/parametros', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(parametros),
+    })
+      .then(res => res.json())
+      .then(data => console.log('Parámetros guardados:', data))
+      .catch(err => console.error('Error guardando parámetros:', err));
   };
 
   const activarEdicion = (id, campo, valorActual) => {
@@ -195,6 +235,41 @@ const Tarifas = () => {
             )}
           </tbody>
         </table>
+        {/* TIPO HORA */}
+        {tipo === 'hora' && (
+          <div className="configuracion-hora-extra">
+            <div className="config-item">
+              <label>Fraccionar a partir de:</label>
+              <select
+                value={parametros.fraccionarDesde || "0"}
+                onChange={(e) => setParametros(prev => ({ ...prev, fraccionarDesde: e.target.value }))}
+              >
+                <option value="0">Sin Fracción</option>
+                <option value="60">60 Minutos</option>
+                <option value="720">720 minutos</option>
+                <option value="1440">1440 minutos</option>
+              </select>
+            </div>
+            <div className="config-item">
+              <label>Tolerancia Inicial:</label>
+              <input
+                type="number"
+                value={parametros.toleranciaInicial || ""}
+                onChange={(e) => setParametros(prev => ({ ...prev, toleranciaInicial: Number(e.target.value) }))}
+              />
+            </div>
+            <div className="config-item checkbox-item">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={parametros.permitirCobroAnticipado || false}
+                  onChange={(e) => setParametros(prev => ({ ...prev, permitirCobroAnticipado: e.target.checked }))}
+                />
+                Permitir cobro anticipado
+              </label>
+            </div>
+          </div>
+        )}
       </div>
     );
   };

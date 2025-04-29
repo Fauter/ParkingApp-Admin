@@ -41,8 +41,10 @@
 }
 
 .tarifa-section {
-  margin-bottom: 3rem;
-  overflow-x: auto;
+  background-color: rgb(244, 244, 245);
+  padding: 20px 20px 0px 20px;
+  margin-bottom: 20px;
+  border-radius: 8px; 
 }
 
 .tarifa-table {
@@ -254,3 +256,41 @@
 .crear-tarifa-modal button:last-of-type:hover {
   background-color: #e9ecef;
 }
+
+.configuracion-hora-extra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  background-color:rgb(244, 244, 245);
+  padding: 20px 0px 20px 0px;
+}
+.configuracion-hora-extra label {
+  font-size: 0.95rem;
+  color: #333;
+  font-weight: bold;
+  margin-right: 0.2rem;
+  white-space: nowrap;
+}
+.configuracion-hora-extra input,
+.configuracion-hora-extra select {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #bbb;
+  border-radius: 6px;
+  font-size: 0.rem;
+  background-color: #fafafa;
+  box-sizing: border-box;
+  transition: border 0.2s ease;
+}
+.configuracion-hora-extra input:focus,
+.configuracion-hora-extra select:focus {
+  background-color: #f1f6f8;
+  outline: none;
+}
+.configuracion-hora-extra .hora-extra-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
