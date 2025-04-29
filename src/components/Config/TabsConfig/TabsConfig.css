@@ -136,5 +136,6 @@
   color: #123c52;
   border: 1px solid #b2d0e4;
   border-radius: 6px;
+  min-height: 85px;
 }
 

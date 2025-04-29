@@ -22,22 +22,22 @@ const TabsConfig = ({ activeTab, onTabChange, fraccionarDesde }) => {
   });
 
   useEffect(() => {
-    fetch('https://parkingapp-back.onrender.com/api/tarifas')
+    fetch('http://localhost:5000/api/tarifas')
     .then(res => res.json())
     .then(data => {
       const tarifasFiltradas = data.filter(t => t.tipo === 'hora');
       setTarifas(tarifasFiltradas);
     });
 
-    fetch('https://parkingapp-back.onrender.com/api/precios')
+    fetch('http://localhost:5000/api/precios')
       .then(res => res.json())
       .then(data => setPrecios(data));
 
-    fetch('https://parkingapp-back.onrender.com/api/tipos-vehiculo')
+    fetch('http://localhost:5000/api/tipos-vehiculo')
       .then(res => res.json())
       .then(data => setTiposVehiculo(data));
 
-    fetch('https://parkingapp-back.onrender.com/api/parametros')
+    fetch('http://localhost:5000/api/parametros')
       .then(res => res.json())
       .then(data => setParametros(data))
       .catch(error => console.error('Error al obtener parámetros:', error));
@@ -73,7 +73,7 @@ const TabsConfig = ({ activeTab, onTabChange, fraccionarDesde }) => {
     const { tipoVehiculo, inicio, dias, hora } = form;
     
     try {
-      const res = await fetch('https://parkingapp-back.onrender.com/api/calcular-tarifa', {
+      const res = await fetch('http://localhost:5000/api/calcular-tarifa', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -94,7 +94,11 @@ const TabsConfig = ({ activeTab, onTabChange, fraccionarDesde }) => {
       const data = await res.json();
   
       if (res.ok) {
-        setDetalle(data.detalle || 'Cálculo realizado.');
+        if (data.detalle && data.detalle.trim() !== '') {
+          setDetalle(data.detalle);
+        } else {
+          setDetalle('');
+        }
       } else {
         setDetalle(data.error || 'Error al calcular tarifa.');
       }
