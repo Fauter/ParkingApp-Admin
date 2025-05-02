@@ -8,7 +8,7 @@ function Filtros({ filtros, setFiltros, activeTab, limpiarFiltros }) {
   useEffect(() => {
     const fetchTiposVehiculo = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/tipos-vehiculo");
+        const response = await fetch("https://parkingapp-back.onrender.com/api/tipos-vehiculo");
         const data = await response.json();
         setTiposVehiculo(data);
       } catch (error) {
@@ -18,7 +18,7 @@ function Filtros({ filtros, setFiltros, activeTab, limpiarFiltros }) {
 
     const fetchTiposTarifa = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/tarifas");
+        const response = await fetch("https://parkingapp-back.onrender.com/api/tarifas");
         const data = await response.json();
         const tiposUnicos = [...new Set(data.map((tarifa) => tarifa.tipo))];
         setTiposTarifa(tiposUnicos);

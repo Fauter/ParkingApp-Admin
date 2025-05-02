@@ -9,12 +9,12 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  border-bottom: 2px solid #cbdce6;
 }
 
 .configTab-links {
   display: flex;
   gap: 16px;
-  border-bottom: 2px solid #cbdce6;
   padding-bottom: 8px;
   justify-content: center;
   flex: 1;

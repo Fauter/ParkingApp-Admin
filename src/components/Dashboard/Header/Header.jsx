@@ -13,7 +13,7 @@ const Header = () => {
       if (!token) return;
   
       try {
-        const response = await fetch('http://localhost:5000/api/auth/profile', { 
+        const response = await fetch('https://parkingapp-back.onrender.com/api/auth/profile', { 
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`, // <-- Asegúrate de incluir "Bearer "
@@ -53,7 +53,8 @@ const Header = () => {
             </div>
             <nav>
               <a href="/">Inicio</a>
-              <a href="#">Mensajes</a>
+              <Link to="/tickets">Tickets</Link>
+              <Link to="/abonos">Abonos</Link>
               <Link to="/config">Config</Link>
               <a href="https://prueba.ofiflex.com.ar">Operador</a>
             </nav>

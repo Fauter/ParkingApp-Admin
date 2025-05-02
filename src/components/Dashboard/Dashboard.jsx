@@ -2,6 +2,8 @@ import { Routes, Route } from "react-router-dom";
 import Header from "./Header/Header.jsx";
 import Body from "./Body/Body.jsx"
 import Config from "../Config/Config.jsx";
+import Abonos from "../Abonos/Abonos.jsx";
+import Tickets from "../Tickets/Tickets.jsx";
 import "./Dashboard.css"
 
 function Dashboard() {
@@ -13,6 +15,8 @@ function Dashboard() {
             <Routes>
                 <Route path="/" element={<Body />} />
                 <Route path="/config" element={<Config />} />
+                <Route path="/abonos" element={<Abonos />} />
+                <Route path="/tickets" element={<Tickets />} />
             </Routes>
             </div>
         </div>
