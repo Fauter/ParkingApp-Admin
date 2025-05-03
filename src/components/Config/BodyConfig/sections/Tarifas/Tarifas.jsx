@@ -30,13 +30,13 @@ const Tarifas = () => {
 
   useEffect(() => {
     // Cargar las tarifas desde la API
-    fetch('https://parkingapp-back.onrender.com/api/tarifas')
+    fetch('http://localhost:5000/api/tarifas')
       .then(res => res.json())
       .then(data => setTarifas(data))
       .catch(err => console.error('Error cargando tarifas:', err));
 
     // Cargar los parámetros por defecto desde el servidor o archivo JSON
-    fetch('https://parkingapp-back.onrender.com/api/parametros')
+    fetch('http://localhost:5000/api/parametros')
       .then(res => res.json())
       .then(data => {
         const newParametros = {
@@ -79,7 +79,7 @@ const Tarifas = () => {
     const data = { ...defaults[selectedTipo], ...nuevoInput };
 
     try {
-      const res = await fetch('https://parkingapp-back.onrender.com/api/tarifas', {
+      const res = await fetch('http://localhost:5000/api/tarifas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -97,7 +97,7 @@ const Tarifas = () => {
     if (!window.confirm("¿Estás seguro de que querés eliminar esta tarifa?")) return;
 
     try {
-      await fetch(`https://parkingapp-back.onrender.com/api/tarifas/${id}`, {
+      await fetch(`http://localhost:5000/api/tarifas/${id}`, {
         method: 'DELETE',
       });
       setTarifas(prev => prev.filter(t => t._id !== id));
@@ -107,7 +107,7 @@ const Tarifas = () => {
   };
 
   const guardarParametros = () => {
-    fetch('https://parkingapp-back.onrender.com/api/parametros', {
+    fetch('http://localhost:5000/api/parametros', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -132,7 +132,7 @@ const Tarifas = () => {
       const actualizada = { ...tarifa, [editandoCampo.campo]: editandoCampo.campo === 'nombre' ? valorTemporal : parseInt(valorTemporal) || 0 };
 
       try {
-        const res = await fetch(`https://parkingapp-back.onrender.com/api/tarifas/${tarifa._id}`, {
+        const res = await fetch(`http://localhost:5000/api/tarifas/${tarifa._id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(actualizada),
