@@ -48,8 +48,7 @@ input[type="checkbox"] {
 
 .tarifa-section {
   background-color: rgb(244, 244, 245);
-  padding: 20px 20px 0px 20px;
-  margin-bottom: 20px;
+  padding: 20px 20px;
   border-radius: 8px; 
 }
 .tarifa-section h2{
@@ -59,7 +58,6 @@ input[type="checkbox"] {
 .tarifa-table {
   width: 100%;
   background-color: #f1f6f8;
-  border-collapse: collapse;
   overflow: hidden;
   table-layout: fixed;
 }
@@ -115,13 +113,13 @@ input[type="checkbox"] {
   background-color: rgba(0, 0, 0, 0.1);
 }
 
-.col-nombre-mensual {
+.col-nombre-abono {
   width: 20%;
   max-width: 200px;
   white-space: nowrap;
 }
 
-.col-acciones-mensual {
+.col-acciones-abono {
   width: 70%;
 }
 

@@ -9,13 +9,13 @@ const TicketsAbiertos = () => {
   useEffect(() => {
     // Fetch para obtener los abonos
     const fetchData = () => {
-      fetch('https://parkingapp-back.onrender.com/api/abonos')
+      fetch('http://localhost:5000/api/abonos')
         .then((res) => res.json())
         .then((data) => setAbonos(data))
         .catch((err) => console.error('Error al obtener abonos:', err));
 
       // Fetch para obtener los turnos
-      fetch('https://parkingapp-back.onrender.com/api/turnos')
+      fetch('http://localhost:5000/api/turnos')
         .then((res) => res.json())
         .then((data) => setTurnos(data))
         .catch((err) => console.error('Error al obtener turnos:', err));
@@ -52,14 +52,14 @@ const TicketsAbiertos = () => {
     <div className="tickets-container">
       {tickets.map((ticket) => (
         <div key={ticket._id} className="abono-card">
-          <div className="abono-header-background" style={{ backgroundColor: ticket.tipoTarifa === 'mensual' ? 'rgba(168, 216, 255, 0.4)' : 'rgba(168, 244, 215, 0.4)' }}>
+          <div className="abono-header-background" style={{ backgroundColor: ticket.tipoTarifa === 'abono' ? 'rgba(168, 216, 255, 0.4)' : 'rgba(168, 244, 215, 0.4)' }}>
             <div className="abono-tipo-tarifa">
               {ticket.tipoTarifa ? (
                 // Si es Abono
-                ticket.tipoTarifa === 'mensual' ? (
+                ticket.tipoTarifa === 'abono' ? (
                   <div className="abono-tarifa-info">
                     <FaCalendarAlt size={30} />
-                    <p>Mensual</p>
+                    <p>Abono</p>
                   </div>
                 ) : (
                   // Si es Turno

@@ -30,13 +30,13 @@ const Tarifas = () => {
 
   useEffect(() => {
     // Cargar las tarifas desde la API
-    fetch('https://parkingapp-back.onrender.com/api/tarifas')
+    fetch('http://localhost:5000/api/tarifas')
       .then(res => res.json())
       .then(data => setTarifas(data))
       .catch(err => console.error('Error cargando tarifas:', err));
 
     // Cargar los parámetros por defecto desde el servidor o archivo JSON
-    fetch('https://parkingapp-back.onrender.com/api/parametros')
+    fetch('http://localhost:5000/api/parametros')
       .then(res => res.json())
       .then(data => {
         const newParametros = {
@@ -59,7 +59,7 @@ const Tarifas = () => {
   const tarifasPorTipo = {
     hora: tarifas.filter(t => t.tipo === 'hora'),
     turno: tarifas.filter(t => t.tipo === 'turno'),
-    mensual: tarifas.filter(t => t.tipo === 'mensual'),
+    abono: tarifas.filter(t => t.tipo === 'abono'),
     // estadia: tarifas.filter(t => t.tipo === 'estadia'),
   };
 
@@ -72,14 +72,14 @@ const Tarifas = () => {
     const defaults = {
       hora: { nombre: 'Hora', tipo: 'hora' },
       turno: { nombre: 'Turno', tipo: 'turno' },
-      mensual: { nombre: 'Mensual', tipo: 'mensual' },
+      abono: { nombre: 'Abono', tipo: 'abono' },
       // estadia: { nombre: 'Día', tipo: 'estadia' },
     };
 
     const data = { ...defaults[selectedTipo], ...nuevoInput };
 
     try {
-      const res = await fetch('https://parkingapp-back.onrender.com/api/tarifas', {
+      const res = await fetch('http://localhost:5000/api/tarifas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -97,7 +97,7 @@ const Tarifas = () => {
     if (!window.confirm("¿Estás seguro de que querés eliminar esta tarifa?")) return;
 
     try {
-      await fetch(`https://parkingapp-back.onrender.com/api/tarifas/${id}`, {
+      await fetch(`http://localhost:5000/api/tarifas/${id}`, {
         method: 'DELETE',
       });
       setTarifas(prev => prev.filter(t => t._id !== id));
@@ -107,7 +107,7 @@ const Tarifas = () => {
   };
 
   const guardarParametros = () => {
-    fetch('https://parkingapp-back.onrender.com/api/parametros', {
+    fetch('http://localhost:5000/api/parametros', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -132,7 +132,7 @@ const Tarifas = () => {
       const actualizada = { ...tarifa, [editandoCampo.campo]: editandoCampo.campo === 'nombre' ? valorTemporal : parseInt(valorTemporal) || 0 };
 
       try {
-        const res = await fetch(`https://parkingapp-back.onrender.com/api/tarifas/${tarifa._id}`, {
+        const res = await fetch(`http://localhost:5000/api/tarifas/${tarifa._id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(actualizada),
@@ -376,7 +376,7 @@ const Tarifas = () => {
     const campos = {
       hora: ['nombre', 'dias', 'horas', 'minutos', 'tolerancia'],
       turno: ['nombre', 'dias', 'horas', 'minutos', 'tolerancia'],
-      mensual: ['nombre'],
+      abono: ['nombre', 'dias', 'horas', 'minutos'],
       // estadia: ['nombre', 'dias', 'tolerancia'],
     };
 
@@ -423,9 +423,9 @@ const Tarifas = () => {
                 <strong>Estadía</strong>
                 <span className="tarifasModal-subtitulo">Estacionamiento diario</span>
               </button> */}
-              <button onClick={() => handleTipoSeleccionado('mensual')}>
-                <strong>Mensual</strong>
-                <span className="tarifasModal-subtitulo">Estacionamiento mensual</span>
+              <button onClick={() => handleTipoSeleccionado('abono')}>
+                <strong>Abono</strong>
+                <span className="tarifasModal-subtitulo">Estacionamiento abono</span>
               </button>
             </div>
             <button className="tarifasModal-cerrar" onClick={() => setShowModal(false)}>
@@ -439,7 +439,7 @@ const Tarifas = () => {
 
       {renderTabla('hora', ['Etiqueta', 'Días', 'Horas', 'Minutos', 'Tolerancia (mins)', 'Acciones'], ['nombre', 'dias', 'horas', 'minutos', 'tolerancia'])}
       {renderTabla('turno', ['Etiqueta', 'Días', 'Horas', 'Minutos', 'Tolerancia (mins)', 'Acciones'], ['nombre', 'dias', 'horas', 'minutos', 'tolerancia'])}
-      {renderTabla('mensual', ['Etiqueta', 'Acciones'], ['nombre'])}
+      {renderTabla('abono', ['Etiqueta', 'Días', 'Acciones'], ['nombre', 'dias'])}
       {/* {renderTabla('estadia', ['Etiqueta', 'Días', 'Tolerancia (mins)', 'Acciones'], ['nombre', 'dias', 'tolerancia'])} */}
     </div>
   );

@@ -4,7 +4,7 @@ import './Abonos.css';
 
 const Abonos = () => {
   return (
-    <div className = "mensuales-container">
+    <div className = "abonoes-container">
       <TabsAbonos />
     </div>
   );
