@@ -1,0 +1,9 @@
+.body {
+    display: flex;
+}
+.filtros-container {
+    flex: 0.5;
+}
+.caja-container {
+    flex: 2;
+}

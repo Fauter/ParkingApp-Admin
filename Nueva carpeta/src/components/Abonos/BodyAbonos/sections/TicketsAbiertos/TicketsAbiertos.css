@@ -1,0 +1,131 @@
+.tickets-container {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.5rem;
+    padding: 1rem 0.5rem 2rem 0.5rem;
+    min-height: 68vh;
+}
+
+.abono-card {
+    background-color: #ffffff;
+    padding: 1rem;
+    border-radius: 12px;
+    color: #333;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #dcdfe3;
+    max-height: 175px;
+}
+
+.abono-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.abono-header-background {
+    background-color: rgba(169, 216, 255, 0.75); /* Color azul pastel con transparencia */
+    padding: 0.3rem 0.5rem;
+    border-radius: 12px 12px 0 0;
+    margin: -1rem;
+    border-bottom: 1px solid #e0e6ea;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.abono-header {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: left;
+}
+
+.abono-patente {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin: 0;
+    color: #1e3a5f;
+}
+
+.abono-vehiculo {
+    font-size: 0.9rem;
+    font-weight: 400;
+    color: #7a8c99;
+    margin-top: 0.2rem;
+}
+
+.abono-tipo-tarifa {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px;
+    background-color: rgba(255, 255, 255, 0.55);
+    border-radius: 8px;
+    border: 1px solid #dcdfe3;
+    height: 45px;
+}
+
+.abono-tarifa-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.abono-tarifa-info p {
+    margin-top: 5px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #4d5c68;
+}
+
+.abono-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.2rem;
+    margin-top: 1rem;
+    padding: 8px 0px;
+}
+
+.abono-fechas {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.fecha-item {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    font-size: 0.7rem;
+    flex: 1;
+}
+
+.fecha-titulo {
+    font-weight: 400;
+    color: #8a8a8a;
+    margin-bottom: 3px;
+}
+
+.fecha-info {
+    color: #333;
+    font-weight: 500;
+}
+
+.abono-precio {
+    margin-top: 10px;
+}
+
+.importe-titulo {
+    font-size: 0.8rem;
+    color: #8a8a8a;
+    font-weight: 400;
+}
+
+.importe-monto {
+    font-weight: 500;
+    font-size: 0.8rem;
+    color: #2e3c53;
+}

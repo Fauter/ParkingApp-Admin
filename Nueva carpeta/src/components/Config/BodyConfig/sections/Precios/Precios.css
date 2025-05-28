@@ -1,0 +1,63 @@
+.precios-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-x: auto;
+}
+
+.precios-table {
+  width: 60%;  /* Reducimos el ancho de la tabla */
+  min-width: 500px;  /* Ajustamos el mínimo de ancho */
+  background-color: #f1f6f8;
+  border-collapse: collapse;
+  table-layout: fixed;
+  margin: 0 auto;  /* Centramos la tabla */
+}
+.precios-table th,
+.precios-table td {
+  padding: 8px;  /* Reducimos el padding para que sea más compacto */
+  text-align: center;
+  font-size: 12px;  /* Hacemos el tamaño de la fuente más pequeño */
+  color: #0d161c;
+  width: 80px;  /* Ajustamos el ancho de las celdas */
+  max-width: 80px;  /* Limitamos el máximo ancho */
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  border: 1px solid #ddd;
+}
+.precios-table th {
+  font-weight: bold;
+  background-color: #e5eef3;
+}
+.precios-table tr:nth-child(even) {
+  background-color: #eaf3f7;
+}
+.precios-table td.editing {
+  background-color: rgba(0, 0, 0, 0.1);  /* Sombra suave en el campo seleccionado */
+}
+.precios-table .precio-input {
+  width: 80%;  /* Ajustamos el ancho de los inputs para que queden más pequeños */
+  padding: 6px;
+  font-size: 12px;  /* Reducimos el tamaño de la fuente del input */
+  box-sizing: border-box;
+  background: transparent;  /* Fondo transparente */
+  height: 10px;  /* Ajustamos la altura para evitar que se haga más alto */
+  text-align: center;  /* Centrado de texto */
+  appearance: none;  
+  -webkit-appearance: none; /* Para Safari */
+  -moz-appearance: textfield; /* Para Firefox */
+  border: none;
+}
+.precios-table .precio-input::-webkit-outer-spin-button,
+.precios-table .precio-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;  /* Desactivamos las flechitas en Chrome y Safari */
+  margin: 0;  /* Eliminamos el espacio extra */
+}
+.precios-table .precio-input:focus {
+  border: none;
+  outline: none;
+  box-shadow: none;
+}
+
+
