@@ -3,7 +3,7 @@ import { useTarifasData, calcularTarifaAPI } from "../../../hooks/tarifasService
 import "./TabsConfig.css";
 
 const TabsConfig = ({ activeTab, onTabChange }) => {
-  const tabs = ["Tipos de Vehículo", "Tarifas", "Precios", "Usuarios"];
+  const tabs = ["Tipos de Vehículo", "Tarifas", "Precios", "Usuarios", "Promos"];
   const [modalAbierto, setModalAbierto] = useState(false);
   const [form, setForm] = useState({
     tipoTarifa: "hora",

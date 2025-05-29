@@ -3,7 +3,6 @@
     flex-direction: column;
     align-items: center;
     overflow-x: auto;
-    padding: 24px;
   }
   
   .usuarios-table {

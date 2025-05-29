@@ -1,4 +1,3 @@
-// tarifasService.js
 import { useState, useEffect } from "react";
 
 export function useTarifasData() {
@@ -12,26 +11,34 @@ export function useTarifasData() {
   });
 
   useEffect(() => {
-    fetch("https://api.garageia.com/api/precios")
-      .then((res) => res.json())
-      .then((data) => setPrecios(data))
+    fetch("https://api.garageia.com/api/precios", {
+      credentials: 'include',
+    })
+      .then(res => res.json())
+      .then(data => setPrecios(data))
       .catch(() => setPrecios({}));
 
-    fetch("https://api.garageia.com/api/tipos-vehiculo")
-      .then((res) => res.json())
-      .then((data) => setTiposVehiculo(data))
+    fetch("https://api.garageia.com/api/tipos-vehiculo", {
+      credentials: 'include',
+    })
+      .then(res => res.json())
+      .then(data => setTiposVehiculo(data))
       .catch(() => setTiposVehiculo([]));
 
-    fetch("https://api.garageia.com/api/parametros")
-      .then((res) => res.json())
-      .then((data) => setParametros(data))
+    fetch("https://api.garageia.com/api/parametros", {
+      credentials: 'include',
+    })
+      .then(res => res.json())
+      .then(data => setParametros(data))
       .catch(() => setParametros({}));
   }, []);
 
   useEffect(() => {
-    fetch("https://api.garageia.com/api/tarifas")
-      .then((res) => res.json())
-      .then((data) => setTarifas(data))
+    fetch("https://api.garageia.com/api/tarifas", {
+      credentials: 'include',
+    })
+      .then(res => res.json())
+      .then(data => setTarifas(data))
       .catch(() => setTarifas([]));
   }, []);
 
@@ -53,15 +60,9 @@ export async function calcularTarifaAPI({
     const response = await fetch("https://api.garageia.com/api/calcular-tarifa", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: 'include',
       body: JSON.stringify({
-        detalle: {
-          tipoVehiculo,
-          inicio,
-          dias,
-          hora,
-          tarifaAbono,
-          tipoTarifa,
-        },
+        detalle: { tipoVehiculo, inicio, dias, hora, tarifaAbono, tipoTarifa },
         tarifas,
         precios,
         parametros,
@@ -73,7 +74,7 @@ export async function calcularTarifaAPI({
       throw new Error(errData.error || "Error al calcular tarifa");
     }
 
-    return await response.json(); // data con data.detalle
+    return await response.json();
   } catch (err) {
     throw err;
   }

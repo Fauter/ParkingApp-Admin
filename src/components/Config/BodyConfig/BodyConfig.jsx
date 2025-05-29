@@ -3,6 +3,7 @@ import TiposVehiculo from './sections/TiposVehiculo/TiposVehiculo';
 import Tarifas from './sections/Tarifas/Tarifas';
 import Precios from './sections/Precios/Precios';
 import Usuarios from './sections/Usuarios/Usuarios';
+import Promos from './sections/Promos/Promos';  
 
 const BodyConfig = ({ activeTab }) => {
     switch (activeTab) {
@@ -14,6 +15,8 @@ const BodyConfig = ({ activeTab }) => {
         return <Precios />;
       case 'Usuarios':
         return <Usuarios />;
+      case 'Promos': 
+        return <Promos />;
       default:
         return <p>Seleccioná una pestaña.</p>;
     }

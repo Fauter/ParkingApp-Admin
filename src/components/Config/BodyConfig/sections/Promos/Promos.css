@@ -1,0 +1,77 @@
+.promos-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-x: auto;
+}
+
+.promos-table {
+  width: 100%;
+  min-width: 600px;
+  background-color: #f1f6f8;
+  border-collapse: collapse;
+  border: 1px solid #ccc;
+  table-layout: auto;
+}
+
+.promos-table th,
+.promos-table td {
+  padding: 12px;
+  text-align: center;
+  font-size: 14px;
+  color: #0d161c;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  border: 1px solid #ddd;
+}
+
+/* Encabezado */
+.promos-table thead th {
+  font-weight: bold;
+  background-color: #e5eef3;
+}
+
+/* Filas alternas */
+.promos-table tbody tr:nth-child(even) {
+  background-color: #eaf3f7;
+}
+
+/* Botones */
+.promos-boton {
+  padding: 6px 12px;
+  font-size: 14px;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  margin: 0 4px;
+  transition: background-color 0.2s ease;
+}
+
+/* Azul pastel para editar */
+.boton-editar {
+  background-color: #7da8d4;
+}
+
+.boton-editar:hover {
+  background-color: #648fbe;
+}
+
+/* Rojo pastel para eliminar */
+.boton-eliminar {
+  background-color: #d87c7c;
+}
+
+.boton-eliminar:hover {
+  background-color: #c56a6a;
+}
+
+/* Verde para crear */
+.boton-crear {
+  margin-top: 16px;
+  background-color: #38a169;
+}
+
+.boton-crear:hover {
+  background-color: #2f855a;
+}

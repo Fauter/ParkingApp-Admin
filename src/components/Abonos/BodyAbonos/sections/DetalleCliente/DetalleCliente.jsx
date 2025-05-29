@@ -105,7 +105,7 @@ const DetalleCliente = () => {
                       <thead>
                         <tr>
                           <th>Fecha</th>
-                          <th>Tipo</th>
+                          <th>Tipo Movimiento</th>
                           <th>Descripción</th>
                           <th>Monto</th>
                         </tr>
@@ -121,15 +121,22 @@ const DetalleCliente = () => {
                           const tipoClase = mov.monto < 0 ? 'monto-negativo' : 'monto-positivo';
                           const signo = mov.monto > 0 ? '+' : '';
 
+                          // TipoMovimiento: Podés decidir según descripción o monto
+                          // Por ejemplo, si la descripción incluye "Pago" lo mostramos como "Pago"
+                          // sino asumimos que es un abono u otro movimiento.
+
+                          let tipoMovimiento = 'Movimiento';
+                          if (mov.descripcion?.toLowerCase().includes('pago')) {
+                            tipoMovimiento = 'Pago';
+                          } else if (mov.tipoVehiculo) {
+                            tipoMovimiento = `Abono (${mov.tipoVehiculo})`;
+                          }
+
                           return (
                             <tr key={index}>
-                              <td>{new Date(mov.fecha).toLocaleDateString()}</td>
-                              <td>{mov.tipo.toLowerCase() === 'pago' ? 'Pago' : 'Inicio Abono'}</td>
-                              <td>
-                                {mov.tipo.toLowerCase() === 'pago'
-                                  ? mov.descripcion || 'Pago realizado'
-                                  : `Inicio de Estacionamiento Abono - #${mov.patente || ''}`}
-                              </td>
+                              <td>{new Date(mov.fecha).toLocaleDateString('es-AR')}</td>
+                              <td>{tipoMovimiento}</td>
+                              <td>{mov.descripcion || '-'}</td>
                               <td className={tipoClase}>
                                 {signo}{montoFormateado}
                               </td>
