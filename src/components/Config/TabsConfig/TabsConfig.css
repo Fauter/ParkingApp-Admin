@@ -6,8 +6,9 @@
 }
 
 .configTab-header {
+  position: relative;
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   border-bottom: 2px solid #cbdce6;
 }
@@ -16,8 +17,6 @@
   display: flex;
   gap: 16px;
   padding-bottom: 8px;
-  justify-content: center;
-  flex: 1;
 }
 
 .configTab-link {
@@ -37,6 +36,10 @@
 }
 
 .simulador-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
   background: #e2edf3;
   border: none;
   padding: 4px 8px;
@@ -44,7 +47,6 @@
   cursor: pointer;
   font-size: 14px;
   color: #276a91;
-  margin-right: 12px;
 }
 
 .simulador-btn:hover {

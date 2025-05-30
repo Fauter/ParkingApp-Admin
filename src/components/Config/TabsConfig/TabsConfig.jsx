@@ -3,7 +3,8 @@ import { useTarifasData, calcularTarifaAPI } from "../../../hooks/tarifasService
 import "./TabsConfig.css";
 
 const TabsConfig = ({ activeTab, onTabChange }) => {
-  const tabs = ["Tipos de Vehículo", "Tarifas", "Precios", "Usuarios", "Promos"];
+  const tabs = ["Tipos de Vehículo", "Tarifas", "Precios"];
+  // const tabs = ["Tipos de Vehículo", "Tarifas", "Precios", "Usuarios", "Promos"];
   const [modalAbierto, setModalAbierto] = useState(false);
   const [form, setForm] = useState({
     tipoTarifa: "hora",
@@ -85,7 +86,7 @@ const TabsConfig = ({ activeTab, onTabChange }) => {
             </a>
           ))}
         </div>
-        <button className="simulador-btn" onClick={() => setModalAbierto(true)}>⚙️</button>
+        <button className="simulador-btn" onClick={() => setModalAbierto(true)}>⚙️ Simulador de Tarifas</button>
       </div>
 
       {modalAbierto && (

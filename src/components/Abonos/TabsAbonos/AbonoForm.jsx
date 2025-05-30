@@ -377,7 +377,7 @@ const AbonoForm = ({ onClose }) => {
                 className="select-input"
             >
                 <option value="" disabled hidden>Seleccionar...</option>
-                <option value="No">No</option>
+                <option value="CC">CC</option>
                 <option value="A">A</option>
                 <option value="Final">Final</option>
             </select>

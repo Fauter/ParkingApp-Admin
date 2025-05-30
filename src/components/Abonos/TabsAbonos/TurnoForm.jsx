@@ -159,7 +159,7 @@ const TurnoForm = ({ onClose }) => {
           required
           name="factura"
         >
-          <option value="No">No</option>
+          <option value="CC">CC</option>
           <option value="A">A</option>
           <option value="Final">Consumidor Final</option>
         </select>
