@@ -69,3 +69,12 @@
 .abonos-table td.balance-cell.positive {
   color: #5cb85c;
 }
+
+.mensaje-vacio {
+  width: 100%;
+  grid-column: 1 / -1;
+  text-align: center;
+  color: #0d161c;
+  font-size: 1.2rem;
+  margin: 40px 0;
+}

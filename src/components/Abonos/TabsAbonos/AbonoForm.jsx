@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import './TabsAbonos.css';
 
-const AbonoForm = ({ onClose }) => {
+const AbonoForm = ({ onClose, user }) => {
   const [formData, setFormData] = useState({
     nombreApellido: '',
     domicilio: '',
@@ -31,6 +31,32 @@ const AbonoForm = ({ onClose }) => {
   const [loading, setLoading] = useState(false);
   const [tiposVehiculo, setTiposVehiculo] = useState([]);
 
+  useEffect(() => {
+    setFormData({
+      nombreApellido: '',
+      domicilio: '',
+      localidad: '',
+      telefonoParticular: '',
+      telefonoEmergencia: '',
+      domicilioTrabajo: '',
+      telefonoTrabajo: '',
+      email: '',
+      patente: '',
+      marca: '',
+      modelo: '',
+      color: '',
+      anio: '',
+      companiaSeguro: '',
+      metodoPago: '',
+      factura: '',
+      tipoVehiculo: '',
+      tarifaSeleccionada: '',
+    });
+    setFotoSeguro(null);
+    setFotoDNI(null);
+    setFotoCedulaVerde(null);
+    setFotoCedulaAzul(null);
+  }, []);  // solo cuando se monta el componente
 
   // Cargar tarifas de tipo "abono" desde API
   useEffect(() => {
@@ -93,24 +119,32 @@ const AbonoForm = ({ onClose }) => {
     </div>
   );
 
-  const buscarClienteExistente = async (nombreApellido) => {
-    const res = await fetch(`https://api.garageia.com/api/clientes?nombreApellido=${encodeURIComponent(nombreApellido)}`);
-    if (!res.ok) throw new Error('Error buscando cliente existente');
-    const clientes = await res.json();
-    // Supongo que el API devuelve un array
-    return clientes.length > 0 ? clientes[0] : null;
+  const validarPatente = (patente) => {
+    // Validamos mayúsculas estrictas, 3 letras + 3 números, opcional 2 letras al final
+    const regex = /^[A-Z]{3}\d{3}([A-Z]{2})?$/;
+    return regex.test(patente);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('Submit iniciado con formData:', formData);
     setLoading(true);
 
     try {
+      // Validación patente
+      if (!validarPatente(formData.patente)) {
+        alert('❌ Patente no válida. Debe ser 3 letras mayúsculas + 3 números, o 3 letras + 3 números + 2 letras (ej: ABC123 o ABC123DC)');
+        setLoading(false);
+        return;
+      }
+
       if (!formData.tarifaSeleccionada) throw new Error('Debe seleccionar una tarifa');
 
       const tarifaObj = JSON.parse(formData.tarifaSeleccionada);
 
+      // Paso 1: Obtener precios (primero)
       const resPrecios = await fetch('https://api.garageia.com/api/precios');
+      if (!resPrecios.ok) throw new Error('Error al obtener precios');
       const precios = await resPrecios.json();
 
       const tipoVehiculo = formData.tipoVehiculo;
@@ -127,32 +161,71 @@ const AbonoForm = ({ onClose }) => {
       const precioCalculado = precios[tipoVehiculo]?.[nombreTarifa];
       if (!precioCalculado) throw new Error(`No se encontró precio para ${tipoVehiculo} con tarifa ${nombreTarifa}`);
 
-      // Buscar si el cliente ya existe
-      const clientesRes = await fetch('https://api.garageia.com/api/clientes');
-      const clientes = await clientesRes.json();
-      const clienteExistente = clientes.find(c => c.nombreApellido.trim().toLowerCase() === formData.nombreApellido.trim().toLowerCase());
+      // Paso 2: Buscar vehículo por patente
+      const vehiculoRes = await fetch(`https://api.garageia.com/api/vehiculos/${encodeURIComponent(formData.patente)}`);
+      let vehiculo = null;
 
-      let clienteId = null;
-
-      if (clienteExistente) {
-        clienteId = clienteExistente._id;
-
-        // Agregar nuevo vehículo al cliente existente
-        await fetch(`https://api.garageia.com/api/clientes/${clienteId}/vehiculos`, {
+      if (!vehiculoRes.ok || (await vehiculoRes.json()).msg === "Vehículo no encontrado") {
+        const nuevoVehiculoRes = await fetch('https://api.garageia.com/api/vehiculos/sin-entrada', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             patente: formData.patente,
-            marca: formData.marca,
-            modelo: formData.modelo,
-            color: formData.color,
-            anio: formData.anio,
-            companiaSeguro: formData.companiaSeguro
+            tipoVehiculo: formData.tipoVehiculo,
+            abonado: false,
+            turno: false
           })
         });
 
+        let nuevoVehiculoJson = null;
+        try {
+          nuevoVehiculoJson = await nuevoVehiculoRes.json();
+        } catch {
+          alert('❌ No se pudo interpretar la respuesta al crear el vehículo.');
+          setLoading(false);
+          return;
+        }
+
+        if (!nuevoVehiculoJson || !nuevoVehiculoJson._id) {
+          // Acá vamos a esperar 500ms y hacer un GET para confirmar si ya existe
+          await new Promise(resolve => setTimeout(resolve, 500)); // Esperar medio segundo
+
+          const retryVehiculoRes = await fetch(`https://api.garageia.com/api/vehiculos/${encodeURIComponent(formData.patente)}`);
+          if (!retryVehiculoRes.ok) {
+            alert('❌ El vehículo no se creó correctamente y no se encontró en el retry. No se continuará con el proceso.');
+            setLoading(false);
+            return;
+          }
+          const retryVehiculoJson = await retryVehiculoRes.json();
+
+          if (!retryVehiculoJson || !retryVehiculoJson._id) {
+            alert('❌ El vehículo no se creó correctamente y no se encontró en el retry. No se continuará con el proceso.');
+            setLoading(false);
+            return;
+          }
+
+          vehiculo = retryVehiculoJson;
+        } else {
+          vehiculo = nuevoVehiculoJson;
+        }
+
       } else {
-        // Crear nuevo cliente
+        const data = await vehiculoRes.json();  // <-- Segundo .json() sobre la misma respuesta
+        vehiculo = data;
+      }
+
+      // Paso 4: Buscar cliente
+      const clientesRes = await fetch('https://api.garageia.com/api/clientes');
+      if (!clientesRes.ok) throw new Error('Error al obtener clientes');
+      const clientes = await clientesRes.json();
+      const clienteExistente = clientes.find(c => c.nombreApellido.trim().toLowerCase() === formData.nombreApellido.trim().toLowerCase());
+
+      let clienteId;
+
+      if (clienteExistente) {
+        clienteId = clienteExistente._id;
+      } else {
+        // Crear nuevo cliente sin vehículo asociado
         const nuevoClienteRes = await fetch('https://api.garageia.com/api/clientes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -165,57 +238,57 @@ const AbonoForm = ({ onClose }) => {
             domicilioTrabajo: formData.domicilioTrabajo,
             telefonoTrabajo: formData.telefonoTrabajo,
             email: formData.email,
-            vehiculos: [{
-              patente: formData.patente,
-              marca: formData.marca,
-              modelo: formData.modelo,
-              color: formData.color,
-              anio: formData.anio,
-              companiaSeguro: formData.companiaSeguro
-            }]
           })
         });
-
+        if (!nuevoClienteRes.ok) throw new Error('Error al crear cliente');
         const nuevoCliente = await nuevoClienteRes.json();
         if (!nuevoCliente._id) throw new Error('No se pudo crear cliente');
         clienteId = nuevoCliente._id;
       }
 
-      // Ahora registrar abono
+      // Paso 5: Registrar abono (solo si vehículo existe o fue creado)
       const abonoFormData = new FormData();
+
+      // Agregar todo lo que venga en formData, pero controlar tarifaSeleccionada
       for (const key in formData) {
         if (formData[key]) {
           if (key === 'tarifaSeleccionada') {
-            abonoFormData.append('tarifaSeleccionada', tarifaObj._id);
+            abonoFormData.append('tarifaSeleccionada', tarifaObj._id); // Id string
           } else {
             abonoFormData.append(key, formData[key]);
           }
         }
       }
 
+      // Asegurar que patente y tipoVehiculo estén siempre en el FormData
+      if (formData.patente) abonoFormData.set('patente', formData.patente.toUpperCase());
+      if (formData.tipoVehiculo) abonoFormData.set('tipoVehiculo', formData.tipoVehiculo);
+
       abonoFormData.append('precio', precioCalculado);
       abonoFormData.append('cliente', clienteId);
+
+      // Archivos
       if (fotoSeguro) abonoFormData.append('fotoSeguro', fotoSeguro);
       if (fotoDNI) abonoFormData.append('fotoDNI', fotoDNI);
       if (fotoCedulaVerde) abonoFormData.append('fotoCedulaVerde', fotoCedulaVerde);
       if (fotoCedulaAzul) abonoFormData.append('fotoCedulaAzul', fotoCedulaAzul);
 
+      // Luego envías
       const abonoRes = await fetch('https://api.garageia.com/api/abonos/registrar-abono', {
         method: 'POST',
         body: abonoFormData,
       });
-
       if (!abonoRes.ok) throw new Error('Error al registrar abono');
 
       alert('✅ Abono registrado');
 
-      // Registrar movimiento general
-      await fetch('https://api.garageia.com/api/movimientos/registrar', {
+      // Paso 6: Registrar movimiento general
+      const movimientoRes = await fetch('https://api.garageia.com/api/movimientos/registrar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           patente: formData.patente,
-          operador: 'Carlos',
+          operador: user.nombre, 
           tipoVehiculo: formData.tipoVehiculo,
           metodoPago: formData.metodoPago,
           factura: formData.factura || 'Sin factura',
@@ -224,8 +297,9 @@ const AbonoForm = ({ onClose }) => {
           tipoTarifa: tarifaObj.nombre,
         }),
       });
+      if (!movimientoRes.ok) throw new Error('Error al registrar movimiento');
 
-      // Registrar movimiento del cliente
+      // Paso 7: Registrar movimiento cliente
       const movimientoClientePayload = {
         nombreApellido: formData.nombreApellido,
         email: formData.email,
@@ -235,15 +309,11 @@ const AbonoForm = ({ onClose }) => {
         operador: 'Carlos',
         patente: formData.patente
       };
-
-      console.log('📦 Payload para /movimientosclientes:', movimientoClientePayload);
-      
       const movimientoClienteRes = await fetch('https://api.garageia.com/api/movimientosclientes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(movimientoClientePayload)
       });
-
       if (!movimientoClienteRes.ok) {
         const err = await movimientoClienteRes.json();
         throw new Error(`Error al registrar MovimientoCliente: ${err.message}`);
@@ -251,7 +321,7 @@ const AbonoForm = ({ onClose }) => {
 
       alert('✅ Movimiento cliente registrado correctamente');
 
-      // Reset
+      // Resetear formulario y fotos
       setFormData({
         nombreApellido: '',
         domicilio: '',
@@ -324,7 +394,7 @@ const AbonoForm = ({ onClose }) => {
       </div>
 
       <div className="form-section grid-2">
-        <input name="patente" placeholder="Patente" value={formData.patente} onChange={handleChange} required />
+        <input name="patente" placeholder="Patente" value={formData.patente} onChange={(e) => {const val = e.target.value.toUpperCase(); setFormData({...formData, patente: val}); }} required />
         <input name="marca" placeholder="Marca" value={formData.marca} onChange={handleChange} />
         <input name="modelo" placeholder="Modelo" value={formData.modelo} onChange={handleChange} />
         <input name="color" placeholder="Color" value={formData.color} onChange={handleChange} />

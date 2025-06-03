@@ -46,7 +46,7 @@ const Caja = ({ activeTab, setActiveTab, movimientos, vehiculos, limpiarFiltros 
 
     if (activeTab === 'Caja') {
       const movimientosFiltrados = movimientos.filter((mov) =>
-        mov.patente.toUpperCase().startsWith(term)
+        mov.patente.toUpperCase().includes(term)
       );
 
       const movimientosPaginados = paginar(movimientosFiltrados, paginaActual);

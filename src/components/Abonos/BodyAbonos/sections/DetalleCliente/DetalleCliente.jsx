@@ -89,14 +89,19 @@ const DetalleCliente = () => {
                   </p>
                 </div>
 
+
                 <div className="botones-acciones">
+                  
+                </div>
+
+                {/* <div className="botones-acciones">
                   <button>Crear Cargo</button>
                   <button>Ingresar Pago</button>
                   <button>Pago Adelantado</button>
                   <button>Ajustar</button>
                   <button title="Imprimir"><FaPrint /></button>
                   <button title="Subir"><FaUpload /></button>
-                </div>
+                </div> */}
 
                 <div className="movimientos-section">
                   <h4>Movimientos</h4>

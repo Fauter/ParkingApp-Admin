@@ -273,7 +273,7 @@ input[type="checkbox"] {
   gap: 1rem;
   font-size: 0.95rem;
   background-color:rgb(244, 244, 245);
-  padding: 20px 0px 20px 0px;
+  padding: 10px 0px 0px 0px;
 }
 .configuracion-hora-extra label {
   color: #333;
@@ -355,7 +355,7 @@ input[type="checkbox"] {
   display: flex;
   justify-content: center;
   background-color: rgb(244, 244, 245);
-  padding: 20px 0;
+  padding: 5px 0;
   font-size: 0.95rem;
 }
 .config-wrapper-turno {

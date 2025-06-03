@@ -3,8 +3,7 @@ import { useTarifasData, calcularTarifaAPI } from "../../../hooks/tarifasService
 import "./TabsConfig.css";
 
 const TabsConfig = ({ activeTab, onTabChange }) => {
-  const tabs = ["Tipos de Vehículo", "Tarifas", "Precios"];
-  // const tabs = ["Tipos de Vehículo", "Tarifas", "Precios", "Usuarios", "Promos"];
+  const tabs = ["Tipos de Vehículo", "Tarifas", "Precios", "Promos", "Usuarios", ];
   const [modalAbierto, setModalAbierto] = useState(false);
   const [form, setForm] = useState({
     tipoTarifa: "hora",
@@ -101,8 +100,8 @@ const TabsConfig = ({ activeTab, onTabChange }) => {
                 <label>Tipo de Tarifa</label>
                 <select name="tipoTarifa" value={form.tipoTarifa} onChange={handleChange}>
                   <option value="hora">x Hora</option>
-                  <option value="turno">x Turno</option>
-                  <option value="abono">x Abono</option>
+                  {/* <option value="turno">x Turno</option>
+                  <option value="abono">x Abono</option> */}
                 </select>
               </div>
 

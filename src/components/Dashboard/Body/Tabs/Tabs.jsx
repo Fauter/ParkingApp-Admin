@@ -2,7 +2,7 @@ import React from 'react';
 import './Tabs.css';
 
 const Tabs = ({ activeTab, onTabChange, searchTerm, setSearchTerm }) => {
-  const tabs = ['Caja', 'Ingresos', 'Cierres de Caja'];
+  const tabs = ['Caja', 'Ingresos'];
 
   return (
     <div className="tab-container">
@@ -31,7 +31,7 @@ const Tabs = ({ activeTab, onTabChange, searchTerm, setSearchTerm }) => {
             </div>
             <input
               className="search-input"
-              placeholder="Buscar"
+              placeholder="Buscar por Patente"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value.toUpperCase())}
             />

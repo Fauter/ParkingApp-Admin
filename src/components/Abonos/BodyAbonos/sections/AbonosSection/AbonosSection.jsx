@@ -43,24 +43,32 @@ const AbonosSection = () => {
           </tr>
         </thead>
         <tbody>
-          {clientes.map((cliente) => (
-            <tr
-              key={cliente._id}
-              onClick={() => handleRowClick(cliente)}
-              style={{ cursor: 'pointer' }}
-            >
-              <td>{cliente.nombreApellido}</td>
-              <td>{cliente.vehiculos?.length || 0}</td>
-              <td>
-                {cliente.vehiculos?.length > 0
-                  ? cliente.vehiculos.map((v) => v.patente).join(', ')
-                  : '—'}
-              </td>
-              <td style={{ color: cliente.balance < 0 ? 'red' : 'green' }}>
-                ${cliente.balance.toFixed(2)}
+          {clientes.length === 0 ? (
+            <tr>
+              <td colSpan="4" style={{ textAlign: 'center', fontStyle: 'italic' }}>
+                No existen clientes abonados.
               </td>
             </tr>
-          ))}
+          ) : (
+            clientes.map((cliente) => (
+              <tr
+                key={cliente._id}
+                onClick={() => handleRowClick(cliente)}
+                style={{ cursor: 'pointer' }}
+              >
+                <td>{cliente.nombreApellido}</td>
+                <td>{cliente.vehiculos?.length || 0}</td>
+                <td>
+                  {cliente.vehiculos?.length > 0
+                    ? cliente.vehiculos.map((v) => v.patente).join(', ')
+                    : '—'}
+                </td>
+                <td style={{ color: cliente.balance < 0 ? 'red' : 'green' }}>
+                  ${cliente.balance.toFixed(2)}
+                </td>
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
     </div>

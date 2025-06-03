@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom'; // <-- Importar useNavigate
+import { Link, useNavigate } from 'react-router-dom'; 
 import profilePic from '../../../assets/profilePic.png';
 import './Header.css';
 
 const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [username, setUsername] = useState('');
-  const navigate = useNavigate(); // <-- Usar el hook
+  const [user, setUser] = useState(null); 
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchUser = async () => {
       const token = localStorage.getItem('token');
-      if (!token) return;
+
+      if (!token) {
+        navigate('/login');
+        return;
+      }
 
       try {
         const response = await fetch('https://api.garageia.com/api/auth/profile', {
@@ -23,26 +27,36 @@ const Header = () => {
         });
 
         const data = await response.json();
+
         if (response.ok) {
-          setUsername(data.username);
+          setUser(data);
         } else {
-          console.error('Error obteniendo usuario:', data.msg);
+          if (response.status === 401) {
+            localStorage.removeItem('token');
+            setUser(null);
+            navigate('/login');
+          }
         }
       } catch (error) {
-        console.error('Error en la petición:', error);
+        console.error('Error fetching user:', error);
+        // Podés manejar error acá si querés, ejemplo:
+        // setUser(null);
+        // navigate('/login');
       }
     };
 
     fetchUser();
-  }, []);
+  }, [navigate]);
 
   const toggleMenu = () => {
-    setMenuOpen(!menuOpen);
+    setMenuOpen(prev => !prev);
   };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
-    navigate('/login'); // <-- Redireccionar correctamente
+    setUser(null);
+    setMenuOpen(false);
+    navigate('/login');
   };
 
   return (
@@ -63,14 +77,14 @@ const Header = () => {
         </div>
         <div className="header-right">
           <div className="profile-name">
-            {username || 'Cargando...'}
+            {user ? `${user.nombre}` : 'Cargando...'}
           </div>
           <div className="profile-container">
             <div
               className="profile-pic"
               onClick={toggleMenu}
               style={{ backgroundImage: `url(${profilePic})` }}
-            ></div>
+            />
             {menuOpen && (
               <div className="dropdown-menu">
                 <button onClick={handleLogout}>Cerrar sesión</button>

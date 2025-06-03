@@ -5,6 +5,10 @@
   overflow-x: auto;
 }
 
+.promos-title {
+  margin-bottom: 20px;
+}
+
 .promos-table {
   width: 100%;
   min-width: 600px;
@@ -16,62 +20,193 @@
 
 .promos-table th,
 .promos-table td {
-  padding: 12px;
+  padding: 6px 8px;
+  font-size: 13px;
   text-align: center;
-  font-size: 14px;
   color: #0d161c;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
   border: 1px solid #ddd;
+  cursor: pointer;
 }
 
-/* Encabezado */
+.promos-table tbody tr td {
+  height: 10px;
+  max-width: 2px;
+}
+
 .promos-table thead th {
   font-weight: bold;
   background-color: #e5eef3;
+  height: 20px;
 }
 
-/* Filas alternas */
 .promos-table tbody tr:nth-child(even) {
   background-color: #eaf3f7;
 }
 
-/* Botones */
-.promos-boton {
-  padding: 6px 12px;
-  font-size: 14px;
-  border-radius: 6px;
-  color: white;
-  cursor: pointer;
-  margin: 0 4px;
-  transition: background-color 0.2s ease;
-}
-
-/* Azul pastel para editar */
-.boton-editar {
-  background-color: #7da8d4;
-}
-
-.boton-editar:hover {
-  background-color: #648fbe;
-}
-
-/* Rojo pastel para eliminar */
-.boton-eliminar {
-  background-color: #d87c7c;
-}
-
-.boton-eliminar:hover {
-  background-color: #c56a6a;
-}
-
-/* Verde para crear */
+/* Botón Crear Promo abajo, centrado y con padding mayor */
 .boton-crear {
-  margin-top: 16px;
-  background-color: #38a169;
+  margin-top: 12px;
+  background-color: #81c784;
+  color: #1b4d2b;
+  border: 1px solid #66bb6a;
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .boton-crear:hover {
-  background-color: #2f855a;
+  background-color: #66bb6a;
+}
+
+.editing {
+  background-color: #d9d9d9 !important;
+}
+
+.promo-input {
+  min-width: 60px;
+  width: 100%;
+  max-width: 100%;
+  padding: 0; 
+  font-size: 14px;
+  text-align: center;
+  border: none;      
+  background: transparent; 
+  color: inherit;        
+  outline: none;      
+  
+  overflow-x: auto;
+  white-space: nowrap;  
+}
+
+.input-con-porcentaje {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.porcentaje {
+  font-size: 14px;
+  color: inherit;
+  user-select: none; /* no seleccionable */
+}
+
+.eliminar-promo-btn {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+  margin-left: 5px;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.eliminar-promo-btn:hover {
+  background-color: #f5c6cb;
+}
+
+/* Modal Crear Promo */
+.modal-promo {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+.modal-contenido-promo {
+  background: #f9f9f9;
+  padding: 32px 36px;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+  width: 360px;
+  max-width: 90%;
+  color: #1e1e1e;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  text-align: center;
+}
+.modal-contenido-promo h3 {
+  margin-bottom: 20px;
+  font-weight: 600;
+  font-size: 22px;
+  color: #2c3e50;
+}
+.modal-contenido-promo input.promo-input {
+  font-size: 16px;
+  border: 1.5px solid #ccc;
+  border-radius: 6px;
+  margin-bottom: 18px;
+  background: white;
+  color: #1e1e1e;
+  transition: border-color 0.2s ease;
+}
+.modal-contenido-promo input.promo-input:focus {
+  outline: none;
+  border-color: #5eab5e;
+  box-shadow: 0 0 8px #5eab5e55;
+}
+.modal-contenido input.promo-input {
+  box-sizing: border-box;
+}
+.modal-promo-botones {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+.promos-boton {
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+.creacionBoton {
+  background-color: #2e7d32; /* verde oscuro sobrio */
+  color: white;
+  padding: 10px 22px;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 15px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.creacionBoton:hover {
+  background-color: #27642a;
+}
+.cancelarCreacionBoton {
+  background-color: #eaeaea; /* gris claro sobrio */
+  color: #333;
+  padding: 10px 22px;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 15px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.cancelarCreacionBoton:hover {
+|  background-color: #d6d6d6;
+}
+
+.promo-input::-webkit-outer-spin-button,
+.promo-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+.promo-input[type=number] {
+  -moz-appearance: textfield;
 }

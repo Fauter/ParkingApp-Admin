@@ -53,59 +53,72 @@ const TicketsAbiertos = () => {
 
   return (
     <div className="tickets-container">
-      {tickets.map((ticket) => (
-        <div key={ticket._id} className="abono-card">
-          <div className="abono-header-background" style={{ backgroundColor: ticket.tipoTarifa === 'abono' ? 'rgba(168, 216, 255, 0.4)' : 'rgba(168, 244, 215, 0.4)' }}>
-            <div className="abono-tipo-tarifa">
-              {ticket.tipoTarifa ? (
-                // Si es Abono
-                ticket.tipoTarifa === 'abono' ? (
-                  <div className="abono-tarifa-info">
-                    <FaCalendarAlt size={30} />
-                    <p>Abono</p>
-                  </div>
+      {tickets.length === 0 ? (
+        <div className="mensaje-vacio">
+          <p>No hay abonos ni turnos activos en este momento.</p>
+        </div>
+      ) : (
+        tickets.map((ticket) => (
+          <div key={ticket._id} className="abono-card">
+            <div
+              className="abono-header-background"
+              style={{
+                backgroundColor:
+                  ticket.tipoTarifa === 'abono'
+                    ? 'rgba(168, 216, 255, 0.4)'
+                    : 'rgba(168, 244, 215, 0.4)',
+              }}
+            >
+              <div className="abono-tipo-tarifa">
+                {ticket.tipoTarifa ? (
+                  ticket.tipoTarifa === 'abono' ? (
+                    <div className="abono-tarifa-info">
+                      <FaCalendarAlt size={30} />
+                      <p>Abono</p>
+                    </div>
+                  ) : (
+                    <div className="abono-tarifa-info">
+                      <FaRegClock size={25} />
+                      <p>Turno</p>
+                    </div>
+                  )
                 ) : (
-                  // Si es Turno
                   <div className="abono-tarifa-info">
                     <FaRegClock size={25} />
                     <p>Turno</p>
                   </div>
-                )
-              ) : (
-                // Si no tiene tipoTarifa, es un turno
-                <div className="abono-tarifa-info">
-                  <FaRegClock size={25} />
-                  <p>Turno</p>
+                )}
+              </div>
+
+              <div className="abono-header">
+                <h2 className="abono-patente">{ticket.patente}</h2>
+                <p className="abono-vehiculo">{capitalizar(ticket.tipoVehiculo)}</p>
+              </div>
+            </div>
+
+            <div className="abono-body">
+              <div className="abono-fechas">
+                <div className="fecha-item">
+                  <p className="fecha-titulo">Creación:</p>
+                  <p className="fecha-info">
+                    {formatearFechaHora(ticket.createdAt || ticket.fechaCreacion)}
+                  </p>
                 </div>
-              )}
-            </div>
-
-            <div className="abono-header">
-              <h2 className="abono-patente">{ticket.patente}</h2>
-              <p className="abono-vehiculo">{capitalizar(ticket.tipoVehiculo)}</p>
-            </div>
-          </div>
-
-          <div className="abono-body">
-            <div className="abono-fechas">
-              <div className="fecha-item">
-                <p className="fecha-titulo">Creación:</p>
-                <p className="fecha-info">{formatearFechaHora(ticket.createdAt || ticket.fechaCreacion)}</p>
+                <div className="fecha-item">
+                  <p className="fecha-titulo">Expiración:</p>
+                  <p className="fecha-info">
+                    {formatearFechaHora(ticket.fechaExpiracion || ticket.fin)}
+                  </p>
+                </div>
               </div>
-              <div className="fecha-item">
-                <p className="fecha-titulo">Expiración:</p>
-                <p className="fecha-info">
-                  {formatearFechaHora(ticket.fechaExpiracion || ticket.fin)}
-                </p>
+              <div className="abono-precio">
+                <p className="importe-titulo">Importe Actual</p>
+                <p className="importe-monto">${ticket.precio.toLocaleString('es-AR')}</p>
               </div>
             </div>
-            <div className="abono-precio">
-              <p className="importe-titulo">Importe Actual</p>
-              <p className="importe-monto">${ticket.precio.toLocaleString('es-AR')}</p>
-            </div>
           </div>
-        </div>
-      ))}
+        ))
+      )}
     </div>
   );
 };

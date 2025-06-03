@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import './TabsAbonos.css';
 
-const TurnoForm = ({ onClose }) => {
+const TurnoForm = ({ onClose, user }) => {
   const [patente, setPatente] = useState('');
   const [turnos, setTurnos] = useState([]);
   const [turnoSeleccionado, setTurnoSeleccionado] = useState('');
   const [metodoPago, setMetodoPago] = useState('Efectivo');
-  const [factura, setFactura] = useState('No');
+  const [factura, setFactura] = useState('CC');
   const [precio, setPrecio] = useState(0);
 
   useEffect(() => {
@@ -18,6 +18,12 @@ const TurnoForm = ({ onClose }) => {
       })
       .catch(err => console.error('Error al cargar los turnos:', err));
   }, []);
+
+  const handlePatenteChange = (e) => {
+    let val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); // Solo letras y números
+    if (val.length > 8) val = val.slice(0, 8);
+    setPatente(val);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -52,13 +58,12 @@ const TurnoForm = ({ onClose }) => {
       return;
     }
 
-    // Calcular duración en horas y fechaFin
+    // Calcular duración en horas y fin
     const duracionHoras = (turnoData.dias || 0) * 24 + (turnoData.horas || 0) + ((turnoData.minutos || 0) / 60);
     const ahora = new Date();
-    const fechaFin = new Date(ahora);
-    fechaFin.setMinutes(fechaFin.getMinutes() + ((turnoData.dias || 0) * 1440) + ((turnoData.horas || 0) * 60) + (turnoData.minutos || 0));
+    const fin = new Date(ahora);
+    fin.setMinutes(fin.getMinutes() + ((turnoData.dias || 0) * 1440) + ((turnoData.horas || 0) * 60) + (turnoData.minutos || 0));
 
-    // Obtener precios para verificar
     try {
       const resPrecio = await fetch('https://api.garageia.com/api/precios/');
       const precios = await resPrecio.json();
@@ -71,38 +76,63 @@ const TurnoForm = ({ onClose }) => {
       }
       setPrecio(precioVehiculo);
 
-      // Preparar payload para backend
-      const payload = {
+      // Preparar payload para registrar turno
+      const payloadTurno = {
         patente,
         turnoId: turnoSeleccionado,
         metodoPago,
         factura,
         precio: precioVehiculo,
         duracionHoras,
-        fechaFin,
+        fin,
         nombreTarifa: turnoData.nombre
       };
 
-      const res = await fetch('https://api.garageia.com/api/turnos', {
+      const resTurno = await fetch('https://api.garageia.com/api/turnos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(payloadTurno),
       });
 
-      const data = await res.json();
+      const dataTurno = await resTurno.json();
 
-      if (res.ok) {
-        alert('Turno registrado correctamente');
-        setPatente('');
-        setTurnoSeleccionado('');
-        setMetodoPago('Efectivo');
-        setFactura('No');
-        onClose();
-      } else {
-        alert('Error del servidor: ' + (data.error || JSON.stringify(data)));
+      if (!resTurno.ok) {
+        alert('Error al registrar turno: ' + (dataTurno.error || JSON.stringify(dataTurno)));
+        return;
       }
+
+      // Si el turno se registra bien, registramos el movimiento
+      const payloadMovimiento = {
+        patente,
+        operador: user.nombre,
+        tipoVehiculo,
+        metodoPago,
+        factura: factura || 'Sin factura',
+        monto: precioVehiculo,
+        descripcion: `Pago Por Abono (${turnoData.nombre})`,
+        tipoTarifa: turnoData.nombre,
+      };
+
+      const movimientoRes = await fetch('https://api.garageia.com/api/movimientos/registrar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payloadMovimiento),
+      });
+
+      if (!movimientoRes.ok) {
+        alert('Turno registrado pero error al registrar movimiento.');
+        return;
+      }
+
+      alert('Turno y movimiento registrados correctamente.');
+      setPatente('');
+      setTurnoSeleccionado('');
+      setMetodoPago('Efectivo');
+      setFactura('CC');
+      onClose();
+
     } catch (err) {
-      alert('Error al consultar precios o registrar turno.');
+      alert('Error al procesar la solicitud.');
       console.error(err);
     }
   };
@@ -114,7 +144,7 @@ const TurnoForm = ({ onClose }) => {
           type="text"
           placeholder="Patente"
           value={patente}
-          onChange={(e) => setPatente(e.target.value.toUpperCase().replace(/\s/g, ''))}
+          onChange={handlePatenteChange}
           required
           name="patente"
         />

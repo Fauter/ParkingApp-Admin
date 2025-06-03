@@ -255,7 +255,7 @@ const Tarifas = () => {
             </div>
           </div>
         )}
-        {tipo === 'turno' && (
+        {/* {tipo === 'turno' && (
           <div className="configuracion-turno">
             <div className="config-wrapper-turno">
               <div className="lado-izquierdo-turno">
@@ -294,78 +294,6 @@ const Tarifas = () => {
               </div>
             </div>
           </div>
-        )}
-        {/* {tipo === 'estadia' && (
-          <div className="configuracion-estadia">
-            <div className="config-wrapper">
-              <div className="config-item-estadia">
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={parametros.horarioFinalizacionEstadia?.habilitado || false}
-                    onChange={(e) =>
-                      setParametros(prev => ({
-                        ...prev,
-                        horarioFinalizacionEstadia: {
-                          ...prev.horarioFinalizacionEstadia,
-                          habilitado: e.target.checked,
-                        },
-                      }))
-                    }
-                  />
-                  Horario de finalización de estadía
-                </label>
-                <div className="input-hora-wrapper">
-                  {parametros.horarioFinalizacionEstadia?.habilitado && (
-                    <input
-                      type="time"
-                      value={parametros.horarioFinalizacionEstadia?.hora || "10:00"}
-                      onChange={(e) =>
-                        setParametros(prev => ({
-                          ...prev,
-                          horarioFinalizacionEstadia: {
-                            ...prev.horarioFinalizacionEstadia,
-                            hora: e.target.value,
-                            habilitado: true,
-                          },
-                        }))
-                      }
-                    />
-                  )}
-                </div>
-              </div>
-              <div className="config-item-estadia">
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={parametros.registrarPresencia || false}
-                    onChange={(e) => setParametros(prev => ({ ...prev, registrarPresencia: e.target.checked }))}
-                  />
-                  Registrar presencia
-                </label>
-              </div>
-              <div className="config-item-estadia">
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={parametros.calcularExcedentePorHoraEstadia || false}
-                    onChange={(e) => setParametros(prev => ({ ...prev, calcularExcedentePorHoraEstadia: e.target.checked }))}
-                  />
-                  Calcular excedente por hora
-                </label>
-              </div>
-              <div className="config-item-estadia">
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={parametros.permitirCobroAnticipadoEstadia || false}
-                    onChange={(e) => setParametros(prev => ({ ...prev, permitirCobroAnticipadoEstadia: e.target.checked }))}
-                  />
-                  Permitir cobro anticipado
-                </label>
-              </div>
-            </div>
-          </div>
         )} */}
       </div>
     );
@@ -376,7 +304,7 @@ const Tarifas = () => {
     const campos = {
       hora: ['nombre', 'dias', 'horas', 'minutos', 'tolerancia'],
       turno: ['nombre', 'dias', 'horas', 'minutos', 'tolerancia'],
-      abono: ['nombre', 'dias', 'horas', 'minutos'],
+      abono: ['nombre', 'dias'],
       // estadia: ['nombre', 'dias', 'tolerancia'],
     };
 
@@ -440,7 +368,6 @@ const Tarifas = () => {
       {renderTabla('hora', ['Etiqueta', 'Días', 'Horas', 'Minutos', 'Tolerancia (mins)', 'Acciones'], ['nombre', 'dias', 'horas', 'minutos', 'tolerancia'])}
       {renderTabla('turno', ['Etiqueta', 'Días', 'Horas', 'Minutos', 'Tolerancia (mins)', 'Acciones'], ['nombre', 'dias', 'horas', 'minutos', 'tolerancia'])}
       {renderTabla('abono', ['Etiqueta', 'Días', 'Acciones'], ['nombre', 'dias'])}
-      {/* {renderTabla('estadia', ['Etiqueta', 'Días', 'Tolerancia (mins)', 'Acciones'], ['nombre', 'dias', 'tolerancia'])} */}
     </div>
   );
 };

@@ -5,8 +5,10 @@ const Usuarios = () => {
   const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [modalOpen, setModalOpen] = useState(false); // Estado para controlar el modal
-  const [nuevoUsuario, setNuevoUsuario] = useState({
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editando, setEditando] = useState(false);
+  const [usuarioEditadoId, setUsuarioEditadoId] = useState(null);
+  const [formUsuario, setFormUsuario] = useState({
     nombre: '',
     apellido: '',
     username: '',
@@ -14,7 +16,6 @@ const Usuarios = () => {
     role: 'operador',
   });
 
-  // Para simular datos mientras tanto
   useEffect(() => {
     const obtenerUsuarios = async () => {
       try {
@@ -28,18 +29,69 @@ const Usuarios = () => {
         setLoading(false);
       }
     };
-
     obtenerUsuarios();
   }, []);
 
-  const handleEditar = (id) => {
-    console.log("Editar usuario:", id);
-    // abrir modal o redirigir a formulario
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormUsuario((prevState) => ({
+      ...prevState,
+      [name]: value,
+    }));
   };
 
-  const handleEliminar = (id) => {
+  const handleEliminar = async (id) => {
     if (window.confirm("¿Seguro que querés eliminar este usuario?")) {
-      setUsuarios(usuarios.filter(u => u.id !== id));
+      try {
+        const res = await fetch(`https://api.garageia.com/api/auth/${id}`, {
+          method: 'DELETE',
+        });
+
+        if (!res.ok) throw new Error('Error al eliminar el usuario');
+
+        setUsuarios(usuarios.filter((u) => u._id !== id));
+        alert("Usuario eliminado correctamente");
+      } catch (err) {
+        console.error(err);
+        alert("Hubo un error al eliminar el usuario");
+      }
+    }
+  };
+
+  const handleEditar = (id) => {
+    const usuario = usuarios.find((u) => u._id === id);
+    if (usuario) {
+      setFormUsuario({ ...usuario, password: '' }); // No mostramos contraseña
+      setUsuarioEditadoId(id);
+      setEditando(true);
+      setModalOpen(true);
+    }
+  };
+
+  const handleGuardarEdicion = async () => {
+    try {
+      const res = await fetch(`https://api.garageia.com/api/auth/${usuarioEditadoId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formUsuario),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.msg || 'Error al editar usuario');
+
+      setUsuarios(usuarios.map((u) =>
+        u._id === usuarioEditadoId ? { ...u, ...formUsuario } : u
+      ));
+      setModalOpen(false);
+      setEditando(false);
+      setUsuarioEditadoId(null);
+      alert("Usuario actualizado correctamente");
+    } catch (err) {
+      console.error(err);
+      alert("Hubo un error al editar el usuario");
     }
   };
 
@@ -50,15 +102,15 @@ const Usuarios = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(nuevoUsuario),
+        body: JSON.stringify(formUsuario),
       });
 
       const data = await res.json();
 
       if (res.ok) {
         alert(data.msg);
-        setUsuarios([...usuarios, nuevoUsuario]); // Añadir el nuevo usuario a la lista
-        setModalOpen(false); // Cerrar el modal después de crear el usuario
+        setUsuarios([...usuarios, formUsuario]);
+        setModalOpen(false);
       } else {
         alert(data.msg || 'Error al crear usuario');
       }
@@ -67,12 +119,17 @@ const Usuarios = () => {
     }
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setNuevoUsuario((prevState) => ({
-      ...prevState,
-      [name]: value,
-    }));
+  const cerrarModal = () => {
+    setModalOpen(false);
+    setEditando(false);
+    setUsuarioEditadoId(null);
+    setFormUsuario({
+      nombre: '',
+      apellido: '',
+      username: '',
+      password: '',
+      role: 'operador',
+    });
   };
 
   return (
@@ -101,7 +158,7 @@ const Usuarios = () => {
             </thead>
             <tbody>
               {usuarios.map((usuario, index) => (
-                <tr key={usuario.id}>
+                <tr key={usuario._id}>
                   <td className="fila-numero">{index + 1}</td>
                   <td>{usuario.nombre}</td>
                   <td>{usuario.apellido}</td>
@@ -110,13 +167,13 @@ const Usuarios = () => {
                   <td>{usuario.ultimoAcceso}</td>
                   <td>
                     <button
-                      onClick={() => handleEditar(usuario.id)}
+                      onClick={() => handleEditar(usuario._id)}
                       className="usuarios-boton boton-editar"
                     >
                       Editar
                     </button>
                     <button
-                      onClick={() => handleEliminar(usuario.id)}
+                      onClick={() => handleEliminar(usuario._id)}
                       className="usuarios-boton boton-eliminar"
                     >
                       Eliminar
@@ -128,7 +185,17 @@ const Usuarios = () => {
           </table>
 
           <button
-            onClick={() => setModalOpen(true)} // Abrir el modal
+            onClick={() => {
+              setModalOpen(true);
+              setEditando(false);
+              setFormUsuario({
+                nombre: '',
+                apellido: '',
+                username: '',
+                password: '',
+                role: 'operador',
+              });
+            }}
             className="usuarios-boton boton-crear"
           >
             Crear Usuario
@@ -136,18 +203,17 @@ const Usuarios = () => {
         </>
       )}
 
-      {/* Modal para Crear Usuario */}
       {modalOpen && (
         <div className="modalUsers">
           <div className="modal-content">
-            <h3>Crear Usuario</h3>
+            <h3>{editando ? 'Editar Usuario' : 'Crear Usuario'}</h3>
             <form>
               <div>
                 <label>Nombre</label>
                 <input
                   type="text"
                   name="nombre"
-                  value={nuevoUsuario.nombre}
+                  value={formUsuario.nombre}
                   onChange={handleInputChange}
                 />
               </div>
@@ -156,7 +222,7 @@ const Usuarios = () => {
                 <input
                   type="text"
                   name="apellido"
-                  value={nuevoUsuario.apellido}
+                  value={formUsuario.apellido}
                   onChange={handleInputChange}
                 />
               </div>
@@ -165,7 +231,7 @@ const Usuarios = () => {
                 <input
                   type="text"
                   name="username"
-                  value={nuevoUsuario.username}
+                  value={formUsuario.username}
                   onChange={handleInputChange}
                 />
               </div>
@@ -174,15 +240,16 @@ const Usuarios = () => {
                 <input
                   type="password"
                   name="password"
-                  value={nuevoUsuario.password}
+                  value={formUsuario.password}
                   onChange={handleInputChange}
+                  placeholder={editando ? "(Dejar en blanco para no cambiar)" : ""}
                 />
               </div>
               <div>
                 <label>Rol</label>
                 <select
                   name="role"
-                  value={nuevoUsuario.role}
+                  value={formUsuario.role}
                   onChange={handleInputChange}
                 >
                   <option value="operador">Operador</option>
@@ -192,14 +259,14 @@ const Usuarios = () => {
               </div>
               <button
                 type="button"
-                onClick={handleCrearUsuario}
+                onClick={editando ? handleGuardarEdicion : handleCrearUsuario}
                 className="usuarios-boton boton-crear"
               >
-                Crear
+                {editando ? 'Guardar Cambios' : 'Crear'}
               </button>
               <button
                 type="button"
-                onClick={() => setModalOpen(false)} // Cerrar el modal
+                onClick={cerrarModal}
                 className="usuarios-boton boton-cancelar"
               >
                 Cancelar
