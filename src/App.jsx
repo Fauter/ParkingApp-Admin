@@ -28,6 +28,7 @@ const AppWrapper = () => {
   const [checkingAuth, setCheckingAuth] = useState(true);
 
   useEffect(() => {
+    // Esta función puede ser async si necesitás hacer fetch para validar token en backend
     const validarAcceso = () => {
       const token = localStorage.getItem('token');
       const redirectAfterLogin = localStorage.getItem('redirectAfterLogin');
@@ -57,8 +58,12 @@ const AppWrapper = () => {
         return false;
       }
 
-      const role = decoded.role;
+      // Seguridad: role puede ser undefined si backend no lo envía en el token
+      const role = decoded.role || 'unknown';
       console.log("Role del usuario:", role);
+
+      // Ideal: backend debería enviar el role dentro del token
+      // Mientras tanto, podés debuguear y ver qué rol te llega
 
       if (hostname === "admin.garageia.com" && role !== "superAdmin") {
         alert("No tienes permisos para acceder a esta aplicación");
@@ -67,7 +72,12 @@ const AppWrapper = () => {
         return false;
       }
 
-      if (hostname === "operador.garageia.com" && role !== "operador") {
+      if (
+        hostname === "operador.garageia.com" &&
+        role !== "operador" &&
+        role !== "admin" &&
+        role !== "superAdmin"
+      ) {
         alert("No tienes permisos para acceder a esta aplicación");
         localStorage.removeItem('token');
         navigate('/login', { replace: true });
@@ -82,8 +92,12 @@ const AppWrapper = () => {
       return true;
     };
 
-    const accesoValido = validarAcceso();
-    setCheckingAuth(false);
+    // Opcional: si querés simular un pequeño delay antes de validar (no recomendado para producción)
+    setTimeout(() => {
+      validarAcceso();
+      setCheckingAuth(false);
+    }, 100); // 100ms, ajustá si querés
+
   }, [navigate]);
 
   if (checkingAuth) {
