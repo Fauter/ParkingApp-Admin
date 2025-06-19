@@ -1,12 +1,25 @@
+// Body.jsx
 import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import "./Body.css";
 import Filtros from "./Filtros/Filtros.jsx";
 import Caja from "./Caja/Caja.jsx";
+import CierreDeCajaAdmin from "./CierreDeCajaAdmin/CierreDeCajaAdmin.jsx";
+import Tabs from "./Tabs/Tabs.jsx";
 
 function Body() {
+  const location = useLocation();
+
   const [activeTab, setActiveTab] = useState("Caja");
+  const [activeCajaTab, setActiveCajaTab] = useState("Caja");
+  const [searchTerm, setSearchTerm] = useState("");
+
   const [movimientos, setMovimientos] = useState([]);
   const [vehiculos, setVehiculos] = useState([]);
+  const [incidentes, setIncidentes] = useState([]);
+  const [alertas, setAlertas] = useState([]);
+  const [cierresDeCaja, setCierresDeCaja] = useState([]); // NUEVO
+
   const [filtros, setFiltros] = useState({
     patente: "",
     tipoVehiculo: "",
@@ -21,52 +34,63 @@ function Body() {
   });
 
   useEffect(() => {
-    const fetchMovimientos = async () => {
-      try {
-        const response = await fetch("https://api.garageia.com/api/movimientos");
-        const data = await response.json();
-        setMovimientos(data);
-      } catch (error) {
-        console.error("Error al obtener movimientos:", error);
-      }
-    };
-
-    fetchMovimientos();
-    const interval = setInterval(fetchMovimientos, 5000);
-    return () => clearInterval(interval);
-  }, []);
+    if (location.pathname === "/cierresDeCaja") {
+      setActiveTab("Cierre");
+    } else {
+      setActiveTab("Caja");
+    }
+  }, [location.pathname]);
 
   useEffect(() => {
-    const fetchVehiculos = async () => {
+    if (activeTab === "Caja") {
+      setActiveCajaTab("Caja");
+    } else if (activeTab === "Cierre") {
+      setActiveCajaTab("A Retirar");
+    }
+    setSearchTerm("");
+  }, [activeTab]);
+
+  useEffect(() => {
+    const fetchData = async (endpoint, setState) => {
       try {
-        const response = await fetch("https://api.garageia.com/api/vehiculos");
+        const response = await fetch(`http://localhost:5000/api/${endpoint}`);
         const data = await response.json();
-        setVehiculos(data);
+        setState(data);
       } catch (error) {
-        console.error("Error al obtener vehículos:", error);
+        console.error(`Error al obtener ${endpoint}:`, error);
       }
     };
 
-    fetchVehiculos();
-    const interval = setInterval(fetchVehiculos, 5000);
+    fetchData("movimientos", setMovimientos);
+    fetchData("vehiculos", setVehiculos);
+    fetchData("incidentes", setIncidentes);
+    fetchData("alertas", setAlertas);
+    fetchData("cierresdecaja", setCierresDeCaja); // NUEVO
+
+    const interval = setInterval(() => {
+      fetchData("movimientos", setMovimientos);
+      fetchData("vehiculos", setVehiculos);
+      fetchData("incidentes", setIncidentes);
+      fetchData("alertas", setAlertas);
+      fetchData("cierresdecaja", setCierresDeCaja); // NUEVO
+    }, 5000);
+
     return () => clearInterval(interval);
   }, []);
 
-  // FILTRAR MOVIMIENTOS
-  const movimientosFiltrados = movimientos.filter((mov) => {
+  const movimientosFiltrados = movimientos.filter(mov => {
+    const patenteMatch = !searchTerm || mov.patente.toUpperCase().includes(searchTerm.toUpperCase());
     const horaMovimiento = new Date(mov.fecha).getHours();
     const [desde, hasta] = filtros.hora ? filtros.hora.split("-").map(Number) : [null, null];
-  
     const fechaMovimiento = new Date(mov.fecha);
     const fechaMovimientoStr = fechaMovimiento.toLocaleDateString("sv-SE");
-  
     const fechaDesdeDate = filtros.fechaDesde ? new Date(filtros.fechaDesde) : null;
     const fechaHastaDate = filtros.fechaHasta
       ? new Date(new Date(filtros.fechaHasta).setDate(new Date(filtros.fechaHasta).getDate() + 1))
       : null;
-  
+
     return (
-      (!filtros.patente || mov.patente.toLowerCase().includes(filtros.patente.toLowerCase())) &&
+      patenteMatch &&
       (!filtros.tipoVehiculo || mov.tipoVehiculo === filtros.tipoVehiculo) &&
       (!filtros.metodoPago || mov.metodoPago === filtros.metodoPago) &&
       (!filtros.operador || mov.operador.toLowerCase().includes(filtros.operador.toLowerCase())) &&
@@ -74,30 +98,31 @@ function Body() {
       (!filtros.fecha || fechaMovimientoStr === filtros.fecha) &&
       (!filtros.fechaDesde || fechaMovimiento >= fechaDesdeDate) &&
       (!filtros.fechaHasta || fechaMovimiento < fechaHastaDate) &&
-      (!filtros.tipoMovimiento || mov.tipoTarifa?.toLowerCase() === filtros.tipoMovimiento.toLowerCase())
+      (!filtros.tipoMovimiento || (mov.tipoTarifa && mov.tipoTarifa.toLowerCase() === filtros.tipoMovimiento.toLowerCase()))
     );
   });
+
   const vehiculosFiltrados = vehiculos
-    .filter((veh) => veh.estadiaActual && veh.estadiaActual.entrada !== null)
-    .filter((veh) => {
-      const entradaDate = new Date(veh.estadiaActual.entrada);
-      const salidaDate = veh.estadiaActual.salida ? new Date(veh.estadiaActual.salida) : null;
-      const horaEntrada = entradaDate.getHours();
+    .filter(veh => veh.estadiaActual?.entrada && !veh.estadiaActual?.salida)
+    .filter(veh => {
+      const patenteMatch = !searchTerm || veh.patente.toUpperCase().includes(searchTerm.toUpperCase());
+      const horaEntrada = new Date(veh.estadiaActual.entrada).getHours();
       const [desde, hasta] = filtros.horaEntrada ? filtros.horaEntrada.split("-").map(Number) : [null, null];
-  
       const fechaDesdeDate = filtros.fechaDesde ? new Date(filtros.fechaDesde) : null;
       const fechaHastaDate = filtros.fechaHasta
         ? new Date(new Date(filtros.fechaHasta).setDate(new Date(filtros.fechaHasta).getDate() + 1))
         : null;
-  
+      const operadorMatch = !filtros.operador || veh.estadiaActual.operadorNombre?.toLowerCase().includes(filtros.operador.toLowerCase());
+
       return (
-        (!filtros.operador || veh.estadiaActual.operador?.toLowerCase().includes(filtros.operador.toLowerCase())) &&
-        (!filtros.horaEntrada || (horaEntrada >= desde && horaEntrada < hasta)) &&
+        patenteMatch &&
+        operadorMatch &&
         (!filtros.tipoVehiculo || veh.tipoVehiculo === filtros.tipoVehiculo) &&
-        (!filtros.fechaDesde || entradaDate >= fechaDesdeDate) &&
-        (!filtros.fechaHasta || (salidaDate ? salidaDate < fechaHastaDate : entradaDate < fechaHastaDate))
+        (!filtros.horaEntrada || (horaEntrada >= desde && horaEntrada < hasta)) &&
+        (!filtros.fechaDesde || new Date(veh.estadiaActual.entrada) >= fechaDesdeDate) &&
+        (!filtros.fechaHasta || new Date(veh.estadiaActual.entrada) < fechaHastaDate)
       );
-  });
+    });
 
   const limpiarFiltros = () => {
     setFiltros({
@@ -112,6 +137,12 @@ function Body() {
       fechaDesde: "",
       fechaHasta: ""
     });
+    setSearchTerm("");
+    if (activeTab === "Caja") {
+      setActiveCajaTab("Caja");
+    } else if (activeTab === "Cierre") {
+      setActiveCajaTab("A Retirar");
+    }
   };
 
   return (
@@ -121,17 +152,44 @@ function Body() {
           filtros={filtros}
           setFiltros={setFiltros}
           activeTab={activeTab}
+          activeCajaTab={activeCajaTab}
           limpiarFiltros={limpiarFiltros}
         />
       </div>
-      <div className="caja-container">
-        <Caja
+
+      <div className="contenido-derecha">
+        <Tabs
           activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          movimientos={movimientosFiltrados}
-          vehiculos={vehiculosFiltrados}
-          limpiarFiltros={limpiarFiltros}
+          activeCajaTab={activeCajaTab}
+          onCajaTabChange={setActiveCajaTab}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
         />
+
+        {activeTab === "Caja" && (
+          <Caja
+            activeCajaTab={activeCajaTab}
+            movimientos={movimientosFiltrados}
+            vehiculos={vehiculosFiltrados}
+            alertas={alertas}
+            incidentes={incidentes}
+            limpiarFiltros={limpiarFiltros}
+          />
+        )}
+
+        {activeTab === "Cierre" && (
+          <CierreDeCajaAdmin
+            activeCajaTab={activeCajaTab}
+            searchTerm={searchTerm}
+            onCajaTabChange={setActiveCajaTab}
+            aRetirar={activeCajaTab === "A Retirar" ? movimientosFiltrados.filter(m => m.estadoRetiro === "pendiente") : []}
+            retirado={activeCajaTab === "Retirado" ? movimientosFiltrados.filter(m => m.estadoRetiro === "retirado") : []}
+            parciales={activeCajaTab === "Parciales" ? movimientosFiltrados.filter(m => m.estadoRetiro === "parcial") : []}
+            cierresDeCaja={cierresDeCaja} 
+            limpiarFiltros={limpiarFiltros}
+            filtros={filtros} // Añade esta línea para pasar los filtros
+          />
+        )}
       </div>
     </div>
   );

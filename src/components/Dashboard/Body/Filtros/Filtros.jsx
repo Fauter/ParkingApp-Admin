@@ -1,14 +1,15 @@
 import { useEffect, useState } from "react";
 import "./Filtros.css";
 
-function Filtros({ filtros, setFiltros, activeTab, limpiarFiltros }) {
+function Filtros({ filtros, setFiltros, activeCajaTab, limpiarFiltros }) {
   const [tiposVehiculo, setTiposVehiculo] = useState([]);
   const [tiposTarifa, setTiposTarifa] = useState([]);
+  const [operadores, setOperadores] = useState([]);
 
   useEffect(() => {
     const fetchTiposVehiculo = async () => {
       try {
-        const response = await fetch("https://api.garageia.com/api/tipos-vehiculo");
+        const response = await fetch("http://localhost:5000/api/tipos-vehiculo");
         const data = await response.json();
         setTiposVehiculo(data);
       } catch (error) {
@@ -18,7 +19,7 @@ function Filtros({ filtros, setFiltros, activeTab, limpiarFiltros }) {
 
     const fetchTiposTarifa = async () => {
       try {
-        const response = await fetch("https://api.garageia.com/api/tarifas");
+        const response = await fetch("http://localhost:5000/api/tarifas");
         const data = await response.json();
         const tiposUnicos = [...new Set(data.map((tarifa) => tarifa.tipo))];
         setTiposTarifa(tiposUnicos);
@@ -27,8 +28,21 @@ function Filtros({ filtros, setFiltros, activeTab, limpiarFiltros }) {
       }
     };
 
+    const fetchOperadores = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/auth");
+        const data = await response.json();
+        // Extraemos los nombres de los usuarios y eliminamos duplicados
+        const nombresOperadores = [...new Set(data.map(user => user.nombre))];
+        setOperadores(nombresOperadores);
+      } catch (error) {
+        console.error("Error al obtener operadores:", error);
+      }
+    };
+
     fetchTiposVehiculo();
     fetchTiposTarifa();
+    fetchOperadores();
   }, []);
 
   const handleChange = (e) => {
@@ -52,6 +66,25 @@ function Filtros({ filtros, setFiltros, activeTab, limpiarFiltros }) {
         return tipo;
     }
   };
+
+  const renderSelectOperador = () => (
+    <div className="filtro-container">
+      <label className="filtro-label">Operador</label>
+      <select
+        name="operador"
+        className="filtro-select"
+        onChange={handleChange}
+        value={filtros.operador || ""}
+      >
+        <option value="">Todos</option>
+        {operadores.map((operador, i) => (
+          <option key={i} value={operador}>
+            {operador}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
 
   const rangoFecha = (
     <div className="filtro-fechas">
@@ -79,22 +112,10 @@ function Filtros({ filtros, setFiltros, activeTab, limpiarFiltros }) {
   );
 
   const renderFiltrosPorTab = () => {
-    if (activeTab === "Caja") {
+    if (activeCajaTab === "Caja") {
       return (
         <>
-          <div className="filtro-container">
-            <label className="filtro-label">Operador</label>
-            <select
-              name="operador"
-              className="filtro-select"
-              onChange={handleChange}
-              value={filtros.operador || ""}
-            >
-              <option value="">Todos</option>
-              <option value="Carlos">Carlos</option>
-              <option value="Diego">Diego</option>
-            </select>
-          </div>
+          {renderSelectOperador()}
 
           <div className="filtro-container">
             <label className="filtro-label">Método de Pago</label>
@@ -186,22 +207,10 @@ function Filtros({ filtros, setFiltros, activeTab, limpiarFiltros }) {
       );
     }
 
-    if (activeTab === "Ingresos") {
+    if (activeCajaTab === "Ingresos") {
       return (
         <>
-          <div className="filtro-container">
-            <label className="filtro-label">Operador</label>
-            <select
-              name="operador"
-              className="filtro-select"
-              onChange={handleChange}
-              value={filtros.operador || ""}
-            >
-              <option value="">Todos</option>
-              <option value="Carlos">Carlos</option>
-              <option value="Diego">Diego</option>
-            </select>
-          </div>
+          {renderSelectOperador()}
 
           <div className="filtro-container">
             <label className="filtro-label">Hora de Entrada</label>
@@ -249,12 +258,102 @@ function Filtros({ filtros, setFiltros, activeTab, limpiarFiltros }) {
       );
     }
 
+    if (activeCajaTab === "Alertas" || activeCajaTab === "Incidentes") {
+      return (
+        <>
+          {renderSelectOperador()}
+
+          <div className="filtro-container">
+            <label className="filtro-label">Hora</label>
+            <select
+              name="hora"
+              className="filtro-select"
+              onChange={handleChange}
+              value={filtros.hora || ""}
+            >
+              <option value="">Todas</option>
+              <option value="0-3">00:00 - 03:00</option>
+              <option value="3-6">03:00 - 06:00</option>
+              <option value="6-9">06:00 - 09:00</option>
+              <option value="9-12">09:00 - 12:00</option>
+              <option value="12-15">12:00 - 15:00</option>
+              <option value="15-18">15:00 - 18:00</option>
+              <option value="18-21">18:00 - 21:00</option>
+              <option value="21-24">21:00 - 00:00</option>
+            </select>
+          </div>
+
+          <div className="filtro-container">
+            <label className="filtro-label">Fecha exacta</label>
+            <input
+              type="date"
+              name="fecha"
+              className="filtro-input"
+              value={filtros.fecha || ""}
+              onChange={handleChange}
+            />
+          </div>
+
+          {rangoFecha}
+
+          <button className="btn-limpiar" onClick={limpiarFiltros}>
+            Limpiar filtros
+          </button>
+        </>
+      );
+    }
+
+    if (activeCajaTab === "A Retirar" || activeCajaTab === "Retirado" || activeCajaTab === "Parciales") {
+      return (
+        <>
+          {renderSelectOperador()}
+
+          <div className="filtro-container">
+            <label className="filtro-label">Hora</label>
+            <select
+              name="hora"
+              className="filtro-select"
+              onChange={handleChange}
+              value={filtros.hora || ""}
+            >
+              <option value="">Todas</option>
+              <option value="0-3">00:00 - 03:00</option>
+              <option value="3-6">03:00 - 06:00</option>
+              <option value="6-9">06:00 - 09:00</option>
+              <option value="9-12">09:00 - 12:00</option>
+              <option value="12-15">12:00 - 15:00</option>
+              <option value="15-18">15:00 - 18:00</option>
+              <option value="18-21">18:00 - 21:00</option>
+              <option value="21-24">21:00 - 00:00</option>
+            </select>
+          </div>
+
+          <div className="filtro-container">
+            <label className="filtro-label">Fecha exacta</label>
+            <input
+              type="date"
+              name="fecha"
+              className="filtro-input"
+              value={filtros.fecha || ""}
+              onChange={handleChange}
+            />
+          </div>
+
+          {rangoFecha}
+
+          <button className="btn-limpiar" onClick={limpiarFiltros}>
+            Limpiar filtros
+          </button>
+        </>
+      );
+    }
+
     return null;
   };
 
   return (
     <div className="filtros">
-      <div className="titleFiltros">Filtros - {activeTab}</div>
+      <div className="titleFiltros">Filtros - {activeCajaTab}</div>
       {renderFiltrosPorTab()}
     </div>
   );

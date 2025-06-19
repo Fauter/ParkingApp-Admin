@@ -2,8 +2,7 @@
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     gap: 0.5rem;
-    padding: 1rem 0.5rem 2rem 0.5rem;
-    min-height: 68vh;
+    padding: 0 0.5rem 2rem 0.5rem;
 }
 
 .abono-card {
@@ -137,4 +136,37 @@
   color: #0d161c;
   font-size: 1.2rem;
   margin: 40px 0;
+}
+
+.tickets-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+  font-family: Arial, sans-serif;
+  color: #2e3c53;
+}
+
+.tickets-table thead {
+  background-color: #f5f7fa;
+}
+
+.tickets-table th,
+.tickets-table td {
+  border: 1px solid #dcdfe3;
+  padding: 10px 12px;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.tickets-table th {
+  font-weight: 600;
+  color: #1e3a5f;
+}
+
+.tickets-table tbody tr:hover {
+  background-color: #e9f0fa;
+}
+
+.tickets-table tbody tr:nth-child(even) {
+  background-color: #fbfcfd;
 }

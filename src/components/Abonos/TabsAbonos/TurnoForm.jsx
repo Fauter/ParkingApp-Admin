@@ -8,75 +8,75 @@ const TurnoForm = ({ onClose, user }) => {
   const [metodoPago, setMetodoPago] = useState('Efectivo');
   const [factura, setFactura] = useState('CC');
   const [precio, setPrecio] = useState(0);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetch('https://api.garageia.com/api/tarifas/')
+    fetch('http://localhost:5000/api/tarifas/')
       .then(res => res.json())
       .then(data => {
         const turnosFiltrados = data.filter(t => t.tipo === 'turno');
         setTurnos(turnosFiltrados);
       })
-      .catch(err => console.error('Error al cargar los turnos:', err));
+      .catch(err => {
+        console.error('Error al cargar los turnos:', err);
+        setError('Error al cargar los turnos disponibles');
+      });
   }, []);
 
   const handlePatenteChange = (e) => {
-    let val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); // Solo letras y números
+    let val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
     if (val.length > 8) val = val.slice(0, 8);
     setPatente(val);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(null);
 
     if (!patente || !turnoSeleccionado) {
-      alert('Completá la patente y seleccioná un turno.');
+      setError('Completá la patente y seleccioná un turno.');
       return;
     }
 
     const turnoData = turnos.find(t => t._id === turnoSeleccionado);
     if (!turnoData) {
-      alert('Error interno: turno no encontrado.');
+      setError('Error interno: turno no encontrado.');
       return;
     }
 
-    // Obtener tipoVehiculo desde API vehiculos
-    let tipoVehiculo;
     try {
-      const resVehiculo = await fetch(`https://api.garageia.com/api/vehiculos/${patente}`);
+      // Obtener tipoVehiculo
+      const resVehiculo = await fetch(`http://localhost:5000/api/vehiculos/${patente}`);
       if (!resVehiculo.ok) {
-        alert('Vehículo no encontrado');
+        setError('Vehículo no encontrado');
         return;
       }
       const dataVehiculo = await resVehiculo.json();
-      tipoVehiculo = dataVehiculo.tipoVehiculo;
+      const tipoVehiculo = dataVehiculo.tipoVehiculo;
       if (!tipoVehiculo) {
-        alert('Tipo de vehículo no definido');
+        setError('Tipo de vehículo no definido');
         return;
       }
-    } catch (err) {
-      alert('Error al obtener datos del vehículo.');
-      return;
-    }
 
-    // Calcular duración en horas y fin
-    const duracionHoras = (turnoData.dias || 0) * 24 + (turnoData.horas || 0) + ((turnoData.minutos || 0) / 60);
-    const ahora = new Date();
-    const fin = new Date(ahora);
-    fin.setMinutes(fin.getMinutes() + ((turnoData.dias || 0) * 1440) + ((turnoData.horas || 0) * 60) + (turnoData.minutos || 0));
+      // Calcular duración y fecha fin
+      const duracionHoras = (turnoData.dias || 0) * 24 + (turnoData.horas || 0) + ((turnoData.minutos || 0) / 60);
+      const ahora = new Date();
+      const fin = new Date(ahora);
+      fin.setMinutes(fin.getMinutes() + ((turnoData.dias || 0) * 1440) + ((turnoData.horas || 0) * 60) + (turnoData.minutos || 0));
 
-    try {
-      const resPrecio = await fetch('https://api.garageia.com/api/precios/');
+      // Obtener precio
+      const resPrecio = await fetch('http://localhost:5000/api/precios/');
       const precios = await resPrecio.json();
-
       const nombreTarifa = turnoData.nombre.toLowerCase().trim();
       const precioVehiculo = precios[tipoVehiculo]?.[nombreTarifa];
+      
       if (precioVehiculo === undefined) {
-        alert(`No se encontró un precio para "${turnoData.nombre}" y vehículo tipo "${tipoVehiculo}"`);
+        setError(`No se encontró precio para "${turnoData.nombre}" y vehículo tipo "${tipoVehiculo}"`);
         return;
       }
       setPrecio(precioVehiculo);
 
-      // Preparar payload para registrar turno
+      // Registrar turno
       const payloadTurno = {
         patente,
         turnoId: turnoSeleccionado,
@@ -88,20 +88,19 @@ const TurnoForm = ({ onClose, user }) => {
         nombreTarifa: turnoData.nombre
       };
 
-      const resTurno = await fetch('https://api.garageia.com/api/turnos', {
+      const resTurno = await fetch('http://localhost:5000/api/turnos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payloadTurno),
       });
 
-      const dataTurno = await resTurno.json();
-
       if (!resTurno.ok) {
-        alert('Error al registrar turno: ' + (dataTurno.error || JSON.stringify(dataTurno)));
+        const errorData = await resTurno.json();
+        setError(errorData.error || 'Error al registrar turno');
         return;
       }
 
-      // Si el turno se registra bien, registramos el movimiento
+      // Registrar movimiento
       const payloadMovimiento = {
         patente,
         operador: user.nombre,
@@ -109,22 +108,23 @@ const TurnoForm = ({ onClose, user }) => {
         metodoPago,
         factura: factura || 'Sin factura',
         monto: precioVehiculo,
-        descripcion: `Pago Por Abono (${turnoData.nombre})`,
-        tipoTarifa: turnoData.nombre,
+        descripcion: `Pago por Turno: ${turnoData.nombre}`,
+        tipoTarifa: 'turno'  // Cambiado de 'abono' a 'turno'
       };
 
-      const movimientoRes = await fetch('https://api.garageia.com/api/movimientos/registrar', {
+      const movimientoRes = await fetch('http://localhost:5000/api/movimientos/registrar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payloadMovimiento),
       });
 
       if (!movimientoRes.ok) {
-        alert('Turno registrado pero error al registrar movimiento.');
+        const errorData = await movimientoRes.json();
+        setError('Turno registrado pero error al registrar movimiento: ' + (errorData.error || ''));
         return;
       }
 
-      alert('Turno y movimiento registrados correctamente.');
+      // Éxito
       setPatente('');
       setTurnoSeleccionado('');
       setMetodoPago('Efectivo');
@@ -132,13 +132,15 @@ const TurnoForm = ({ onClose, user }) => {
       onClose();
 
     } catch (err) {
-      alert('Error al procesar la solicitud.');
-      console.error(err);
+      console.error('Error:', err);
+      setError('Error al procesar la solicitud');
     }
   };
 
   return (
     <form className="turno-form" onSubmit={handleSubmit}>
+      {error && <div className="error-message">{error}</div>}
+      
       <div className="form-section">
         <input
           type="text"

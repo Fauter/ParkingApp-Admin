@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom'; // agrego useNavigate para redirigir si no hay user
+import { useLocation, useNavigate } from 'react-router-dom'; 
+import { MdGridOn, MdList } from 'react-icons/md';
 import AbonoForm from './AbonoForm.jsx'; 
 import TurnoForm from './TurnoForm.jsx';
 import './TabsAbonos.css';
 
 import TicketsAbiertos from '../BodyAbonos/sections/TicketsAbiertos/TicketsAbiertos';
 import AbonosSection from '../BodyAbonos/sections/AbonosSection/AbonosSection';
-import Turno from '../BodyAbonos/sections/Turnos/Turnos';
 
 const TabsAbonos = () => {
   const tabs = ['Abonos y Turnos Activos', 'Clientes Abonados'];
+  const [viewMode, setViewMode] = useState('grid');
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -38,7 +39,7 @@ const TabsAbonos = () => {
       }
 
       try {
-        const response = await fetch('https://api.garageia.com/api/auth/profile', {
+        const response = await fetch('http://localhost:5000/api/auth/profile', {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -59,23 +60,18 @@ const TabsAbonos = () => {
         }
       } catch (error) {
         console.error('Error fetching user:', error);
-        // Opcional: manejar error
       }
     };
 
     fetchUser();
   }, [navigate]);
 
-  console.log("user en TabsAbonos.jsx", user);
-
   const renderSection = () => {
     switch (activeTab) {
       case 'Abonos y Turnos Activos':
-        return <TicketsAbiertos />;
+        return <TicketsAbiertos viewMode={viewMode} />;
       case 'Clientes Abonados':
-        return <AbonosSection />;
-      case 'Turno':
-        return <Turno />;
+        return <AbonosSection />
       default:
         return null;
     }
@@ -107,6 +103,27 @@ const TabsAbonos = () => {
   return (
     <div className="abonoTab-container">
       <div className="abonoTab-header">
+        {activeTab === 'Abonos y Turnos Activos' && (
+          <div className="abonoTab-viewmode">
+            <button
+              className={`viewmode-btn ${viewMode === 'grid' ? 'active' : ''}`}
+              onClick={() => setViewMode('grid')}
+              title="Modo Cuadrícula"
+              type="button"
+            >
+              <MdGridOn />
+            </button>
+            <button
+              className={`viewmode-btn ${viewMode === 'list' ? 'active' : ''}`}
+              onClick={() => setViewMode('list')}
+              title="Modo Lista"
+              type="button"
+            >
+              <MdList />
+            </button>
+          </div>
+        )}
+
         <div className="abonoTab-links">
           {tabs.map((tab) => (
             <a
@@ -144,7 +161,6 @@ const TabsAbonos = () => {
 
       <div className="abonoTab-content">{renderSection()}</div>
 
-      {/* Modal */}
       {modalOpen && (
         <div className="modalabono-overlay" onClick={closeModal}>
           <div className={`modalabono ${modalOpen === 'turno' ? 'modal-turno' : 'modal-abono'}`} onClick={(e) => e.stopPropagation()}>
@@ -154,11 +170,11 @@ const TabsAbonos = () => {
                 &times;
               </button>
             </div>
-            <div>
+            <div className="modalHola">
               {modalOpen === 'abono' ? (
                 <AbonoForm onClose={closeModal} user={user} />
               ) : (
-                <TurnoForm onClose={closeModal} user={user} />
+                <TurnoForm onClose={closeModal} user={user} tipo="turno" />
               )}
             </div>
           </div>

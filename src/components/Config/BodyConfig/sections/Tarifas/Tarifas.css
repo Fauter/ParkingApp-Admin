@@ -11,13 +11,14 @@ input[type="checkbox"] {
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  padding-bottom: 20px;
 }
 
 .tarifas-title {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1.7rem;
   padding: 0 1.5rem;
 }
 

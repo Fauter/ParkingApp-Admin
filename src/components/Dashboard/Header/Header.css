@@ -1,127 +1,137 @@
-/* Header.css */
 .header-container {
-    display: flex;
-    flex-direction: column;
-    flex-shrink: 0; 
-    background-color:rgb(233, 239, 241);
-    font-family: "Plus Jakarta Sans", "Noto Sans", sans-serif;
-  }
-  
-  .layout-container {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    flex-grow: 1;
-  }
-  
-  .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 40px;
-    border-bottom: 1px solid #e0eaf0;
-  }
-  
-  .header-left {
-    display: flex;
-    align-items: center;
-    gap: 40px;
-  }
-  
-  .logo-container {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    color: #0d161c;
-  }
-  
-  .header-title {
-    font-size: 18px;
-    font-weight: bold;
-    letter-spacing: -0.015em;
-  }
-  
-  nav {
-    display: flex;
-    gap: 20px;
-  }
-  
-  nav a {
-    color: #0d161c;
-    font-size: 14px;
-    font-weight: 500;
-    text-decoration: none;
-    padding: 5px 10px;
-    border-radius: 5px;
-    transition: color 0.3s ease, background-color 0.3s ease;
-  }
-  nav a:hover {
-      color: #ffffff;
-      background-color: #497b97;
-      text-decoration: underline;
-  }
-  
-  .header-right {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-  }
-  
-  .search-bar {
-    display: flex;
-    align-items: center;
-    background-color: #e0eaf0;
-    border-radius: 5px;
-    padding: 5px 10px;
-  }
-  
-  .search-icon {
-    color: #497b97;
-  }
-  
-  .search-bar input {
-    border: none;
-    background: none;
-    outline: none;
-    margin-left: 5px;
-    font-size: 14px;
-    color: #0d161c;
-    padding: 5px;
-    border-radius: 5px;
-  }
-  
-  .profile-container {
-    position: relative;
-    display: inline-block;
-    cursor: pointer;
-  }
-  .profile-pic {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background-size: cover;
-    background-position: center;
-  }
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0; 
+  background-color: rgb(233, 239, 241);
+  font-family: "Plus Jakarta Sans", "Noto Sans", sans-serif;
+}
 
-  .dropdown-menu {
-    position: absolute;
-    top: 45px;
-    right: 0;
-    background: white;
-    border: 1px solid #ccc;
-    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-    border-radius: 5px;
-    width: 100px;
-    z-index: 100;
-  }
-  .dropdown-menu button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    width: 100%;
-    color: black;
-    font-size: 12px;
-  }
-  .dropdown-menu button:hover {
-    background: #f0f0f0;
-  }
+.layout-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  flex-grow: 1;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 40px;
+  border-bottom: 1px solid #e0eaf0;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #0d161c;
+}
+
+.header-title {
+  font-size: 18px;
+  font-weight: bold;
+  letter-spacing: -0.015em;
+}
+
+nav {
+  display: flex;
+  gap: 20px;
+}
+
+nav a {
+  color: #0d161c;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none; /* <-- ya está bien esto */
+  padding: 5px 10px;
+  border-radius: 5px;
+  transition: color 0.3s ease, background-color 0.3s ease;
+}
+
+nav a:hover {
+  color: #ffffff;
+  background-color: #497b97;
+  text-decoration: none; /* CAMBIÁ ESTO de underline a none */
+}
+
+/* >>> Estilo cuando el link está activo <<< */
+nav a.active {
+  color: #ffffff;
+  background-color: #497b97;
+  text-decoration: none; /* CAMBIÁ ESTO de underline a none */
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  background-color: #e0eaf0;
+  border-radius: 5px;
+  padding: 5px 10px;
+}
+
+.search-icon {
+  color: #497b97;
+}
+
+.search-bar input {
+  border: none;
+  background: none;
+  outline: none;
+  margin-left: 5px;
+  font-size: 14px;
+  color: #0d161c;
+  padding: 5px;
+  border-radius: 5px;
+}
+
+.profile-container {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.profile-pic {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-size: cover;
+  background-position: center;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 45px;
+  right: 0;
+  background: white;
+  border: 1px solid #ccc;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 5px;
+  width: 100px;
+  z-index: 100;
+}
+
+.dropdown-menu button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  color: black;
+  font-size: 12px;
+}
+
+.dropdown-menu button:hover {
+  background: #f0f0f0;
+}

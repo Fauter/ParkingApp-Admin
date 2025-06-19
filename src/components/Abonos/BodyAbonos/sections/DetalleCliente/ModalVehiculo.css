@@ -1,0 +1,148 @@
+.modal-vehiculo-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-vehiculo-content {
+  position: relative;
+  background: #fff;
+  padding: 2rem;
+  border-radius: 12px;
+  max-width: 800px;
+  width: 95%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.modal-vehiculo-close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: transparent;
+  border: none;
+  font-size: 28px;
+  font-weight: bold;
+  color: #333;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.modal-vehiculo-image-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.modal-vehiculo-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+}
+
+.modal-vehiculo-buttons button {
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.modal-vehiculo-buttons button[type="submit"] {
+  background-color: #28a745;
+  color: white;
+}
+
+.modal-vehiculo-buttons button[type="submit"]:hover {
+  background-color: #218838;
+}
+
+.modal-vehiculo-buttons button[type="button"] {
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+.modal-vehiculo-buttons button[type="button"]:hover {
+  background-color: #c6c6c6;
+}
+
+.modal-vehiculo-image-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem; /* más espacio entre inputs */
+  justify-content: center; /* centrado horizontal */
+  margin-bottom: 2rem;
+}
+
+.modal-vehiculo-file-input {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 120px;
+  text-align: center;
+  padding: 0px 10px;
+}
+
+.file-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #f5f5f5;
+  border: 2px dashed #ccc;
+  border-radius: 10px;
+  padding: 1rem;
+  cursor: pointer;
+  width: 100%;
+  height: 100px;
+  transition: background-color 0.2s ease;
+}
+
+.file-label:hover {
+  background-color: #eaeaea;
+}
+
+.file-visible-label {
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.file-text span {
+  display: block;
+  font-size: 0.8rem;
+  color: #555;
+}
+
+.file-uploaded {
+  font-size: 1.5rem;
+  color: #28a745;
+}
+
+.icon-wrapper {
+  font-size: 1.4rem;
+  margin-bottom: 0.5rem;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Quita las flechas en Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
+}

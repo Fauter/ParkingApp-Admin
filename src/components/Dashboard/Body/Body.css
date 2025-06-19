@@ -1,9 +1,26 @@
 .body {
-    display: flex;
+  display: flex;
 }
+
 .filtros-container {
-    flex: 0.5;
+  flex: .5; /* fijo a la izquierda, ajustalo a tu gusto */
+  overflow-y: auto; /* para scroll si es muy alto */
 }
+
+.contenido-derecha {
+  flex: 2; /* ocupa todo el espacio que queda a la derecha */
+  display: flex;
+  flex-direction: column; /* para que Tabs quede arriba y Caja debajo */
+  overflow-y: auto;
+  padding: 20px 10px 10px;
+}
+
 .caja-container {
-    flex: 2;
+  flex: 1; 
+  overflow-y: auto;
+}
+
+/* Opcional: Si querés que Tabs tenga un tamaño fijo o mínimo */
+.contenido-derecha > :first-child {
+  min-height: 50px; 
 }

@@ -1,5 +1,5 @@
 .abonos-container {
-  padding-top: 20px;
+  margin: 0px 0px 10px 0px;
 }
 
 .abonos-table {
@@ -77,4 +77,32 @@
   color: #0d161c;
   font-size: 1.2rem;
   margin: 40px 0;
+}
+
+.search-cliente-container {
+  margin: 10px 0px 10px 0px;
+}
+.search-cliente-input-container {
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+  background-color: #e0eaf0;
+  width: 99%;
+}
+
+.search-cliente-icon {
+  display: flex;
+  margin: 0px 5px 0px 5px;
+}
+
+.search-cliente-input {
+  width: 100%;
+  padding: 8px;
+  border: none;
+  font-size: 14px;
+  background-color: #e0eaf0;
+}
+
+.search-cliente-input:focus {
+  outline: none;
 }

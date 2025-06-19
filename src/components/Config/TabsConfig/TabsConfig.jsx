@@ -97,12 +97,12 @@ const TabsConfig = ({ activeTab, onTabChange }) => {
             </div>
             <div className="modal-body modal-simulador-body">
               <div className="modal-simulador-field">
-                <label>Tipo de Tarifa</label>
+                {/* <label>Tipo de Tarifa</label>
                 <select name="tipoTarifa" value={form.tipoTarifa} onChange={handleChange}>
                   <option value="hora">x Hora</option>
-                  {/* <option value="turno">x Turno</option>
-                  <option value="abono">x Abono</option> */}
-                </select>
+                  <option value="turno">x Turno</option>
+                  <option value="abono">x Abono</option> 
+                </select> */}
               </div>
 
               <div className="modal-simulador-field">

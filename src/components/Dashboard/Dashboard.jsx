@@ -3,7 +3,7 @@ import Header from "./Header/Header.jsx";
 import Body from "./Body/Body.jsx";
 import Config from "../Config/Config.jsx";
 import Abonos from "../Abonos/Abonos.jsx";
-import DetalleCliente from "../Abonos/BodyAbonos/sections/DetalleCliente/DetalleCliente.jsx"; // Asegurate que la ruta sea correcta
+import DetalleCliente from "../Abonos/BodyAbonos/sections/DetalleCliente/DetalleCliente.jsx";
 import "./Dashboard.css";
 
 function Dashboard() {
@@ -15,7 +15,8 @@ function Dashboard() {
                     <Route path="/" element={<Body />} />
                     <Route path="/config" element={<Config />} />
                     <Route path="/tickets" element={<Abonos />} />
-                    <Route path="/detalle" element={<DetalleCliente />} /> {/* ESTA ES LA RUTA FALTANTE */}
+                    <Route path="/detalle" element={<DetalleCliente />} />
+                    <Route path="/cierresDeCaja" element={<Body />} />
                 </Routes>
             </div>
         </div>

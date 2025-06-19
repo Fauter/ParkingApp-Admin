@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom'; 
+import { NavLink, useNavigate } from 'react-router-dom';
 import profilePic from '../../../assets/profilePic.png';
 import './Header.css';
 
 const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [user, setUser] = useState(null); 
+  const [user, setUser] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -18,7 +18,7 @@ const Header = () => {
       }
 
       try {
-        const response = await fetch('https://api.garageia.com/api/auth/profile', {
+        const response = await fetch('http://localhost:5000/api/auth/profile', {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -30,18 +30,13 @@ const Header = () => {
 
         if (response.ok) {
           setUser(data);
-        } else {
-          if (response.status === 401) {
-            localStorage.removeItem('token');
-            setUser(null);
-            navigate('/login');
-          }
+        } else if (response.status === 401) {
+          localStorage.removeItem('token');
+          setUser(null);
+          navigate('/login');
         }
       } catch (error) {
         console.error('Error fetching user:', error);
-        // Podés manejar error acá si querés, ejemplo:
-        // setUser(null);
-        // navigate('/login');
       }
     };
 
@@ -67,9 +62,11 @@ const Header = () => {
             <h2 className="header-title">Admin Dashboard</h2>
           </div>
           <nav>
-            <a href="/">Inicio</a>
-            <Link to="/tickets">Tickets</Link>
-            <Link to="/config">Config</Link>
+            <NavLink to="/" end>Inicio</NavLink>
+            <NavLink to="/cierresDeCaja">Cierres de Caja</NavLink>
+            {/* <NavLink to="/auditoria">Auditoría</NavLink> */}
+            <NavLink to="/tickets">Turnos/Abonos</NavLink>
+            <NavLink to="/config">Config</NavLink>
             <a href="https://operador.garageia.com/" target="_blank" rel="noopener noreferrer">
               Operador
             </a>

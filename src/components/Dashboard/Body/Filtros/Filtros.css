@@ -1,8 +1,11 @@
 .filtros {
-    display: flex;
-    flex-direction: column;
-    max-width: 260px;
-    padding: 20px 10px 10px 10px;
+  display: flex;
+  flex-direction: column;
+  max-width: 260px; /* o un ancho más flexible */
+  width: 100%;      /* para que no supere el contenedor padre */
+  padding: 20px 10px 10px 10px;
+  box-sizing: border-box; /* para que padding no agregue ancho extra */
+  overflow-x: hidden;     /* evita scroll horizontal */
 }
 
 .titleFiltros {
@@ -85,7 +88,7 @@
     }
 
     .fecha-item .filtro-input {
-        max-width: 120px; /* Esto evita que se desborde en pantallas más chicas */
+        max-width: 110px; /* Esto evita que se desborde en pantallas más chicas */
     }
 }
 

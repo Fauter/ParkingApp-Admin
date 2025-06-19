@@ -15,7 +15,7 @@ function Login() {
     setLoading(true);
 
     try {
-      const response = await fetch('https://api.garageia.com/api/auth/login', {
+      const response = await fetch('http://localhost:5000/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -30,7 +30,7 @@ function Login() {
         const token = data.token;
 
         // Ahora fetch para obtener perfil con ese token
-        const profileResponse = await fetch('https://api.garageia.com/api/auth/profile', {
+        const profileResponse = await fetch('http://localhost:5000/api/auth/profile', {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,

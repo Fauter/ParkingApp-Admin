@@ -65,7 +65,7 @@ const AppWrapper = () => {
       // Ideal: backend debería enviar el role dentro del token
       // Mientras tanto, podés debuguear y ver qué rol te llega
 
-      if (hostname === "admin.garageia.com" && role !== "superAdmin") {
+      if (hostname === "admin.garageia.com" && role !== "admin" && role !== "superAdmin") {
         alert("No tienes permisos para acceder a esta aplicación");
         localStorage.removeItem('token');
         navigate('/login', { replace: true });
