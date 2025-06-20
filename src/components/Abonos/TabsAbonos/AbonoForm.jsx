@@ -30,6 +30,10 @@ const AbonoForm = ({ onClose, user }) => {
   const [fotoCedulaAzul, setFotoCedulaAzul] = useState(null);
   const [loading, setLoading] = useState(false);
   const [tiposVehiculo, setTiposVehiculo] = useState([]);
+  const [precios, setPrecios] = useState({});
+  const [clientes, setClientes] = useState([]);
+  const [sugerencias, setSugerencias] = useState([]);
+  const [nombreTemporal, setNombreTemporal] = useState('');
 
   useEffect(() => {
     setFormData({
@@ -56,14 +60,14 @@ const AbonoForm = ({ onClose, user }) => {
     setFotoDNI(null);
     setFotoCedulaVerde(null);
     setFotoCedulaAzul(null);
-  }, []);  // solo cuando se monta el componente
+    setNombreTemporal('');
+  }, []);
 
   // Cargar tarifas de tipo "abono" desde API
   useEffect(() => {
-    fetch('http://localhost:5000/api/tarifas')
+    fetch('https://api.garageia.com/api/tarifas')
       .then(res => res.json())
       .then(data => {
-        // Filtrar solo tarifas que tengan tipo "abono"
         const abonos = data.filter(tarifa => tarifa.tipo === 'abono');
         setTarifas(abonos);
       })
@@ -71,17 +75,108 @@ const AbonoForm = ({ onClose, user }) => {
         console.error('Error al cargar tarifas', err);
       });
   }, []);
+
   // Cargar tipos de vehículo
   useEffect(() => {
-    fetch('http://localhost:5000/api/tipos-vehiculo')
+    fetch('https://api.garageia.com/api/tipos-vehiculo')
       .then(res => res.json())
       .then(data => setTiposVehiculo(data))
       .catch(err => console.error('Error al cargar tipos de vehículo', err));
+
+    fetch('https://api.garageia.com/api/precios')
+      .then(res => res.json())
+      .then(data => setPrecios(data))
+      .catch(err => console.error('Error al cargar precios', err));
   }, []);
+
+  // Cargar clientes
+  useEffect(() => {
+    fetch('https://api.garageia.com/api/clientes')
+      .then(res => res.json())
+      .then(data => setClientes(data))
+      .catch(err => console.error('Error al cargar clientes', err));
+  }, []);
+
+  // Buscar sugerencias de clientes
+  useEffect(() => {
+    if (nombreTemporal.trim().length >= 3) {
+      const coincidencias = clientes.filter((c) =>
+        c.nombreApellido.toLowerCase().includes(nombreTemporal.trim().toLowerCase())
+      );
+      setSugerencias(coincidencias);
+    } else {
+      setSugerencias([]);
+    }
+  }, [nombreTemporal, clientes]);
+
+  const buscarClientePorNombre = async (nombre) => {
+    try {
+      const res = await fetch(`https://api.garageia.com/api/clientes/nombre/${encodeURIComponent(nombre)}`);
+      if (res.ok) {
+        const cliente = await res.json();
+        if (cliente) {
+          setFormData(prev => ({
+            ...prev,
+            domicilio: cliente.domicilio || "",
+            localidad: cliente.localidad || "",
+            telefonoParticular: cliente.telefonoParticular || "",
+            telefonoEmergencia: cliente.telefonoEmergencia || "",
+            domicilioTrabajo: cliente.domicilioTrabajo || "",
+            telefonoTrabajo: cliente.telefonoTrabajo || "",
+            email: cliente.email || "",
+            marca: cliente.marca || "",
+            modelo: cliente.modelo || "",
+            color: cliente.color || "",
+            anio: cliente.anio || "",
+            companiaSeguro: cliente.companiaSeguro || "",
+            metodoPago: cliente.metodoPago || "",
+            factura: cliente.factura || "",
+            dniCuitCuil: cliente.dniCuitCuil || "",
+            precioAbono: cliente.precioAbono || ""
+          }));
+        }
+      }
+    } catch (error) {
+      console.error("Error buscando cliente:", error);
+    }
+  };
+
+  const seleccionarCliente = (cliente) => {
+    setFormData({
+      ...formData,
+      nombreApellido: cliente.nombreApellido,
+      domicilio: cliente.domicilio || "",
+      localidad: cliente.localidad || "",
+      telefonoParticular: cliente.telefonoParticular || "",
+      telefonoEmergencia: cliente.telefonoEmergencia || "",
+      domicilioTrabajo: cliente.domicilioTrabajo || "",
+      telefonoTrabajo: cliente.telefonoTrabajo || "",
+      email: cliente.email || "",
+      dniCuitCuil: cliente.dniCuitCuil || "",
+      precioAbono: cliente.precioAbono || ""
+    });
+    setNombreTemporal(cliente.nombreApellido);
+    setSugerencias([]);
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleNombreChange = (e) => {
+    const { value } = e.target;
+    setNombreTemporal(value);
+    setFormData(prev => ({ ...prev, nombreApellido: value }));
+    
+    // Búsqueda con debounce
+    const delayDebounce = setTimeout(() => {
+      if (value.trim().length >= 3) {
+        buscarClientePorNombre(value);
+      }
+    }, 800);
+
+    return () => clearTimeout(delayDebounce);
   };
 
   const handleFileChange = (e) => {
@@ -95,10 +190,10 @@ const AbonoForm = ({ onClose, user }) => {
   };
 
   const fileUploaded = {
-    fotoSeguro,
-    fotoDNI,
-    fotoCedulaVerde,
-    fotoCedulaAzul,
+    fotoSeguro: !!fotoSeguro,
+    fotoDNI: !!fotoDNI,
+    fotoCedulaVerde: !!fotoCedulaVerde,
+    fotoCedulaAzul: !!fotoCedulaAzul,
   };
 
   const renderFileInput = (label, name) => (
@@ -120,12 +215,8 @@ const AbonoForm = ({ onClose, user }) => {
   );
 
   const validarPatente = (patente) => {
-    // Formato viejo: ABC123
     const formatoViejo = /^[A-Z]{3}\d{3}$/;
-
-    // Formato nuevo: AB123CD
     const formatoNuevo = /^[A-Z]{2}\d{3}[A-Z]{2}$/;
-
     return formatoViejo.test(patente) || formatoNuevo.test(patente);
   };
 
@@ -144,17 +235,19 @@ const AbonoForm = ({ onClose, user }) => {
       }
       formData.patente = patente;
 
-      // Paso 1: Obtener precios
-      const resPrecios = await fetch('http://localhost:5000/api/precios');
-      if (!resPrecios.ok) throw new Error('Error al obtener precios');
-      const precios = await resPrecios.json();
-
       // Verificamos tipo de vehículo
       const tipoVehiculo = formData.tipoVehiculo;
-      if (!tipoVehiculo) throw new Error('Debe seleccionar tipo de vehículo');
+      if (!tipoVehiculo) {
+        alert('Debe seleccionar tipo de vehículo');
+        setLoading(false);
+        return;
+      }
+
+      // Paso 1: Obtener precio mensual del tipo de vehículo
+      const precioMensual = precios[tipoVehiculo]?.mensual || 0;
 
       // Paso 2: Buscar vehículo por patente
-      const vehiculoRes = await fetch(`http://localhost:5000/api/vehiculos/${encodeURIComponent(formData.patente)}`);
+      const vehiculoRes = await fetch(`https://api.garageia.com/api/vehiculos/${encodeURIComponent(formData.patente)}`);
       let vehiculo = null;
       let vehiculoData = null;
 
@@ -166,7 +259,7 @@ const AbonoForm = ({ onClose, user }) => {
 
       if (!vehiculoRes.ok || (vehiculoData && vehiculoData.msg === "Vehículo no encontrado")) {
         // Crear vehículo si no existe
-        const nuevoVehiculoRes = await fetch('http://localhost:5000/api/vehiculos/sin-entrada', {
+        const nuevoVehiculoRes = await fetch('https://api.garageia.com/api/vehiculos/sin-entrada', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -189,7 +282,7 @@ const AbonoForm = ({ onClose, user }) => {
         if (!nuevoVehiculoJson || !nuevoVehiculoJson._id) {
           // Retry para ver si ya está creado
           await new Promise(resolve => setTimeout(resolve, 500));
-          const retryVehiculoRes = await fetch(`http://localhost:5000/api/vehiculos/${encodeURIComponent(formData.patente)}`);
+          const retryVehiculoRes = await fetch(`https://api.garageia.com/api/vehiculos/${encodeURIComponent(formData.patente)}`);
           if (!retryVehiculoRes.ok) {
             alert('❌ El vehículo no se creó correctamente y no se encontró en el retry. No se continuará con el proceso.');
             setLoading(false);
@@ -209,8 +302,8 @@ const AbonoForm = ({ onClose, user }) => {
         vehiculo = vehiculoData;
       }
 
-      // Paso 4: Buscar cliente
-      const clientesRes = await fetch('http://localhost:5000/api/clientes');
+      // Paso 3: Buscar cliente
+      const clientesRes = await fetch('https://api.garageia.com/api/clientes');
       if (!clientesRes.ok) throw new Error('Error al obtener clientes');
       const clientes = await clientesRes.json();
       const clienteExistente = clientes.find(
@@ -220,9 +313,21 @@ const AbonoForm = ({ onClose, user }) => {
       let clienteId;
       if (clienteExistente) {
         clienteId = clienteExistente._id;
+        
+        // Actualizar precioAbono del cliente si corresponde
+        if (formData.tipoVehiculo && (clienteExistente.precioAbono === '' || precioMensual > (precios[clienteExistente.precioAbono]?.mensual || 0))) {
+          await fetch(`https://api.garageia.com/api/clientes/${clienteExistente._id}/actualizar-precio-abono`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+              tipoVehiculo: formData.tipoVehiculo,
+              precioMensual: precioMensual
+            }),
+          });
+        }
       } else {
         // Crear nuevo cliente
-        const nuevoClienteRes = await fetch('http://localhost:5000/api/clientes', {
+        const nuevoClienteRes = await fetch('https://api.garageia.com/api/clientes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -235,6 +340,7 @@ const AbonoForm = ({ onClose, user }) => {
             domicilioTrabajo: formData.domicilioTrabajo,
             telefonoTrabajo: formData.telefonoTrabajo,
             email: formData.email,
+            precioAbono: formData.tipoVehiculo
           }),
         });
         if (!nuevoClienteRes.ok) throw new Error('Error al crear cliente');
@@ -243,7 +349,7 @@ const AbonoForm = ({ onClose, user }) => {
         clienteId = nuevoCliente._id;
       }
 
-      // Paso 5: Registrar abono
+      // Paso 4: Registrar abono
       const abonoFormData = new FormData();
 
       for (const key in formData) {
@@ -253,7 +359,6 @@ const AbonoForm = ({ onClose, user }) => {
       }
       abonoFormData.set('patente', formData.patente.toUpperCase());
       abonoFormData.set('tipoVehiculo', formData.tipoVehiculo);
-      // ❌ NO pongas el precio todavía
       abonoFormData.append('cliente', clienteId);
 
       // Archivos fotos si existen
@@ -262,19 +367,19 @@ const AbonoForm = ({ onClose, user }) => {
       if (fotoCedulaVerde) abonoFormData.append('fotoCedulaVerde', fotoCedulaVerde);
       if (fotoCedulaAzul) abonoFormData.append('fotoCedulaAzul', fotoCedulaAzul);
 
-      // Mandás el abono
-      const abonoRes = await fetch('http://localhost:5000/api/abonos/registrar-abono', {
+      // Mandar el abono
+      const abonoRes = await fetch('https://api.garageia.com/api/abonos/registrar-abono', {
         method: 'POST',
         body: abonoFormData,
       });
       if (!abonoRes.ok) throw new Error('Error al registrar abono');
 
-      // ✅ Ahora sí, obtenés el precio desde el backend
+      // Obtener el precio desde el backend
       const abonoJson = await abonoRes.json();
       const precioCalculadoBackend = abonoJson.abono.precio;
 
       // Registrar movimiento
-      const movimientoRes = await fetch('http://localhost:5000/api/movimientos/registrar', {
+      const movimientoRes = await fetch('https://api.garageia.com/api/movimientos/registrar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -297,10 +402,10 @@ const AbonoForm = ({ onClose, user }) => {
         descripcion: `Abono`,
         monto: precioCalculadoBackend,
         tipoVehiculo: formData.tipoVehiculo,
-        operador: 'Carlos',
+        operador: user.nombre,
         patente: formData.patente,
       };
-      const movimientoClienteRes = await fetch('http://localhost:5000/api/movimientosclientes', {
+      const movimientoClienteRes = await fetch('https://api.garageia.com/api/movimientosclientes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(movimientoClientePayload),
@@ -310,7 +415,7 @@ const AbonoForm = ({ onClose, user }) => {
         throw new Error(`Error al registrar MovimientoCliente: ${err.message}`);
       }
 
-      alert('✅ Movimiento cliente registrado correctamente');
+      alert('✅ Abono registrado correctamente');
 
       // Resetear formulario y fotos
       setFormData({
@@ -337,6 +442,7 @@ const AbonoForm = ({ onClose, user }) => {
       setFotoDNI(null);
       setFotoCedulaVerde(null);
       setFotoCedulaAzul(null);
+      setNombreTemporal('');
       if (onClose) onClose();
 
     } catch (error) {
@@ -351,7 +457,7 @@ const AbonoForm = ({ onClose, user }) => {
     <form onSubmit={handleSubmit} className="abono-form">
 
       <div className="form-section grid-2">
-        <input name="nombreApellido" placeholder="Nombre y Apellido" value={formData.nombreApellido} onChange={handleChange} required />
+        <input name="nombreApellido" placeholder="Nombre y Apellido" value={nombreTemporal} onChange={handleNombreChange} required />
         <input name="dniCuitCuil" type="dniCuitCuil" placeholder="DNI/CUIT/CUIL" value={formData.dniCuitCuil} onChange={handleChange} required />
         <input name="email" type="email" placeholder="Email" value={formData.email} onChange={handleChange} required />
         <input name="domicilio" placeholder="Domicilio" value={formData.domicilio} onChange={handleChange} required />

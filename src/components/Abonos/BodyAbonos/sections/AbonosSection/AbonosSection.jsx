@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import './AbonosSection.css';
 
 const AbonosSection = ({ viewMode }) => {
@@ -7,30 +7,48 @@ const AbonosSection = ({ viewMode }) => {
   const [loading, setLoading] = useState(true);
   const [busqueda, setBusqueda] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const fetchClientes = async () => {
+    try {
+      const res = await fetch('https://api.garageia.com/api/clientes');
+      if (!res.ok) throw new Error("Error al cargar clientes");
+      const data = await res.json();
+      setClientes(data);
+    } catch (error) {
+      console.error('Error al obtener los clientes:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchClientes = async () => {
-      try {
-        const res = await fetch('http://localhost:5000/api/clientes');
-        const data = await res.json();
-        setClientes(data);
-      } catch (error) {
-        console.error('Error al obtener los clientes:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchClientes();
   }, []);
 
+  // Si venimos con location.state.recargar, recargamos la lista
+  useEffect(() => {
+    if (location.state?.recargar) {
+      fetchClientes();
+      // Para evitar recarga infinita
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
+
+  // También refrescar cada 5 segundos para datos actualizados
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchClientes();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
   const handleRowClick = (cliente) => {
-    localStorage.setItem('clienteSeleccionado', JSON.stringify(cliente));
-    navigate('/detalle');
+    navigate(`/detalle/${cliente._id}`);
   };
 
   const clientesFiltrados = clientes
-    .filter((cliente) => cliente.abonos && cliente.abonos.length > 0)
+    // .filter((cliente) => cliente.abonos && cliente.abonos.length > 0)
     .filter((cliente) => {
       const termino = busqueda.toLowerCase();
       return (
@@ -41,7 +59,6 @@ const AbonosSection = ({ viewMode }) => {
 
   return (
     <div className="abonos-container">
-      {/* Buscador siempre visible */}
       <div className="search-cliente-container">
         <div className="search-cliente-input-container">
           <div className="search-cliente-icon">

@@ -1,9 +1,8 @@
   .caja {
     display: flex;
     flex-direction: column;
-    padding: 16px 0px ;
   }
-  
+
   .table-container {
     overflow: hidden;
     width: 99%;
@@ -82,6 +81,12 @@
     vertical-align: middle;
   }
 
+  .transaction-table td.td-checkbox {
+    padding: 6px !important;
+    text-align: center;
+    vertical-align: middle;
+  }
+
   .btn-retirado {
     padding: 6px 5px;
     font-size: 0.9rem;
@@ -99,3 +104,116 @@
     background-color: #ddd;
     color: #222;
   }
+
+ /* Agrega esto a tu archivo Caja.css */
+.enlace-auditoria {
+  color: #2563eb;
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: inline-block;
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.enlace-auditoria:hover {
+  color: #1d4ed8;
+  text-decoration: none;
+}
+
+.enlace-auditoria:active {
+  color: #1e40af;
+  transform: translateY(1px);
+}
+
+.celda-archivo {
+  max-width: 250px;
+}
+
+.checkbox-container {
+  position: relative;
+  padding-left: 25px;
+  cursor: pointer;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  margin: 0 auto;
+  width: 20px;
+  height: 20px;
+}
+
+.checkbox-container input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.checkmark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 18px;
+  width: 18px;
+  background-color: #f1f6f8;
+  border: 1px solid #c0cbd1;
+  border-radius: 3px;
+  transition: all 0.2s ease;
+}
+
+.checkbox-container:hover input ~ .checkmark {
+  background-color: #e5eef3;
+}
+
+.checkbox-container input:checked ~ .checkmark {
+  background-color: #2563eb;
+  border-color: #2563eb;
+}
+
+.checkmark:after {
+  content: "";
+  position: absolute;
+  display: none;
+}
+
+.checkbox-container input:checked ~ .checkmark:after {
+  display: block;
+}
+
+.checkbox-container .checkmark:after {
+  left: 6px;
+  top: 2px;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  -webkit-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+/* Centrado específico para las celdas de checkbox */
+.td-checkbox {
+  text-align: center;
+  vertical-align: middle;
+  padding: 8px !important;
+}
+
+.th-checkbox {
+  text-align: center;
+  vertical-align: middle;
+  padding: 8px !important;
+}
+
+/* Mantener el estilo del botón retirado */
+.td-retirado {
+  border: none !important;
+  padding: 6px !important;
+  text-align: center;
+  vertical-align: middle;
+}

@@ -11,6 +11,7 @@ const Caja = ({
   incidentes = [],
   limpiarFiltros,
   activeCajaTab = 'Caja',
+  isSearchBarVisible = true 
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [paginaActual, setPaginaActual] = useState(1);

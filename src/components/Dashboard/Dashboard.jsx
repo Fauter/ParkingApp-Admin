@@ -15,8 +15,9 @@ function Dashboard() {
                     <Route path="/" element={<Body />} />
                     <Route path="/config" element={<Config />} />
                     <Route path="/tickets" element={<Abonos />} />
-                    <Route path="/detalle" element={<DetalleCliente />} />
+                    <Route path="/detalle/:id" element={<DetalleCliente />} />
                     <Route path="/cierresDeCaja" element={<Body />} />
+                    <Route path="/auditoria" element={<Body />} />
                 </Routes>
             </div>
         </div>

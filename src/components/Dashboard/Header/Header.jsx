@@ -18,7 +18,7 @@ const Header = () => {
       }
 
       try {
-        const response = await fetch('http://localhost:5000/api/auth/profile', {
+        const response = await fetch('https://api.garageia.com/api/auth/profile', {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -64,7 +64,7 @@ const Header = () => {
           <nav>
             <NavLink to="/" end>Inicio</NavLink>
             <NavLink to="/cierresDeCaja">Cierres de Caja</NavLink>
-            {/* <NavLink to="/auditoria">Auditoría</NavLink> */}
+            <NavLink to="/auditoria">Auditoría</NavLink>
             <NavLink to="/tickets">Turnos/Abonos</NavLink>
             <NavLink to="/config">Config</NavLink>
             <a href="https://operador.garageia.com/" target="_blank" rel="noopener noreferrer">

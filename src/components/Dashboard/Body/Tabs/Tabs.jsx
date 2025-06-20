@@ -7,32 +7,62 @@ const Tabs = ({
   onCajaTabChange,
   searchTerm,
   setSearchTerm,
+  onSearchBarVisibilityChange,
+  onRegisterAuditClick
 }) => {
   const tabs =
     activeTab === 'Cierre'
       ? ['A Retirar', 'Retirado', 'Parciales']
+      : activeTab === 'Auditoria'
+      ? ['Histórico', 'Nueva Auditoría']
       : ['Caja', 'Ingresos', 'Alertas', 'Incidentes'];
+
+  // Determinar si debemos mostrar el searchbar
+  const showSearchBar = 
+    (activeTab !== 'Cierre') && 
+    (activeTab !== 'Auditoria' || activeCajaTab === 'Nueva Auditoría');
+
+  // Mostrar botón de registrar auditoría solo en pestaña Auditoria y en Nueva Auditoría
+  const showRegisterButton = activeTab === 'Auditoria' && activeCajaTab === 'Nueva Auditoría';
+
+  // Notificar al padre cuando cambia la visibilidad
+  React.useEffect(() => {
+    if (onSearchBarVisibilityChange) {
+      onSearchBarVisibilityChange(showSearchBar);
+    }
+  }, [showSearchBar, onSearchBarVisibilityChange]);
 
   return (
     <div className="tab-container">
-      <div className="tab-links">
-        {tabs.map(tab => (
-          <a
-            key={tab}
-            href="#"
-            className={`tab-link ${activeCajaTab === tab ? 'active' : ''}`}
-            onClick={e => {
-              e.preventDefault();
-              onCajaTabChange(tab);
-            }}
+      <div className="tab-header">
+        <div className="tab-links">
+          {tabs.map(tab => (
+            <a
+              key={tab}
+              href="#"
+              className={`tab-link ${activeCajaTab === tab ? 'active' : ''}`}
+              onClick={e => {
+                e.preventDefault();
+                onCajaTabChange(tab);
+              }}
+            >
+              <p className="tab-text">{tab}</p>
+            </a>
+          ))}
+        </div>
+
+        {/* {showRegisterButton && (
+          <button 
+            className="register-audit-button"
+            onClick={onRegisterAuditClick}
           >
-            <p className="tab-text">{tab}</p>
-          </a>
-        ))}
+            Registrar Auditoría
+          </button>
+        )} */}
       </div>
 
-      <div className="search-container">
-        {activeTab !== 'Cierre' && (
+      <div className={`search-container ${!showSearchBar ? 'no-search' : ''}`}>
+        {showSearchBar && (
           <label className="search-box">
             <div className="search-input-container">
               <div className="search-icon">

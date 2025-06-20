@@ -19,7 +19,7 @@ const Usuarios = () => {
   useEffect(() => {
     const obtenerUsuarios = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/auth/');
+        const response = await fetch('https://api.garageia.com/api/auth/');
         if (!response.ok) throw new Error('Error al obtener usuarios');
         const data = await response.json();
         setUsuarios(data);
@@ -43,7 +43,7 @@ const Usuarios = () => {
   const handleEliminar = async (id) => {
     if (window.confirm("¿Seguro que querés eliminar este usuario?")) {
       try {
-        const res = await fetch(`http://localhost:5000/api/auth/${id}`, {
+        const res = await fetch(`https://api.garageia.com/api/auth/${id}`, {
           method: 'DELETE',
         });
 
@@ -70,7 +70,7 @@ const Usuarios = () => {
 
   const handleGuardarEdicion = async () => {
     try {
-      const res = await fetch(`http://localhost:5000/api/auth/${usuarioEditadoId}`, {
+      const res = await fetch(`https://api.garageia.com/api/auth/${usuarioEditadoId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -97,7 +97,7 @@ const Usuarios = () => {
 
   const handleCrearUsuario = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/auth/register', {
+      const res = await fetch('https://api.garageia.com/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

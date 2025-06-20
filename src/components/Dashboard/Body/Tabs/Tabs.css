@@ -1,26 +1,55 @@
-
 .tab-container {
+}
+
+.tab-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
 }
 
 .tab-links {
     display: flex;
     gap: 16px;
 }
+
 .tab-link {
     text-decoration: none;
     color: #497b97;
     font-weight: bold;
-    }
+}
 .tab-link.active {
     border-bottom: 3px solid #276a91;
     color: #0d161c;
 }
 
+.register-audit-button {
+    background-color: #276a91;
+    color: white;
+    border: none;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-right: 30px;
+}
+
+.register-audit-button:hover {
+    background-color: #1d4f6e;
+}
+
 .search-container {
-    margin-top: 12px;
     border-top: 2px solid #cbdce6;
     padding-top: 12px;
+    padding-bottom: 12px;
 }
+
+/* Estilo cuando no hay search bar visible */
+.search-container.no-search {
+    padding-bottom: 0;
+}
+
 .search-input-container {
     display: flex;
     align-items: center;

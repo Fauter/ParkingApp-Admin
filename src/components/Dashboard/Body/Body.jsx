@@ -1,24 +1,27 @@
-// Body.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import "./Body.css";
 import Filtros from "./Filtros/Filtros.jsx";
 import Caja from "./Caja/Caja.jsx";
 import CierreDeCajaAdmin from "./CierreDeCajaAdmin/CierreDeCajaAdmin.jsx";
+import Auditoria from "./AuditoriaAdmin/AuditoriaAdmin.jsx";
 import Tabs from "./Tabs/Tabs.jsx";
 
 function Body() {
   const location = useLocation();
+  const auditoriaRef = useRef();
 
   const [activeTab, setActiveTab] = useState("Caja");
   const [activeCajaTab, setActiveCajaTab] = useState("Caja");
   const [searchTerm, setSearchTerm] = useState("");
+  const [isSearchBarVisible, setIsSearchBarVisible] = useState(false);
 
   const [movimientos, setMovimientos] = useState([]);
   const [vehiculos, setVehiculos] = useState([]);
   const [incidentes, setIncidentes] = useState([]);
   const [alertas, setAlertas] = useState([]);
-  const [cierresDeCaja, setCierresDeCaja] = useState([]); // NUEVO
+  const [cierresDeCaja, setCierresDeCaja] = useState([]);
+  const [auditorias, setAuditorias] = useState([]);
 
   const [filtros, setFiltros] = useState({
     patente: "",
@@ -36,6 +39,8 @@ function Body() {
   useEffect(() => {
     if (location.pathname === "/cierresDeCaja") {
       setActiveTab("Cierre");
+    } else if (location.pathname === "/auditoria") {
+      setActiveTab("Auditoria");
     } else {
       setActiveTab("Caja");
     }
@@ -46,6 +51,8 @@ function Body() {
       setActiveCajaTab("Caja");
     } else if (activeTab === "Cierre") {
       setActiveCajaTab("A Retirar");
+    } else if (activeTab === "Auditoria") {
+      setActiveCajaTab("Histórico");
     }
     setSearchTerm("");
   }, [activeTab]);
@@ -53,7 +60,7 @@ function Body() {
   useEffect(() => {
     const fetchData = async (endpoint, setState) => {
       try {
-        const response = await fetch(`http://localhost:5000/api/${endpoint}`);
+        const response = await fetch(`https://api.garageia.com/api/${endpoint}`);
         const data = await response.json();
         setState(data);
       } catch (error) {
@@ -65,14 +72,16 @@ function Body() {
     fetchData("vehiculos", setVehiculos);
     fetchData("incidentes", setIncidentes);
     fetchData("alertas", setAlertas);
-    fetchData("cierresdecaja", setCierresDeCaja); // NUEVO
+    fetchData("cierresdecaja", setCierresDeCaja);
+    fetchData("auditorias", setAuditorias);
 
     const interval = setInterval(() => {
       fetchData("movimientos", setMovimientos);
       fetchData("vehiculos", setVehiculos);
       fetchData("incidentes", setIncidentes);
       fetchData("alertas", setAlertas);
-      fetchData("cierresdecaja", setCierresDeCaja); // NUEVO
+      fetchData("cierresdecaja", setCierresDeCaja);
+      fetchData("auditorias", setAuditorias);
     }, 5000);
 
     return () => clearInterval(interval);
@@ -142,6 +151,14 @@ function Body() {
       setActiveCajaTab("Caja");
     } else if (activeTab === "Cierre") {
       setActiveCajaTab("A Retirar");
+    } else if (activeTab === "Auditoria") {
+      setActiveCajaTab("Histórico");
+    }
+  };
+
+  const handleRegisterAuditClick = () => {
+    if (auditoriaRef.current) {
+      auditoriaRef.current.generarAuditoria();
     }
   };
 
@@ -164,6 +181,8 @@ function Body() {
           onCajaTabChange={setActiveCajaTab}
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
+          onSearchBarVisibilityChange={setIsSearchBarVisible}
+          onRegisterAuditClick={handleRegisterAuditClick}
         />
 
         {activeTab === "Caja" && (
@@ -174,6 +193,7 @@ function Body() {
             alertas={alertas}
             incidentes={incidentes}
             limpiarFiltros={limpiarFiltros}
+            isSearchBarVisible={isSearchBarVisible} 
           />
         )}
 
@@ -187,7 +207,20 @@ function Body() {
             parciales={activeCajaTab === "Parciales" ? movimientosFiltrados.filter(m => m.estadoRetiro === "parcial") : []}
             cierresDeCaja={cierresDeCaja} 
             limpiarFiltros={limpiarFiltros}
-            filtros={filtros} // Añade esta línea para pasar los filtros
+            filtros={filtros}
+          />
+        )}
+
+        {activeTab === "Auditoria" && (
+          <Auditoria
+            activeCajaTab={activeCajaTab}
+            searchTerm={searchTerm}
+            onCajaTabChange={setActiveCajaTab}
+            limpiarFiltros={limpiarFiltros}
+            filtros={filtros}
+            auditorias={auditorias} 
+            vehiculos={vehiculosFiltrados}
+            ref={auditoriaRef}
           />
         )}
       </div>
