@@ -268,6 +268,11 @@ const ModalVehiculo = ({
       return;
     }
 
+    if (!cliente || !cliente._id) {
+      setErrorMessage("No se pudo identificar al cliente");
+      return;
+    }
+
     setIsSubmitting(true);
     setErrorMessage("");
 
@@ -283,7 +288,10 @@ const ModalVehiculo = ({
       if (!vehiculoExistente) {
         const crearRes = await fetch("https://api.garageia.com/api/vehiculos/sin-entrada", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
           body: JSON.stringify({ 
             patente, 
             tipoVehiculo: formData.tipoVehiculo 
@@ -300,6 +308,7 @@ const ModalVehiculo = ({
       const abonoFormData = new FormData();
       
       // Datos del cliente
+      abonoFormData.append("clienteId", cliente._id);
       abonoFormData.append("nombreApellido", cliente?.nombreApellido || "");
       abonoFormData.append("domicilio", cliente?.domicilio || "");
       abonoFormData.append("localidad", cliente?.localidad || "");
@@ -330,8 +339,11 @@ const ModalVehiculo = ({
       if (formData.fotoCedulaAzul) abonoFormData.append("fotoCedulaAzul", formData.fotoCedulaAzul);
 
       // Registrar el abono
-      const abonoRes = await fetch("https://api.garageia.com/api/abonos/registrar-abono", {
+      const abonoRes = await fetch("https://api.garageia.com/api/abonos/agregar-abono", {
         method: "POST",
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
         body: abonoFormData,
       });
 
@@ -346,7 +358,10 @@ const ModalVehiculo = ({
         
         await fetch(`https://api.garageia.com/api/clientes/${cliente._id}/actualizar-precio-abono`, {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
           body: JSON.stringify({ 
             tipoVehiculo: formData.tipoVehiculo,
             precioMensual: precioMensual

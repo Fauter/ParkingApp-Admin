@@ -222,7 +222,6 @@ const AbonoForm = ({ onClose, user }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Submit iniciado con formData:', formData);
     setLoading(true);
 
     try {
@@ -314,17 +313,24 @@ const AbonoForm = ({ onClose, user }) => {
       if (clienteExistente) {
         clienteId = clienteExistente._id;
         
-        // Actualizar precioAbono del cliente si corresponde
-        if (formData.tipoVehiculo && (clienteExistente.precioAbono === '' || precioMensual > (precios[clienteExistente.precioAbono]?.mensual || 0))) {
-          await fetch(`https://api.garageia.com/api/clientes/${clienteExistente._id}/actualizar-precio-abono`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ 
-              tipoVehiculo: formData.tipoVehiculo,
-              precioMensual: precioMensual
-            }),
-          });
-        }
+        // Actualizar cliente existente con los nuevos datos
+        await fetch(`https://api.garageia.com/api/clientes/${clienteExistente._id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            nombreApellido: formData.nombreApellido,
+            dniCuitCuil: formData.dniCuitCuil,
+            domicilio: formData.domicilio,
+            localidad: formData.localidad,
+            telefonoParticular: formData.telefonoParticular,
+            telefonoEmergencia: formData.telefonoEmergencia,
+            domicilioTrabajo: formData.domicilioTrabajo,
+            telefonoTrabajo: formData.telefonoTrabajo,
+            email: formData.email,
+            tipoVehiculo: formData.tipoVehiculo,
+            precioAbono: formData.tipoVehiculo
+          }),
+        });
       } else {
         // Crear nuevo cliente
         const nuevoClienteRes = await fetch('https://api.garageia.com/api/clientes', {
@@ -359,7 +365,7 @@ const AbonoForm = ({ onClose, user }) => {
       }
       abonoFormData.set('patente', formData.patente.toUpperCase());
       abonoFormData.set('tipoVehiculo', formData.tipoVehiculo);
-      abonoFormData.append('cliente', clienteId);
+      abonoFormData.append('cliente', clienteId); // Asegurar que el clienteId se envía
 
       // Archivos fotos si existen
       if (fotoSeguro) abonoFormData.append('fotoSeguro', fotoSeguro);
@@ -455,9 +461,14 @@ const AbonoForm = ({ onClose, user }) => {
 
   return (
     <form onSubmit={handleSubmit} className="abono-form">
-
       <div className="form-section grid-2">
-        <input name="nombreApellido" placeholder="Nombre y Apellido" value={nombreTemporal} onChange={handleNombreChange} required />
+        <input 
+            name="nombreApellido" 
+            placeholder="Nombre y Apellido" 
+            value={nombreTemporal} 
+            onChange={handleNombreChange} 
+            required 
+        />
         <input name="dniCuitCuil" type="dniCuitCuil" placeholder="DNI/CUIT/CUIL" value={formData.dniCuitCuil} onChange={handleChange} required />
         <input name="email" type="email" placeholder="Email" value={formData.email} onChange={handleChange} required />
         <input name="domicilio" placeholder="Domicilio" value={formData.domicilio} onChange={handleChange} required />

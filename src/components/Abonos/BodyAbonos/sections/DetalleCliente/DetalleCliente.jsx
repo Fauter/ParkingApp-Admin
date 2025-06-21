@@ -13,6 +13,11 @@ const DetalleCliente = () => {
   const [modalFotoUrl, setModalFotoUrl] = useState(null);
   const [modalAgregarVisible, setModalAgregarVisible] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [modalRenovarVisible, setModalRenovarVisible] = useState(false);
+  const [precioRenovacion, setPrecioRenovacion] = useState(0);
+  const [metodoPago, setMetodoPago] = useState('Efectivo');
+  const [factura, setFactura] = useState('CC');
+  const [diasRestantes, setDiasRestantes] = useState(0);
 
   const [formData, setFormData] = useState({
     patente: '',
@@ -39,6 +44,103 @@ const DetalleCliente = () => {
     } catch (err) {
       console.error("Error al obtener cliente:", err);
       setCliente(null);
+    }
+  };
+
+  const calcularPrecioProporcional = (precioMensual) => {
+    const hoy = new Date();
+    const ultimoDiaMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+    const totalDiasMes = ultimoDiaMes.getDate();
+    const diaActual = hoy.getDate();
+    const diasRestantesCalculados = totalDiasMes - diaActual + 1;
+    
+    setDiasRestantes(diasRestantesCalculados);
+    
+    // Si es el primer día del mes, cobrar el precio completo
+    if (diaActual === 1) {
+      return precioMensual;
+    }
+    
+    // Calcular precio proporcional
+    return Math.round((precioMensual / totalDiasMes) * diasRestantesCalculados);
+  };
+
+  const calcularPrecioRenovacion = async () => {
+    try {
+      if (!cliente) return;
+
+      // Obtener precios actuales
+      const response = await fetch('https://api.garageia.com/api/precios', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error al obtener precios');
+      }
+      
+      const precios = await response.json();
+      const precioMensual = precios[cliente.precioAbono]?.mensual || 0;
+      const precioProporcional = calcularPrecioProporcional(precioMensual);
+      
+      setPrecioRenovacion(precioProporcional);
+      setModalRenovarVisible(true);
+      
+    } catch (error) {
+      console.error('Error al calcular precio:', error);
+      alert('Error al calcular precio de renovación');
+    }
+  };
+
+  const handleRenovarAbono = async () => {
+    try {
+      // Verificar que el cliente tenga al menos un vehículo/abono
+      if (!cliente.abonos || cliente.abonos.length === 0) {
+        alert('El cliente no tiene vehículos registrados. Agregue un vehículo primero.');
+        setTab('vehiculos'); // Redirigir a la pestaña de vehículos
+        setModalAgregarVisible(true); // Abrir modal para agregar vehículo
+        setModalRenovarVisible(false);
+        return;
+      }
+
+      setLoading(true);
+      
+      const operador = localStorage.getItem('nombreUsuario') || 'Admin';
+      // Tomar la patente del primer vehículo (asegurarse que existe)
+      const patente = cliente.abonos[0].patente;
+      
+      const response = await fetch(`https://api.garageia.com/api/clientes/${id}/renovar-abono`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          precio: precioRenovacion,
+          metodoPago,
+          factura,
+          operador,
+          patente,
+          tipoVehiculo: cliente.precioAbono,
+          diasRestantes
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Error al renovar abono');
+      }
+
+      await fetchCliente();
+      setModalRenovarVisible(false);
+      alert('Abono renovado exitosamente');
+      
+    } catch (error) {
+      console.error('Error al renovar abono:', error);
+      alert(error.message || 'Error al renovar abono');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -232,6 +334,23 @@ const DetalleCliente = () => {
                     <div className={`abonado-status-container ${cliente.abonado ? 'abonado' : 'no-abonado'}`}>
                       <h4>{cliente.abonado ? 'Abonado' : 'Abono Expirado'}</h4>
                       {cliente.abonado && <p className="abonado-fecha">Hasta {formatearFechaCorta(cliente.finAbono)}</p>}
+                      {!cliente.abonado && (
+                        <button 
+                          className="btn-renovar"
+                          onClick={() => {
+                            if (cliente.abonos?.length > 0) {
+                              calcularPrecioRenovacion();
+                            } else {
+                              alert('Agregue al menos un vehículo antes de renovar');
+                              setTab('vehiculos');
+                              setModalAgregarVisible(true);
+                            }
+                          }}
+                          disabled={!cliente.precioAbono}
+                        >
+                          RENOVAR
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -249,7 +368,7 @@ const DetalleCliente = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {cliente.movimientos.map((mov, i) => {
+                        {cliente.movimientos.slice().reverse().map((mov, i) => {
                           const tipo = mov.descripcion?.toLowerCase().includes('pago')
                             ? 'Pago'
                             : mov.tipoVehiculo
@@ -336,6 +455,63 @@ const DetalleCliente = () => {
           loading={loading}
           cliente={cliente}
         />
+      )}
+
+      {modalRenovarVisible && (
+        <div className="modal-renovar-overlay" onClick={() => setModalRenovarVisible(false)}>
+            <div className="modal-renovar-content" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close-btn" onClick={() => setModalRenovarVisible(false)}>
+                &times;
+            </button>
+            
+            <div className="modal-renovar-header">
+                <h3>Renovar Abono</h3>
+            </div>
+            
+            <div className="detalles-renovacion">
+                <p><strong>Tipo de vehículo:</strong> {cliente.precioAbono}</p>
+                <p><strong>Días restantes del mes:</strong> {diasRestantes}</p>
+                <p><strong>Precio a cobrar:</strong> ${precioRenovacion}</p>
+                
+                <div className="form-group">
+                <label>Método de pago:</label>
+                <select 
+                    value={metodoPago} 
+                    onChange={(e) => setMetodoPago(e.target.value)}
+                    className="form-control"
+                    required
+                >
+                    <option value="Efectivo">Efectivo</option>
+                    <option value="Débito">Débito</option>
+                    <option value="Crédito">Crédito</option>
+                    <option value="QR">QR</option>
+                </select>
+                </div>
+                
+                <div className="form-group">
+                <label>Tipo de factura:</label>
+                <select 
+                    value={factura} 
+                    onChange={(e) => setFactura(e.target.value)}
+                    className="form-control"
+                    required
+                >
+                    <option value="CC">CC</option>
+                    <option value="A">A</option>
+                    <option value="Final">Final</option>
+                </select>
+                </div>
+            </div>
+            
+            <button 
+                onClick={handleRenovarAbono}
+                className="btn-confirmar"
+                disabled={loading}
+            >
+                {loading ? 'Procesando...' : 'Confirmar Renovación'}
+            </button>
+            </div>
+        </div>
       )}
 
       {modalFotoUrl && (

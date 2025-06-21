@@ -131,7 +131,53 @@ function Body() {
         (!filtros.fechaDesde || new Date(veh.estadiaActual.entrada) >= fechaDesdeDate) &&
         (!filtros.fechaHasta || new Date(veh.estadiaActual.entrada) < fechaHastaDate)
       );
-    });
+  });
+  const alertasFiltradas = alertas.filter(alerta => {
+    const horaAlerta = alerta.hora ? parseInt(alerta.hora.split(':')[0]) : null;
+    const fechaAlerta = alerta.fecha ? new Date(alerta.fecha) : null;
+    
+    const [desdeHora, hastaHora] = filtros.hora ? filtros.hora.split("-").map(Number) : [null, null];
+    
+    const fechaDesde = filtros.fechaDesde ? new Date(filtros.fechaDesde) : null;
+    const fechaHasta = filtros.fechaHasta ? new Date(new Date(filtros.fechaHasta).setDate(new Date(filtros.fechaHasta).getDate() + 1)) : null;
+    
+    const operadorMatch = !filtros.operador || 
+      (alerta.operador && alerta.operador.toLowerCase().includes(filtros.operador.toLowerCase()));
+    
+    const searchMatch = !searchTerm || 
+      (alerta.tipoDeAlerta && alerta.tipoDeAlerta.toUpperCase().includes(searchTerm.toUpperCase())) || 
+      (alerta.operador && alerta.operador.toUpperCase().includes(searchTerm.toUpperCase()));
+
+    return (
+      searchMatch &&
+      operadorMatch &&
+      (!filtros.hora || (horaAlerta !== null && horaAlerta >= desdeHora && horaAlerta < hastaHora)) &&
+      (!filtros.fecha || (alerta.fecha === filtros.fecha)) &&
+      (!filtros.fechaDesde || (fechaAlerta && fechaAlerta >= fechaDesde)) &&
+      (!filtros.fechaHasta || (fechaAlerta && fechaAlerta < fechaHasta))
+    );
+  });
+  const incidentesFiltrados = incidentes.filter(incidente => {
+    const fechaYHora = incidente.fecha && incidente.hora ? new Date(`${incidente.fecha}T${incidente.hora}:00`) : null;
+    const horaIncidente = fechaYHora ? fechaYHora.getHours() : null;
+    const [desde, hasta] = filtros.hora ? filtros.hora.split("-").map(Number) : [null, null];
+    const fechaDesdeDate = filtros.fechaDesde ? new Date(filtros.fechaDesde) : null;
+    const fechaHastaDate = filtros.fechaHasta
+      ? new Date(new Date(filtros.fechaHasta).setDate(new Date(filtros.fechaHasta).getDate() + 1))
+      : null;
+    const operadorMatch = !filtros.operador || (incidente.operador && incidente.operador.toLowerCase().includes(filtros.operador.toLowerCase()));
+
+    return (
+      (!searchTerm || 
+      (incidente.texto && incidente.texto.toUpperCase().includes(searchTerm.toUpperCase())) ||
+      (incidente.operador && incidente.operador.toUpperCase().includes(searchTerm.toUpperCase()))) &&
+      operadorMatch &&
+      (!filtros.hora || (horaIncidente !== null && horaIncidente >= desde && horaIncidente < hasta)) &&
+      (!filtros.fecha || incidente.fecha === filtros.fecha) &&
+      (!filtros.fechaDesde || (fechaYHora && fechaYHora >= fechaDesdeDate)) &&
+      (!filtros.fechaHasta || (fechaYHora && fechaYHora < fechaHastaDate))
+    );
+  });
 
   const limpiarFiltros = () => {
     setFiltros({
@@ -162,6 +208,12 @@ function Body() {
     }
   };
 
+  const handleAddVehicleClick = () => {
+    if (auditoriaRef.current) {
+      auditoriaRef.current.abrirModalAgregarVehiculo();
+    }
+  };
+
   return (
     <div className="body">
       <div className="filtros-container">
@@ -183,6 +235,7 @@ function Body() {
           setSearchTerm={setSearchTerm}
           onSearchBarVisibilityChange={setIsSearchBarVisible}
           onRegisterAuditClick={handleRegisterAuditClick}
+          onAddVehicleClick={handleAddVehicleClick}
         />
 
         {activeTab === "Caja" && (
@@ -190,8 +243,8 @@ function Body() {
             activeCajaTab={activeCajaTab}
             movimientos={movimientosFiltrados}
             vehiculos={vehiculosFiltrados}
-            alertas={alertas}
-            incidentes={incidentes}
+            alertas={alertasFiltradas}
+            incidentes={incidentesFiltrados}
             limpiarFiltros={limpiarFiltros}
             isSearchBarVisible={isSearchBarVisible} 
           />

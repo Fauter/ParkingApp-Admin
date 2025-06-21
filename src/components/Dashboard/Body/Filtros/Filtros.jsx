@@ -125,9 +125,8 @@ function Filtros({ filtros, setFiltros, activeTab, activeCajaTab, limpiarFiltros
               value={filtros.estado || ""}
             >
               <option value="">Todos</option>
-              <option value="pendiente">Pendiente</option>
-              <option value="completado">Completado</option>
-              <option value="rechazado">Rechazado</option>
+              <option value="OK">OK</option>
+              <option value="Conflicto">Conflicto</option>
             </select>
           </div>
 
@@ -266,7 +265,7 @@ function Filtros({ filtros, setFiltros, activeTab, activeCajaTab, limpiarFiltros
       );
     }
 
-    if (activeCajaTab === "Ingresos") {
+    if (activeCajaTab === "Ingresos" || (activeTab === "Auditoria" && activeCajaTab === "Nueva Auditoría")) {
       return (
         <>
           {renderSelectOperador()}

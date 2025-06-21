@@ -1,5 +1,6 @@
 import React from 'react';
 import './Tabs.css';
+import { FiPlus } from 'react-icons/fi';
 
 const Tabs = ({
   activeTab,
@@ -8,7 +9,8 @@ const Tabs = ({
   searchTerm,
   setSearchTerm,
   onSearchBarVisibilityChange,
-  onRegisterAuditClick
+  onRegisterAuditClick,
+  onAddVehicleClick
 }) => {
   const tabs =
     activeTab === 'Cierre'
@@ -22,8 +24,8 @@ const Tabs = ({
     (activeTab !== 'Cierre') && 
     (activeTab !== 'Auditoria' || activeCajaTab === 'Nueva Auditoría');
 
-  // Mostrar botón de registrar auditoría solo en pestaña Auditoria y en Nueva Auditoría
-  const showRegisterButton = activeTab === 'Auditoria' && activeCajaTab === 'Nueva Auditoría';
+  // Mostrar botones de auditoría solo en pestaña Auditoria y en Nueva Auditoría
+  const showAuditButtons = activeTab === 'Auditoria' && activeCajaTab === 'Nueva Auditoría';
 
   // Notificar al padre cuando cambia la visibilidad
   React.useEffect(() => {
@@ -51,14 +53,23 @@ const Tabs = ({
           ))}
         </div>
 
-        {/* {showRegisterButton && (
-          <button 
-            className="register-audit-button"
-            onClick={onRegisterAuditClick}
-          >
-            Registrar Auditoría
-          </button>
-        )} */}
+        {showAuditButtons && (
+          <div className="audit-buttons-container">
+            <button 
+              className="register-audit-button add-button"
+              onClick={onAddVehicleClick}
+              title="Agregar vehículo temporal"
+            >
+              <FiPlus className="plus-icon" />
+            </button>
+            <button 
+              className="register-audit-button"
+              onClick={onRegisterAuditClick}
+            >
+              Registrar Auditoría
+            </button>
+          </div>
+        )}
       </div>
 
       <div className={`search-container ${!showSearchBar ? 'no-search' : ''}`}>

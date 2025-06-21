@@ -500,3 +500,112 @@
 .boton-plus:hover {
   background-color: #ddd;
 }
+
+/* Estilos para el botón de renovación */
+.btn-renovar {
+  margin-top: 8px;
+  padding: 5px 10px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-renovar:hover {
+  background-color: #218838;
+}
+
+/* Estilos para el modal de renovación */
+.modal-renovar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+}
+
+.modal-renovar-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+  position: relative;
+}
+
+.modal-renovar-header {
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.modal-renovar-header h3 {
+  margin: 0;
+  color: #343a40;
+}
+
+.detalles-renovacion {
+  margin-bottom: 20px;
+}
+
+.detalles-renovacion p {
+  margin: 8px 0;
+}
+
+.form-group {
+  margin: 15px 0;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 600;
+}
+
+.form-control {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+}
+
+.btn-confirmar {
+  width: 100%;
+  padding: 10px;
+  background-color:#28a745db;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-confirmar:hover {
+  background-color: #218838;
+}
+
+.btn-confirmar:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #6c757d;
+}

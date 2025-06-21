@@ -150,8 +150,11 @@ const Caja = ({
   const renderTablaAlertas = () => {
     const term = searchTerm.toUpperCase();
     const filtradas = alertas
-      .filter(a => a.tipoDeAlerta?.toUpperCase().includes(term) || a.operador?.toUpperCase().includes(term))
-      .reverse(); // Mostramos los últimos primero
+      .filter(a => 
+        a.tipoDeAlerta?.toUpperCase().includes(term) || 
+        a.operador?.toUpperCase().includes(term)
+      )
+      .reverse();
     const paginadas = paginar(filtradas, paginaActual);
     const total = totalPaginas(filtradas);
 
@@ -173,8 +176,8 @@ const Caja = ({
                 return (
                   <tr key={alerta._id}>
                     <td>{alerta.tipoDeAlerta || '---'}</td>
-                    <td>{fechaYHora?.toLocaleDateString() || '---'}</td>
-                    <td>{fechaYHora?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || '---'}</td>
+                    <td>{alerta.fecha || '---'}</td>
+                    <td>{alerta.hora || '---'}</td>
                     <td>{alerta.operador || '---'}</td>
                   </tr>
                 );
@@ -191,8 +194,11 @@ const Caja = ({
   const renderTablaIncidentes = () => {
     const term = searchTerm.toUpperCase();
     const filtrados = incidentes
-      .filter(i => i.descripcion?.toUpperCase().includes(term) || i.operador?.toUpperCase().includes(term))
-      .reverse(); // Mostramos los últimos primero
+      .filter(i => 
+        i.texto?.toUpperCase().includes(term) || 
+        i.operador?.toUpperCase().includes(term)
+      )
+      .reverse();
     const paginados = paginar(filtrados, paginaActual);
     const total = totalPaginas(filtrados);
 
