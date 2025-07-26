@@ -65,7 +65,7 @@ const AbonoForm = ({ onClose, user }) => {
 
   // Cargar tarifas de tipo "abono" desde API
   useEffect(() => {
-    fetch('https://api.garageia.com/api/tarifas')
+    fetch('http://localhost:5000/api/tarifas')
       .then(res => res.json())
       .then(data => {
         const abonos = data.filter(tarifa => tarifa.tipo === 'abono');
@@ -78,12 +78,12 @@ const AbonoForm = ({ onClose, user }) => {
 
   // Cargar tipos de vehículo
   useEffect(() => {
-    fetch('https://api.garageia.com/api/tipos-vehiculo')
+    fetch('http://localhost:5000/api/tipos-vehiculo')
       .then(res => res.json())
       .then(data => setTiposVehiculo(data))
       .catch(err => console.error('Error al cargar tipos de vehículo', err));
 
-    fetch('https://api.garageia.com/api/precios')
+    fetch('http://localhost:5000/api/precios')
       .then(res => res.json())
       .then(data => setPrecios(data))
       .catch(err => console.error('Error al cargar precios', err));
@@ -91,7 +91,7 @@ const AbonoForm = ({ onClose, user }) => {
 
   // Cargar clientes
   useEffect(() => {
-    fetch('https://api.garageia.com/api/clientes')
+    fetch('http://localhost:5000/api/clientes')
       .then(res => res.json())
       .then(data => setClientes(data))
       .catch(err => console.error('Error al cargar clientes', err));
@@ -111,7 +111,7 @@ const AbonoForm = ({ onClose, user }) => {
 
   const buscarClientePorNombre = async (nombre) => {
     try {
-      const res = await fetch(`https://api.garageia.com/api/clientes/nombre/${encodeURIComponent(nombre)}`);
+      const res = await fetch(`http://localhost:5000/api/clientes/nombre/${encodeURIComponent(nombre)}`);
       if (res.ok) {
         const cliente = await res.json();
         if (cliente) {
@@ -246,7 +246,7 @@ const AbonoForm = ({ onClose, user }) => {
       const precioMensual = precios[tipoVehiculo]?.mensual || 0;
 
       // Paso 2: Buscar vehículo por patente
-      const vehiculoRes = await fetch(`https://api.garageia.com/api/vehiculos/${encodeURIComponent(formData.patente)}`);
+      const vehiculoRes = await fetch(`http://localhost:5000/api/vehiculos/${encodeURIComponent(formData.patente)}`);
       let vehiculo = null;
       let vehiculoData = null;
 
@@ -258,7 +258,7 @@ const AbonoForm = ({ onClose, user }) => {
 
       if (!vehiculoRes.ok || (vehiculoData && vehiculoData.msg === "Vehículo no encontrado")) {
         // Crear vehículo si no existe
-        const nuevoVehiculoRes = await fetch('https://api.garageia.com/api/vehiculos/sin-entrada', {
+        const nuevoVehiculoRes = await fetch('http://localhost:5000/api/vehiculos/sin-entrada', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -281,7 +281,7 @@ const AbonoForm = ({ onClose, user }) => {
         if (!nuevoVehiculoJson || !nuevoVehiculoJson._id) {
           // Retry para ver si ya está creado
           await new Promise(resolve => setTimeout(resolve, 500));
-          const retryVehiculoRes = await fetch(`https://api.garageia.com/api/vehiculos/${encodeURIComponent(formData.patente)}`);
+          const retryVehiculoRes = await fetch(`http://localhost:5000/api/vehiculos/${encodeURIComponent(formData.patente)}`);
           if (!retryVehiculoRes.ok) {
             alert('❌ El vehículo no se creó correctamente y no se encontró en el retry. No se continuará con el proceso.');
             setLoading(false);
@@ -302,7 +302,7 @@ const AbonoForm = ({ onClose, user }) => {
       }
 
       // Paso 3: Buscar cliente
-      const clientesRes = await fetch('https://api.garageia.com/api/clientes');
+      const clientesRes = await fetch('http://localhost:5000/api/clientes');
       if (!clientesRes.ok) throw new Error('Error al obtener clientes');
       const clientes = await clientesRes.json();
       const clienteExistente = clientes.find(
@@ -314,7 +314,7 @@ const AbonoForm = ({ onClose, user }) => {
         clienteId = clienteExistente._id;
         
         // Actualizar cliente existente con los nuevos datos
-        await fetch(`https://api.garageia.com/api/clientes/${clienteExistente._id}`, {
+        await fetch(`http://localhost:5000/api/clientes/${clienteExistente._id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ 
@@ -333,7 +333,7 @@ const AbonoForm = ({ onClose, user }) => {
         });
       } else {
         // Crear nuevo cliente
-        const nuevoClienteRes = await fetch('https://api.garageia.com/api/clientes', {
+        const nuevoClienteRes = await fetch('http://localhost:5000/api/clientes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -374,7 +374,7 @@ const AbonoForm = ({ onClose, user }) => {
       if (fotoCedulaAzul) abonoFormData.append('fotoCedulaAzul', fotoCedulaAzul);
 
       // Mandar el abono
-      const abonoRes = await fetch('https://api.garageia.com/api/abonos/registrar-abono', {
+      const abonoRes = await fetch('http://localhost:5000/api/abonos/registrar-abono', {
         method: 'POST',
         body: abonoFormData,
       });
@@ -385,7 +385,7 @@ const AbonoForm = ({ onClose, user }) => {
       const precioCalculadoBackend = abonoJson.abono.precio;
 
       // Registrar movimiento
-      const movimientoRes = await fetch('https://api.garageia.com/api/movimientos/registrar', {
+      const movimientoRes = await fetch('http://localhost:5000/api/movimientos/registrar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -411,7 +411,7 @@ const AbonoForm = ({ onClose, user }) => {
         operador: user.nombre,
         patente: formData.patente,
       };
-      const movimientoClienteRes = await fetch('https://api.garageia.com/api/movimientosclientes', {
+      const movimientoClienteRes = await fetch('http://localhost:5000/api/movimientosclientes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(movimientoClientePayload),

@@ -9,14 +9,14 @@ const TicketsAbiertos = ({ viewMode }) => {
 
   useEffect(() => {
     const fetchData = () => {
-      fetch('https://api.garageia.com/api/abonos')
+      fetch('http://localhost:5000/api/abonos')
         .then((res) => res.json())
         .then((data) =>
           setAbonos(data.map((abono) => ({ ...abono, tipoTicket: 'abono' })))
         )
         .catch((err) => console.error('Error al obtener abonos:', err));
 
-      fetch('https://api.garageia.com/api/turnos')
+      fetch('http://localhost:5000/api/turnos')
         .then((res) => res.json())
         .then((data) =>
           setTurnos(data.map((turno) => ({ ...turno, tipoTicket: 'turno' })))

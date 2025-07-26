@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Tabs from '../Tabs/Tabs';
 import './Caja.css';
 
@@ -11,14 +11,59 @@ const Caja = ({
   incidentes = [],
   limpiarFiltros,
   activeCajaTab = 'Caja',
-  isSearchBarVisible = true 
+  isSearchBarVisible = true
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [paginaActual, setPaginaActual] = useState(1);
+  const [modalFotoUrl, setModalFotoUrl] = useState(null);
+  const [estadiaCache, setEstadiaCache] = useState({});
+  const fetchingTickets = useRef({});
 
   useEffect(() => {
     setPaginaActual(1);
   }, [searchTerm, activeCajaTab]);
+
+  const fetchEstadiaByTicket = async (ticket) => {
+    if (!ticket || fetchingTickets.current[ticket] || estadiaCache[ticket]) return;
+
+    fetchingTickets.current[ticket] = true;
+    setEstadiaCache((prev) => ({
+      ...prev,
+      [ticket]: { data: null, loading: true, error: null }
+    }));
+
+    try {
+      const res = await fetch(`http://localhost:5000/api/vehiculos/ticket-admin/${ticket}`);
+      if (!res.ok) throw new Error(`Error al obtener estadía ticket ${ticket}`);
+      const json = await res.json();
+
+      setEstadiaCache((prev) => ({
+        ...prev,
+        [ticket]: { data: json.estadia, loading: false, error: null }
+      }));
+    } catch (error) {
+      setEstadiaCache((prev) => ({
+        ...prev,
+        [ticket]: { data: null, loading: false, error: error.message }
+      }));
+    } finally {
+      fetchingTickets.current[ticket] = false;
+    }
+  };
+
+  const abrirFoto = (url) => {
+    if (!url) return;
+
+    // Si la url empieza con '/', la concateno con host backend
+    const baseBackendUrl = 'http://localhost:5000'; // Cambiar según tu entorno
+    const urlCompleta = url.startsWith('/') ? baseBackendUrl + url : url;
+
+    // Para evitar caché
+    const urlConTimestamp = `${urlCompleta}?t=${Date.now()}`;
+    setModalFotoUrl(urlConTimestamp);
+  };
+
+  const cerrarModal = () => setModalFotoUrl(null);
 
   const paginar = (array, pagina) => {
     const startIndex = (pagina - 1) * ITEMS_POR_PAGINA;
@@ -26,13 +71,6 @@ const Caja = ({
   };
 
   const totalPaginas = (array) => Math.ceil(array.length / ITEMS_POR_PAGINA);
-
-  const handleTabChange = (tab) => {
-    setSearchTerm('');
-    limpiarFiltros?.();
-    setActiveTab(tab);
-    setPaginaActual(1);
-  };
 
   const renderPaginado = (total) => (
     <div className="paginado">
@@ -47,6 +85,18 @@ const Caja = ({
       <tr key={`empty-${i}`}>{Array.from({ length: columnas }, (_, j) => <td key={j}>---</td>)}</tr>
     ));
 
+  useEffect(() => {
+    if (activeCajaTab !== 'Caja') return;
+
+    const term = searchTerm.toUpperCase();
+    const filtrados = movimientos.filter(mov => mov.patente?.toUpperCase().includes(term));
+    const paginados = paginar(filtrados, paginaActual);
+
+    paginados.forEach(mov => {
+      if (mov.ticket != null) fetchEstadiaByTicket(mov.ticket);
+    });
+  }, [activeCajaTab, movimientos, paginaActual, searchTerm]);
+
   const renderTablaCaja = () => {
     const term = searchTerm.toUpperCase();
     const filtrados = movimientos.filter(mov => mov.patente?.toUpperCase().includes(term));
@@ -56,39 +106,67 @@ const Caja = ({
     return (
       <div className="table-container">
         <div className="table-wrapper">
-          <table className="transaction-table">
+          <table className="transaction-table caja-table">
             <thead>
               <tr>
                 <th>Patente</th>
                 <th>Fecha</th>
-                <th>Hora</th>
+                <th>Entrada</th>
+                <th>Salida</th>
                 <th>Descripción</th>
                 <th>Operador</th>
                 <th>Tipo de Vehículo</th>
                 <th>Método de Pago</th>
                 <th>Factura</th>
                 <th>Monto</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
               {paginados.map(movimiento => {
                 const fecha = movimiento.fecha ? new Date(movimiento.fecha) : null;
                 const montoSeguro = typeof movimiento.monto === 'number' ? movimiento.monto : 0;
+                const patenteKey = movimiento.patente ? movimiento.patente.toUpperCase() : null;
+
+                const estadiaInfo = movimiento.ticket ? estadiaCache[movimiento.ticket] : null;
+                const estadia = estadiaInfo?.data || null;
+                const loading = estadiaInfo?.loading || false;
+                const error = estadiaInfo?.error || null;
+
+                const entrada = estadia?.entrada ? new Date(estadia.entrada) : null;
+                const salida = estadia?.salida ? new Date(estadia.salida) : null;
+                const fotoUrl = estadia?.fotoUrl;
+
                 return (
                   <tr key={movimiento._id}>
-                    <td>{movimiento.patente?.toUpperCase() || '---'}</td>
+                    <td>{patenteKey || '---'}</td>
                     <td>{fecha?.toLocaleDateString() || '---'}</td>
-                    <td>{fecha?.toLocaleTimeString() || '---'}</td>
+                    <td>{loading ? 'Cargando...' : error ? 'Error' : (entrada?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || '---')}</td>
+                    <td>{loading ? 'Cargando...' : error ? 'Error' : (salida?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || '---')}</td>
                     <td>{movimiento.descripcion || '---'}</td>
                     <td>{movimiento.operador || '---'}</td>
                     <td>{movimiento.tipoVehiculo ? movimiento.tipoVehiculo[0].toUpperCase() + movimiento.tipoVehiculo.slice(1) : '---'}</td>
                     <td>{movimiento.metodoPago || '---'}</td>
                     <td>{movimiento.factura || '---'}</td>
                     <td>{montoSeguro === 0 ? '---' : `$${montoSeguro.toLocaleString('es-AR')}`}</td>
+                    <td>
+                      {loading && '...'}
+                      {!loading && fotoUrl && (
+                        <button 
+                          onClick={() => abrirFoto(fotoUrl)} 
+                          title="Ver foto"
+                          className="btn-ver-foto"
+                        >
+                          Foto
+                        </button>
+                      )}
+                      {!loading && !fotoUrl && '---'}
+                      {!loading && error && '⚠️'}
+                    </td>
                   </tr>
                 );
               })}
-              {renderFilasVacias(ITEMS_POR_PAGINA - paginados.length, 9)}
+              {renderFilasVacias(ITEMS_POR_PAGINA - paginados.length, 11)}
             </tbody>
           </table>
           {renderPaginado(total)}
@@ -102,14 +180,14 @@ const Caja = ({
     const filtrados = vehiculos
       .filter(veh => veh.estadiaActual?.entrada && !veh.estadiaActual?.salida)
       .filter(veh => veh.patente?.toUpperCase().includes(term))
-      .reverse(); // Mostramos los últimos primero
+      .reverse();
     const paginados = paginar(filtrados, paginaActual);
     const total = totalPaginas(filtrados);
 
     return (
       <div className="table-container">
         <div className="table-wrapper">
-          <table className="transaction-table">
+          <table className="transaction-table ingresos-table">
             <thead>
               <tr>
                 <th>Patente</th>
@@ -118,6 +196,7 @@ const Caja = ({
                 <th>Operador</th>
                 <th>Tipo de Vehículo</th>
                 <th>Abonado/Turno</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -135,10 +214,21 @@ const Caja = ({
                     <td>{veh.estadiaActual.operadorNombre || '---'}</td>
                     <td>{veh.tipoVehiculo ? veh.tipoVehiculo[0].toUpperCase() + veh.tipoVehiculo.slice(1) : '---'}</td>
                     <td>{abonadoTurnoTexto}</td>
+                    <td>
+                      {veh.estadiaActual?.fotoUrl && (
+                        <button 
+                          onClick={() => abrirFoto(veh.estadiaActual.fotoUrl)} 
+                          title="Ver foto"
+                          className="btn-ver-foto"
+                        >
+                          Foto
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 );
               })}
-              {renderFilasVacias(ITEMS_POR_PAGINA - paginados.length, 6)}
+              {renderFilasVacias(ITEMS_POR_PAGINA - paginados.length, 7)}
             </tbody>
           </table>
           {renderPaginado(total)}
@@ -150,8 +240,8 @@ const Caja = ({
   const renderTablaAlertas = () => {
     const term = searchTerm.toUpperCase();
     const filtradas = alertas
-      .filter(a => 
-        a.tipoDeAlerta?.toUpperCase().includes(term) || 
+      .filter(a =>
+        a.tipoDeAlerta?.toUpperCase().includes(term) ||
         a.operador?.toUpperCase().includes(term)
       )
       .reverse();
@@ -171,17 +261,14 @@ const Caja = ({
               </tr>
             </thead>
             <tbody>
-              {paginadas.map(alerta => {
-                const fechaYHora = alerta.fecha && alerta.hora ? new Date(`${alerta.fecha}T${alerta.hora}:00`) : null;
-                return (
-                  <tr key={alerta._id}>
-                    <td>{alerta.tipoDeAlerta || '---'}</td>
-                    <td>{alerta.fecha || '---'}</td>
-                    <td>{alerta.hora || '---'}</td>
-                    <td>{alerta.operador || '---'}</td>
-                  </tr>
-                );
-              })}
+              {paginadas.map(alerta => (
+                <tr key={alerta._id}>
+                  <td>{alerta.tipoDeAlerta || '---'}</td>
+                  <td>{alerta.fecha || '---'}</td>
+                  <td>{alerta.hora || '---'}</td>
+                  <td>{alerta.operador || '---'}</td>
+                </tr>
+              ))}
               {renderFilasVacias(ITEMS_POR_PAGINA - paginadas.length, 4)}
             </tbody>
           </table>
@@ -194,8 +281,8 @@ const Caja = ({
   const renderTablaIncidentes = () => {
     const term = searchTerm.toUpperCase();
     const filtrados = incidentes
-      .filter(i => 
-        i.texto?.toUpperCase().includes(term) || 
+      .filter(i =>
+        i.texto?.toUpperCase().includes(term) ||
         i.operador?.toUpperCase().includes(term)
       )
       .reverse();
@@ -216,7 +303,7 @@ const Caja = ({
             </thead>
             <tbody>
               {paginados.map(inc => {
-                const fechaYHora = inc.fecha && inc.hora ? new Date(`${inc.fecha}T${inc.hora}:00`) : null;
+                const fechaYHora = inc.fecha && inc.hora ? new Date(`${inc.fecha}T${inc.hora}`) : null;
                 return (
                   <tr key={inc._id}>
                     <td>{inc.texto || '---'}</td>
@@ -237,22 +324,35 @@ const Caja = ({
 
   const renderContent = () => {
     switch (activeCajaTab) {
-      case 'Caja':
-        return renderTablaCaja();
-      case 'Ingresos':
-        return renderTablaIngresos();
-      case 'Alertas':
-        return renderTablaAlertas();
-      case 'Incidentes':
-        return renderTablaIncidentes();
-      default:
-        return <p style={{ padding: '1rem' }}>Contenido para la pestaña "{activeCajaTab}" próximamente...</p>;
+      case 'Caja': return renderTablaCaja();
+      case 'Ingresos': return renderTablaIngresos();
+      case 'Alertas': return renderTablaAlertas();
+      case 'Incidentes': return renderTablaIncidentes();
+      default: return <p style={{ padding: '1rem' }}>Contenido para la pestaña "{activeCajaTab}" próximamente...</p>;
     }
   };
 
   return (
     <div className="caja">
       {renderContent()}
+      
+      {modalFotoUrl && (
+        <div className="modal-foto-overlay" onClick={cerrarModal}>
+          <div className="modal-foto-content" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close-btn" onClick={cerrarModal}>&times;</button>
+            <img 
+              src={modalFotoUrl} 
+              alt="Foto del vehículo" 
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = '';
+                alert('No se pudo cargar la imagen. Por favor intente nuevamente.');
+                cerrarModal();
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

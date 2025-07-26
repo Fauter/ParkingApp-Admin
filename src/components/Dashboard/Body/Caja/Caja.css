@@ -22,7 +22,7 @@
 
 .transaction-table th,
 .transaction-table td {
-  padding: 12px;
+  padding: 13px 5px;
   border: 1px #ddd solid;
   text-align: left;
   font-size: 13px;
@@ -30,6 +30,7 @@
   min-width: 10px;
   max-width: 76px;
 }
+
 
 .transaction-table th {
   font-weight: bold;
@@ -349,3 +350,86 @@
   color: #854d0e;
   background-color: #fef9c3;
 }
+
+.modal-foto-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-foto-content {
+  position: relative;
+  max-width: 90%;
+  max-height: 90%;
+}
+
+.modal-foto-content img {
+  max-width: 100%;
+  max-height: 80vh;
+  border: 3px solid white;
+  border-radius: 5px;
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: -40px;
+  right: 0;
+  background: #ff4444;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.btn-ver-foto {
+  background: #4CAF50;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-ver-foto:hover {
+  background: #45a049;
+}
+/* SOLUCIÓN ALTERNATIVA SIN MODIFICAR JSX */
+/* Selecciona tablas que tienen exactamente 11 columnas (Caja) */
+.table-wrapper:has(.transaction-table th:nth-child(11):last-child) td:last-child,
+/* Selecciona tablas que tienen exactamente 7 columnas (Ingresos) */
+.table-wrapper:has(.transaction-table th:nth-child(7):last-child) td:last-child {
+  text-align: center;
+  vertical-align: middle;
+  padding: 8px !important;
+}
+
+.table-wrapper:has(.transaction-table th:nth-child(11):last-child) .btn-ver-foto,
+.table-wrapper:has(.transaction-table th:nth-child(7):last-child) .btn-ver-foto {
+  display: inline-block;
+  margin: 0 auto;
+}
+
+/* Restaurar estilos para otras tablas */
+.transaction-table td:last-child {
+  text-align: left;
+  padding: 13px 5px !important;
+}
+
+.transaction-table td:last-child .btn-ver-foto {
+  display: inline;
+  margin: 0;
+}
+

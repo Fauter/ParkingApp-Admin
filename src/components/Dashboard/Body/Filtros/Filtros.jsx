@@ -9,7 +9,7 @@ function Filtros({ filtros, setFiltros, activeTab, activeCajaTab, limpiarFiltros
   useEffect(() => {
     const fetchTiposVehiculo = async () => {
       try {
-        const response = await fetch("https://api.garageia.com/api/tipos-vehiculo");
+        const response = await fetch("http://localhost:5000/api/tipos-vehiculo");
         const data = await response.json();
         setTiposVehiculo(data);
       } catch (error) {
@@ -19,7 +19,7 @@ function Filtros({ filtros, setFiltros, activeTab, activeCajaTab, limpiarFiltros
 
     const fetchTiposTarifa = async () => {
       try {
-        const response = await fetch("https://api.garageia.com/api/tarifas");
+        const response = await fetch("http://localhost:5000/api/tarifas");
         const data = await response.json();
         const tiposUnicos = [...new Set(data.map((tarifa) => tarifa.tipo))];
         setTiposTarifa(tiposUnicos);
@@ -30,7 +30,7 @@ function Filtros({ filtros, setFiltros, activeTab, activeCajaTab, limpiarFiltros
 
     const fetchOperadores = async () => {
       try {
-        const response = await fetch("https://api.garageia.com/api/auth");
+        const response = await fetch("http://localhost:5000/api/auth");
         const data = await response.json();
         const nombresOperadores = [...new Set(data.map(user => user.nombre))];
         setOperadores(nombresOperadores);
