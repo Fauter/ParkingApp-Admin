@@ -1,0 +1,286 @@
+:root {
+  --bg: #f5f7fb;
+  --panel: #ffffff;
+  --text: #0d161c;
+  --muted: #6b778c;
+  --line: #e3e7ee;
+  --accent: #2563eb;
+  --accent-2: #1d4ed8;
+  --accent-3: #1e40af;
+  --danger: #e74c3c;
+  --ok-bg: #dcfce7;
+  --ok: #166534;
+  --warn-bg: #fef9c3;
+  --warn: #854d0e;
+  --err-bg: #fee2e2;
+  --err: #991b1b;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+
+.auditor-wrap {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Plus Jakarta Sans", "Noto Sans", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial;
+}
+
+/* Main content spacing (dejamos el header a cargo de Header.css) */
+.aud-main {
+  padding: 18px 16px 40px;
+}
+
+.aud-topbar {
+  display: grid;
+  gap: 12px;
+  margin: 12px auto;
+  max-width: 1200px;
+}
+
+/* Filters */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px;
+}
+
+.filter-input, .filter-clear {
+  height: 36px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text);
+  font-size: 14px;
+}
+.filter-input:focus { outline: none; border-color: #c9d6ff; }
+.filter-clear {
+  background: #f3f6fb;
+  cursor: pointer;
+  font-weight: 600;
+}
+.filter-clear:hover { background: #e8eefb; }
+
+/* Toolbar (Nueva Auditoría) */
+.audit-toolbar {
+  margin: 10px auto 12px;
+  max-width: 1200px;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.toolbar-left { display: flex; gap: 10px; align-items: center; }
+.toolbar-right { display: flex; gap: 10px; align-items: center; }
+
+.register-audit-button {
+  padding: 8px 15px;
+  background-color: #3498db;
+  color: white;
+  border: 1px solid #287bb2;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.register-audit-button:hover { background-color: #2980b9; }
+.register-audit-button.add-button {
+  padding: 8px;
+  border-radius: 10px;
+  width: 36px;
+  height: 36px;
+  justify-content: center;
+  align-items: center;
+}
+.plus-icon { font-size: 16px; }
+
+/* Tables */
+.table-container {
+  overflow: hidden;
+  width: 99%;
+  min-height: 400px;
+  margin: 0 auto;
+  max-width: 1200px;
+}
+
+.table-wrapper { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+
+.transaction-table {
+  width: 100%;
+  background-color: #f1f6f8;
+  border-collapse: collapse;
+}
+
+.transaction-table th,
+.transaction-table td {
+  padding: 13px 8px;
+  border: 1px #ddd solid;
+  text-align: left;
+  font-size: 13px;
+  color: var(--text);
+  min-width: 10px;
+  max-width: 220px;
+}
+
+.transaction-table th {
+  font-weight: 700;
+  background-color: #e5eef3;
+}
+
+.transaction-table tr:nth-child(even) { background-color: #eaf3f7; }
+
+/* States */
+.estado-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.estado-ok { color: var(--ok); background-color: var(--ok-bg); }
+.estado-conflicto { color: var(--err); background-color: var(--err-bg); }
+.estado-pendiente { color: var(--warn); background-color: var(--warn-bg); }
+
+/* Vehículo temporal + checked */
+.vehiculo-temporal { background-color: #fff9e6; }
+.vehiculo-temporal:hover { background-color: #fff2cc; }
+.checked { background-color: #e6f7ff !important; }
+.checked:hover { background-color: #d0ebff; }
+
+/* Pagination */
+.paginado {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: .8rem;
+  padding: .8rem;
+  border-top: 1px solid #ccc;
+  background-color: #f8f9fa;
+  font-weight: bold;
+  color: #333;
+}
+.paginado button {
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background-color: #dce3e7;
+  color: var(--text);
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+}
+.paginado button:hover:not(:disabled) { background-color: #c0cbd1; }
+.paginado button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Checkbox */
+.td-checkbox { text-align: center; vertical-align: middle; padding: 8px !important; }
+.th-checkbox { text-align: center; vertical-align: middle; padding: 8px !important; }
+
+.checkbox-container {
+  position: relative;
+  padding-left: 25px;
+  cursor: pointer;
+  user-select: none;
+  margin: 0 auto;
+  width: 20px; height: 20px;
+}
+.checkbox-container input {
+  position: absolute; opacity: 0; cursor: pointer; height: 0; width: 0;
+}
+.checkmark {
+  position: absolute; top: 0; left: 0;
+  height: 18px; width: 18px;
+  background-color: #f1f6f8;
+  border: 1px solid #c0cbd1;
+  border-radius: 3px;
+  transition: all 0.2s ease;
+}
+.checkbox-container:hover input ~ .checkmark { background-color: #e5eef3; }
+.checkbox-container input:checked ~ .checkmark { background-color: var(--accent); border-color: var(--accent); }
+.checkmark:after { content: ""; position: absolute; display: none; }
+.checkbox-container input:checked ~ .checkmark:after { display: block; }
+.checkbox-container .checkmark:after {
+  left: 6px; top: 2px; width: 5px; height: 10px;
+  border: solid white; border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* Links */
+.enlace-auditoria {
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: 600;
+  transition: color 0.2s ease, transform 0.02s ease-in-out;
+  display: inline-block;
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.enlace-auditoria:hover { color: var(--accent-2); text-decoration: none; }
+.enlace-auditoria:active { color: var(--accent-3); transform: translateY(1px); }
+.celda-archivo { max-width: 250px; }
+
+/* Modal */
+.modal-backdrop-audit {
+  position: fixed; inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex; justify-content: center; align-items: center;
+  z-index: 1000;
+}
+.modal-contenedor-audit {
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 18px rgba(0,0,0,0.25);
+  width: 480px; max-width: 92%;
+  overflow: hidden;
+}
+.modal-header-audit {
+  background-color: #2c3e50;
+  color: white;
+  padding: 14px 16px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.modal-header-audit h2 { margin: 0; font-size: 1.1rem; }
+.modal-cerrar-audit {
+  background: none; border: none; color: white;
+  font-size: 1.2rem; cursor: pointer;
+}
+.modal-body-audit { padding: 18px; }
+.form-group-audit { margin-bottom: 12px; }
+.form-group-audit label { display: block; margin-bottom: 6px; font-weight: 600; }
+.modal-input-audit {
+  width: 100%; padding: 8px 10px; border: 1px solid #ddd;
+  border-radius: 8px; font-size: 14px;
+  background: #fff;
+}
+.modal-botones-audit {
+  display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px;
+}
+.boton-cancelar-audit, .boton-confirmar-audit {
+  padding: 8px 15px; border: none; border-radius: 8px;
+  cursor: pointer; font-weight: 600;
+}
+.boton-cancelar-audit { background-color: var(--danger); color: white; }
+.boton-confirmar-audit { background-color: #2ecc71; color: white; }
+
+/* Responsive tweaks */
+@media (max-width: 840px) {
+  .filters { gap: 6px; }
+  .filter-input { flex: 1 1 auto; min-width: 140px; }
+}
+
+@media (max-width: 640px) {
+  .audit-toolbar { flex-direction: column; align-items: stretch; gap: 8px; }
+  .toolbar-left, .toolbar-right { justify-content: space-between; }
+  .register-audit-button { width: 100%; justify-content: center; }
+}

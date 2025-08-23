@@ -11,7 +11,7 @@ const TurnoForm = ({ onClose, user }) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/tarifas/')
+    fetch('https://api.garageia.com/api/tarifas/')
       .then(res => res.json())
       .then(data => {
         const turnosFiltrados = data.filter(t => t.tipo === 'turno');
@@ -46,7 +46,7 @@ const TurnoForm = ({ onClose, user }) => {
 
     try {
       // Obtener tipoVehiculo
-      const resVehiculo = await fetch(`http://localhost:5000/api/vehiculos/${patente}`);
+      const resVehiculo = await fetch(`https://api.garageia.com/api/vehiculos/${patente}`);
       if (!resVehiculo.ok) {
         setError('Vehículo no encontrado');
         return;
@@ -65,7 +65,7 @@ const TurnoForm = ({ onClose, user }) => {
       fin.setMinutes(fin.getMinutes() + ((turnoData.dias || 0) * 1440) + ((turnoData.horas || 0) * 60) + (turnoData.minutos || 0));
 
       // Obtener precio
-      const resPrecio = await fetch('http://localhost:5000/api/precios/');
+      const resPrecio = await fetch('https://api.garageia.com/api/precios/');
       const precios = await resPrecio.json();
       const nombreTarifa = turnoData.nombre.toLowerCase().trim();
       const precioVehiculo = precios[tipoVehiculo]?.[nombreTarifa];
@@ -88,7 +88,7 @@ const TurnoForm = ({ onClose, user }) => {
         nombreTarifa: turnoData.nombre
       };
 
-      const resTurno = await fetch('http://localhost:5000/api/turnos', {
+      const resTurno = await fetch('https://api.garageia.com/api/turnos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payloadTurno),
@@ -112,7 +112,7 @@ const TurnoForm = ({ onClose, user }) => {
         tipoTarifa: 'turno'  // Cambiado de 'abono' a 'turno'
       };
 
-      const movimientoRes = await fetch('http://localhost:5000/api/movimientos/registrar', {
+      const movimientoRes = await fetch('https://api.garageia.com/api/movimientos/registrar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payloadMovimiento),

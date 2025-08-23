@@ -108,11 +108,16 @@ const TabsConfig = ({ activeTab, onTabChange }) => {
               <div className="modal-simulador-field">
                 <label>Tipo de Vehículo</label>
                 <select name="tipoVehiculo" value={form.tipoVehiculo} onChange={handleChange}>
-                  {tiposVehiculo.map((tv) => (
-                    <option key={tv.toLowerCase()} value={tv.toLowerCase()}>
-                      {tv.charAt(0).toUpperCase() + tv.slice(1)}
-                    </option>
-                  ))}
+                  {tiposVehiculo.map((tv) => {
+                    const nombre = typeof tv === "string" 
+                      ? tv 
+                      : tv?.nombre || "";
+                    return (
+                      <option key={nombre.toLowerCase()} value={nombre.toLowerCase()}>
+                        {nombre.charAt(0).toUpperCase() + nombre.slice(1)}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 

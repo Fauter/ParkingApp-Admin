@@ -1,8 +1,10 @@
+// src/App.jsx
 import './App.css';
-import React, { useEffect, useState } from 'react';
-import { Routes, Route, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState, useMemo } from 'react';
+import { Routes, Route, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import Login from './components/Login/Login.jsx';
 import Dashboard from './components/Dashboard/Dashboard.jsx';
+import Auditor from './components/Auditor/Auditor.jsx';
 
 function decodeJWT(token) {
   if (!token) return null;
@@ -23,17 +25,66 @@ function decodeJWT(token) {
   }
 }
 
+function getCurrentRole() {
+  const token = localStorage.getItem('token');
+  const decoded = decodeJWT(token);
+  return (decoded && decoded.role) ? decoded.role : 'unknown';
+}
+
+function hasHostPermission(hostname, role) {
+  if (!role) return false;
+
+  if (hostname === 'admin.garageia.com') {
+    return role === 'admin' || role === 'superAdmin' || role === 'auditor';
+  }
+  if (hostname === 'operador.garageia.com') {
+    return role === 'operador' || role === 'admin' || role === 'superAdmin' || role === 'auditor';
+  }
+  return true; // localhost/dev
+}
+
+function homePathByRole(role) {
+  if (role === 'auditor') return '/auditor';
+  return '/';
+}
+
+/** ✅ helper: match exact segmento (/auditor o /auditor/...) */
+function isAtRoute(pathname, base) {
+  return pathname === base || pathname.startsWith(base + '/');
+}
+
+function RequireAuth({ children }) {
+  const token = localStorage.getItem('token');
+  const decoded = decodeJWT(token);
+  const location = useLocation();
+
+  if (!token || !decoded) {
+    localStorage.setItem('redirectAfterLogin', location.pathname);
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+}
+
+function RequireRole({ allowed = [], children }) {
+  const role = getCurrentRole();
+  if (!allowed.includes(role)) {
+    return <Navigate to={homePathByRole(role)} replace />;
+  }
+  return children;
+}
+
 const AppWrapper = () => {
   const navigate = useNavigate();
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const location = useLocation();
+
+  const hostname = useMemo(() => window.location.hostname, []);
+  const pathname = location.pathname;
 
   useEffect(() => {
-    // Esta función puede ser async si necesitás hacer fetch para validar token en backend
     const validarAcceso = () => {
       const token = localStorage.getItem('token');
       const redirectAfterLogin = localStorage.getItem('redirectAfterLogin');
-      const pathname = window.location.pathname;
-      const hostname = window.location.hostname;
 
       console.log("Hostname:", hostname);
       console.log("Current Path:", pathname);
@@ -58,26 +109,10 @@ const AppWrapper = () => {
         return false;
       }
 
-      // Seguridad: role puede ser undefined si backend no lo envía en el token
       const role = decoded.role || 'unknown';
       console.log("Role del usuario:", role);
 
-      // Ideal: backend debería enviar el role dentro del token
-      // Mientras tanto, podés debuguear y ver qué rol te llega
-
-      if (hostname === "admin.garageia.com" && role !== "admin" && role !== "superAdmin") {
-        alert("No tienes permisos para acceder a esta aplicación");
-        localStorage.removeItem('token');
-        navigate('/login', { replace: true });
-        return false;
-      }
-
-      if (
-        hostname === "operador.garageia.com" &&
-        role !== "operador" &&
-        role !== "admin" &&
-        role !== "superAdmin"
-      ) {
+      if (!hasHostPermission(hostname, role)) {
         alert("No tienes permisos para acceder a esta aplicación");
         localStorage.removeItem('token');
         navigate('/login', { replace: true });
@@ -85,20 +120,38 @@ const AppWrapper = () => {
       }
 
       if (pathname === '/login') {
-        console.log("Usuario ya autenticado, redirigiendo...");
-        navigate(redirectAfterLogin || '/', { replace: true });
+        const target = redirectAfterLogin || homePathByRole(role);
+        console.log("Usuario autenticado, redirigiendo a:", target);
+        navigate(target, { replace: true });
+        return true;
+      }
+
+      // ✅ Redirección sólo para AUDITOR usando match por segmento
+      const desiredHome = homePathByRole(role);
+      const onAuditor = isAtRoute(pathname, '/auditor');
+      const isAuditor = role === 'auditor';
+
+      if (isAuditor && !onAuditor) {
+        console.log("Forzando auditor → /auditor");
+        navigate('/auditor', { replace: true });
+        return true;
+      }
+
+      // ⚠️ Importante: NO tocar /auditoria (Dashboard) — sólo /auditor
+      if (!isAuditor && onAuditor) {
+        console.log("Usuario sin rol auditor intentando /auditor → redirigiendo a", desiredHome);
+        navigate(desiredHome, { replace: true });
+        return true;
       }
 
       return true;
     };
 
-    // Opcional: si querés simular un pequeño delay antes de validar (no recomendado para producción)
     setTimeout(() => {
       validarAcceso();
       setCheckingAuth(false);
-    }, 100); // 100ms, ajustá si querés
-
-  }, [navigate]);
+    }, 100);
+  }, [navigate, hostname, pathname]);
 
   if (checkingAuth) {
     return <div>Cargando...</div>;
@@ -107,7 +160,28 @@ const AppWrapper = () => {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-      <Route path="/*" element={<Dashboard />} />
+
+      <Route
+        path="/auditor/*"
+        element={
+          <RequireAuth>
+            <RequireRole allowed={['auditor']}>
+              <Auditor />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/*"
+        element={
+          <RequireAuth>
+            <Dashboard />
+          </RequireAuth>
+        }
+      />
+
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 };

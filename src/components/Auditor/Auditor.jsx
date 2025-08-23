@@ -1,12 +1,56 @@
-import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { saveAs } from 'file-saver';
 import { FiPlus } from 'react-icons/fi';
-import '../Caja/Caja.css';
-import './AuditoriaAdmin.css';
+import './Auditor.css';
 
 const ITEMS_POR_PAGINA = 10;
 
-const ModalAudit = ({ titulo, onClose, children }) => {
+/* =========================
+   Utils
+========================= */
+function decodeJWT(token) {
+  if (!token) return null;
+  const payload = token.split('.')[1];
+  if (!payload) return null;
+  try {
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch {
+    return null;
+  }
+}
+
+function formatFecha(fechaHora) {
+  if (!fechaHora) return '---';
+  try {
+    const fecha = new Date(fechaHora);
+    return fecha.toLocaleDateString('es-AR');
+  } catch {
+    return '---';
+  }
+}
+
+function formatHora(fechaHora) {
+  if (!fechaHora) return '---';
+  try {
+    const fecha = new Date(fechaHora);
+    return fecha.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+  } catch {
+    return '---';
+  }
+}
+
+/* =========================
+   Modal
+========================= */
+function ModalAudit({ titulo, onClose, children }) {
   return (
     <div className="modal-backdrop-audit">
       <div className="modal-contenedor-audit">
@@ -20,23 +64,48 @@ const ModalAudit = ({ titulo, onClose, children }) => {
       </div>
     </div>
   );
-};
+}
 
-const AuditoriaAdmin = forwardRef(({
-  activeCajaTab,
-  searchTerm,
-  onCajaTabChange,
-  limpiarFiltros,
-  filtros,
-  auditorias = [],
-  vehiculos = []
-}, ref) => {
+/* =========================
+   Main Component
+========================= */
+export default function Auditor() {
+  const navigate = useNavigate();
+  const token = useMemo(() => localStorage.getItem('token'), []);
+  const decoded = useMemo(() => decodeJWT(token) || {}, [token]);
+  const email = decoded?.email || decoded?.user || 'auditor';
+
+  const [activeTab, setActiveTab] = useState('Histórico'); // 'Histórico' | 'Nueva Auditoría'
+  const [loading, setLoading] = useState(false);
+
+  // filtros compactos (según pedido)
+  const [searchTerm, setSearchTerm] = useState(''); // SOLO para "Nueva Auditoría" (patente)
+  const [filtros, setFiltros] = useState({
+    // Histórico
+    fecha: '',     // exacta
+    hora: '',      // rango
+    estado: '',    // OK | Conflicto | Pendiente
+    // Nueva Auditoría
+    fechaNA: '',       // exacta
+    horaEntrada: '',   // rango
+    tipoVehiculo: '',  // string
+  });
+
+  // dropdown perfil
+  const [openMenu, setOpenMenu] = useState(false);
+
+  // data
+  const [user, setUser] = useState(null);
+  const [tiposVehiculo, setTiposVehiculo] = useState([]);
+  const [auditorias, setAuditorias] = useState([]);
+  const [vehiculos, setVehiculos] = useState([]);
+
+  // estado Nueva Auditoría
   const [paginaActual, setPaginaActual] = useState(1);
   const [vehiculosSeleccionados, setVehiculosSeleccionados] = useState([]);
   const [vehiculosTemporales, setVehiculosTemporales] = useState([]);
   const [generandoAuditoria, setGenerandoAuditoria] = useState(false);
   const [modalAbierto, setModalAbierto] = useState(false);
-  const [tiposVehiculo, setTiposVehiculo] = useState([]);
   const [nuevoVehiculo, setNuevoVehiculo] = useState({
     patente: '',
     marca: '',
@@ -44,24 +113,13 @@ const AuditoriaAdmin = forwardRef(({
     color: '',
     tipoVehiculo: 'auto'
   });
-  const [user, setUser] = useState(null);
 
-  // Función para abrir el modal que será expuesta al padre
-  const abrirModalAgregarVehiculo = () => {
-    setModalAbierto(true);
-  };
-
-  // Exponer funciones al padre mediante ref
-  useImperativeHandle(ref, () => ({
-    generarAuditoria,
-    abrirModalAgregarVehiculo
-  }));
-
+  /* =========================
+     Effects: fetch básicos
+  ========================= */
   useEffect(() => {
     const fetchUser = async () => {
-      const token = localStorage.getItem('token');
       if (!token) return;
-
       try {
         const response = await fetch('https://api.garageia.com/api/auth/profile', {
           method: 'GET',
@@ -70,13 +128,10 @@ const AuditoriaAdmin = forwardRef(({
             'Content-Type': 'application/json',
           },
         });
-
         const data = await response.json();
-        if (response.ok) {
-          setUser(data);
-        }
-      } catch (error) {
-        console.error('Error fetching user:', error);
+        if (response.ok) setUser(data);
+      } catch (err) {
+        console.error('Error fetching user:', err);
       }
     };
 
@@ -84,21 +139,54 @@ const AuditoriaAdmin = forwardRef(({
       try {
         const response = await fetch('https://api.garageia.com/api/tipos-vehiculo');
         const data = await response.json();
-        setTiposVehiculo(data);
+        setTiposVehiculo(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error('Error al cargar tipos de vehículo:', err);
       }
     };
 
-    fetchUser();
-    cargarTiposVehiculo();
-    setPaginaActual(1);
-  }, [activeCajaTab, searchTerm]);
+    const cargarAuditorias = async () => {
+      try {
+        const response = await fetch('https://api.garageia.com/api/auditorias', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        setAuditorias(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error('Error al cargar auditorías:', err);
+      }
+    };
 
+    const cargarVehiculos = async () => {
+      try {
+        // Si tu API tiene un endpoint específico para "en playa", reemplazalo aquí
+        const response = await fetch('https://api.garageia.com/api/vehiculos', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        setVehiculos(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error('Error al cargar vehículos:', err);
+      }
+    };
+
+    setLoading(true);
+    Promise.all([fetchUser(), cargarTiposVehiculo(), cargarAuditorias(), cargarVehiculos()])
+      .finally(() => setLoading(false));
+  }, [token]);
+
+  // reset paginado al cambiar de tab o filtros
+  useEffect(() => {
+    setPaginaActual(1);
+  }, [activeTab, searchTerm, filtros.fecha, filtros.hora, filtros.estado, filtros.fechaNA, filtros.horaEntrada, filtros.tipoVehiculo]);
+
+  /* =========================
+     Helpers core (idéntica lógica)
+  ========================= */
   const crearAlertaConflicto = async (tipoConflicto) => {
     const fecha = new Date().toISOString().split('T')[0];
-    const hora = new Date().toLocaleTimeString();
-    
+    const hora = new Date().toLocaleTimeString('es-AR');
+
     const dataAlerta = {
       fecha,
       hora,
@@ -111,7 +199,7 @@ const AuditoriaAdmin = forwardRef(({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(dataAlerta),
       });
@@ -131,7 +219,7 @@ const AuditoriaAdmin = forwardRef(({
     }
 
     setGenerandoAuditoria(true);
-    
+
     try {
       const operador = user?.nombre || 'Operador Desconocido';
 
@@ -142,7 +230,7 @@ const AuditoriaAdmin = forwardRef(({
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ 
           vehiculos: idsNormales,
@@ -167,7 +255,7 @@ const AuditoriaAdmin = forwardRef(({
       const todosLosVehiculosEnSistema = vehiculos.length;
       const vehiculosNoVerificados = todosLosVehiculosEnSistema - idsNormales.length;
       const hayVehiculosTemporales = vehiculosTemporales.length > 0;
-      
+
       if (vehiculosNoVerificados > 0 && hayVehiculosTemporales) {
         alert('Atención: Auditoría generada con CONFLICTO. Hay vehículos no verificados y vehículos temporales.');
         await crearAlertaConflicto('Vehículos no verificados y vehículos temporales agregados');
@@ -179,8 +267,16 @@ const AuditoriaAdmin = forwardRef(({
         await crearAlertaConflicto('Vehículos temporales agregados');
       }
 
+      // Reset selección y temporales
       setVehiculosSeleccionados([]);
       setVehiculosTemporales([]);
+      // Refrescar histórico
+      try {
+        const histRes = await fetch('https://api.garageia.com/api/auditorias', { headers: { Authorization: `Bearer ${token}` }});
+        const histData = await histRes.json();
+        setAuditorias(Array.isArray(histData) ? histData : []);
+      } catch {}
+      setActiveTab('Histórico');
     } catch (error) {
       console.error('Error:', error);
       alert('Error al generar el reporte de auditoría');
@@ -207,7 +303,7 @@ const AuditoriaAdmin = forwardRef(({
 
     setVehiculosTemporales(prev => [...prev, vehiculoTemporal]);
     setVehiculosSeleccionados(prev => [...prev, vehiculoTemporal._id]);
-    
+
     setNuevoVehiculo({
       patente: '',
       marca: '',
@@ -218,71 +314,31 @@ const AuditoriaAdmin = forwardRef(({
     setModalAbierto(false);
   };
 
-  const aplicarFiltros = (datos) => {
+  const aplicarFiltrosHistorico = (datos) => {
     if (!Array.isArray(datos)) return [];
-    
     return datos.filter(item => {
       if (!item) return false;
-      
-      const searchMatch = item.operador?.toUpperCase().includes(searchTerm.trim().toUpperCase());
-      const operadorMatch = !filtros.operador || 
-        item.operador?.toLowerCase().includes(filtros.operador.toLowerCase());
-      
-      const estadoMatch = !filtros.estado || 
-        item.estado?.toLowerCase() === filtros.estado.toLowerCase();
-      
+
+      // Fecha exacta
+      let fechaMatch = true;
+      if (filtros.fecha && item.fechaHora) {
+        const fechaItem = new Date(item.fechaHora).toISOString().split('T')[0];
+        fechaMatch = fechaItem === filtros.fecha;
+      }
+
+      // Rango de hora
       let horaMatch = true;
       if (filtros.hora && item.fechaHora) {
         const [desde, hasta] = filtros.hora.split('-').map(Number);
         const horaItem = new Date(item.fechaHora).getHours();
         horaMatch = horaItem >= desde && horaItem < hasta;
       }
-      
-      let fechaMatch = true;
-      if (filtros.fecha && item.fechaHora) {
-        const fechaItem = new Date(item.fechaHora).toISOString().split('T')[0];
-        fechaMatch = fechaItem === filtros.fecha;
-      }
-      
-      let rangoFechaMatch = true;
-      if ((filtros.fechaDesde || filtros.fechaHasta) && item.fechaHora) {
-        const fechaItem = new Date(item.fechaHora);
-        const fechaDesde = filtros.fechaDesde ? new Date(filtros.fechaDesde) : null;
-        const fechaHasta = filtros.fechaHasta
-          ? new Date(new Date(filtros.fechaHasta).setDate(new Date(filtros.fechaHasta).getDate() + 1))
-          : null;
-        
-        if (fechaDesde) rangoFechaMatch = fechaItem >= fechaDesde;
-        if (fechaHasta) rangoFechaMatch = rangoFechaMatch && fechaItem < fechaHasta;
-      }
-      
-      return searchMatch && operadorMatch && estadoMatch && horaMatch && fechaMatch && rangoFechaMatch;
+
+      // Estado
+      const estadoMatch = !filtros.estado || (item.estado?.toLowerCase() === filtros.estado.toLowerCase());
+
+      return fechaMatch && horaMatch && estadoMatch;
     });
-  };
-
-  const formatFecha = (fechaHora) => {
-    if (!fechaHora) return '---';
-    try {
-      const fecha = new Date(fechaHora);
-      return fecha.toLocaleDateString('es-AR');
-    } catch {
-      return '---';
-    }
-  };
-
-  const formatHora = (fechaHora) => {
-    if (!fechaHora) return '---';
-    try {
-      const fecha = new Date(fechaHora);
-      return fecha.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-    } catch {
-      return '---';
-    }
-  };
-
-  const formatNombreArchivo = (nombreArchivo) => {
-    if (!nombreArchivo) return '---';
-    return nombreArchivo;
   };
 
   const paginar = (array, pagina) => {
@@ -304,13 +360,6 @@ const AuditoriaAdmin = forwardRef(({
     </div>
   );
 
-  const renderFilasVacias = (cantidad, columnas) =>
-    Array.from({ length: cantidad }, (_, i) => (
-      <tr key={`empty-${i}`}>
-        {Array.from({ length: columnas }, (_, j) => <td key={j}>---</td>)}
-      </tr>
-    ));
-
   const handleCheckboxChange = (vehiculoId) => {
     setVehiculosSeleccionados(prev => {
       if (prev.includes(vehiculoId)) {
@@ -324,24 +373,24 @@ const AuditoriaAdmin = forwardRef(({
   const descargarAuditoria = async (auditoria, e) => {
     e.preventDefault();
     try {
-      if (!auditoria._id) {
-        throw new Error('No hay ID de auditoría disponible');
-      }
-      
+      if (!auditoria._id) throw new Error('No hay ID de auditoría disponible');
       const response = await fetch(`https://api.garageia.com/api/auditorias/descargar/${auditoria._id}`);
       if (!response.ok) throw new Error('Error al descargar el archivo');
-      
       const blob = await response.blob();
-      saveAs(blob, auditoria.auditoria.nombreArchivo || `auditoria-${auditoria._id}.pdf`);
+      const nombre = auditoria.auditoria?.nombreArchivo || `auditoria-${auditoria._id}.pdf`;
+      saveAs(blob, nombre);
     } catch (error) {
       console.error('Error al descargar auditoría:', error);
       alert(error.message || 'Error al descargar el archivo de auditoría');
     }
   };
 
-  const renderTablaHistorico = () => {
-    const datosAuditorias = Array.isArray(auditorias) ? auditorias : [];
-    const filtrados = aplicarFiltros(datosAuditorias).sort((a, b) => new Date(b.fechaHora) - new Date(a.fechaHora));
+  /* =========================
+     Vistas
+  ========================= */
+  const VistaHistorico = () => {
+    const datos = Array.isArray(auditorias) ? auditorias : [];
+    const filtrados = aplicarFiltrosHistorico(datos).sort((a, b) => new Date(b.fechaHora) - new Date(a.fechaHora));
     const paginados = paginar(filtrados, paginaActual);
     const total = totalPaginas(filtrados);
 
@@ -370,20 +419,24 @@ const AuditoriaAdmin = forwardRef(({
                         href="#"
                         onClick={(e) => descargarAuditoria(item, e)}
                         className="enlace-auditoria"
-                        title={item.auditoria.nombreArchivo || 'Descargar auditoría'}
+                        title={item.auditoria?.nombreArchivo || 'Descargar auditoría'}
                       >
-                        {formatNombreArchivo(item.auditoria.nombreArchivo || 'Auditoria.pdf')}
+                        {item.auditoria?.nombreArchivo || 'Auditoria.pdf'}
                       </a>
                     ) : '---'}
                   </td>
                   <td>
-                    <span className={`estado-badge estado-${item.estado?.toLowerCase() || 'pendiente'}`}>
+                    <span className={`estado-badge estado-${(item.estado || 'pendiente').toLowerCase()}`}>
                       {item.estado === 'OK' ? 'OK' : item.estado === 'Conflicto' ? 'Conflicto' : 'Pendiente'}
                     </span>
                   </td>
                 </tr>
               ))}
-              {renderFilasVacias(ITEMS_POR_PAGINA - paginados.length, 5)}
+              {Array.from({ length: Math.max(0, ITEMS_POR_PAGINA - paginados.length) }, (_, i) => (
+                <tr key={`empty-h-${i}`}>
+                  {Array.from({ length: 5 }, (_, j) => <td key={j}>---</td>)}
+                </tr>
+              ))}
             </tbody>
           </table>
           {renderPaginado(total)}
@@ -392,37 +445,44 @@ const AuditoriaAdmin = forwardRef(({
     );
   };
 
-  const renderTablaNuevaAuditoria = () => {
+  const VistaNuevaAuditoria = () => {
     const term = searchTerm.toUpperCase();
     const vehiculosCombinados = [...vehiculos, ...vehiculosTemporales];
-    
+
     const filtrados = vehiculosCombinados
       .filter(veh => veh.estadiaActual?.entrada && !veh.estadiaActual?.salida)
       .filter(veh => {
         const patenteMatch = !searchTerm || veh.patente?.toUpperCase().includes(term);
+
+        // fecha exacta
+        let fechaMatch = true;
+        if (filtros.fechaNA) {
+          const fechaItem = veh.estadiaActual?.entrada
+            ? new Date(veh.estadiaActual.entrada).toISOString().split('T')[0]
+            : null;
+          fechaMatch = !filtros.fechaNA || (fechaItem === filtros.fechaNA);
+        }
+
+        // rango hora entrada
         const horaEntrada = veh.estadiaActual?.entrada ? new Date(veh.estadiaActual.entrada).getHours() : null;
         const [desde, hasta] = filtros.horaEntrada ? filtros.horaEntrada.split("-").map(Number) : [null, null];
-        const fechaDesdeDate = filtros.fechaDesde ? new Date(filtros.fechaDesde) : null;
-        const fechaHastaDate = filtros.fechaHasta
-          ? new Date(new Date(filtros.fechaHasta).setDate(new Date(filtros.fechaHasta).getDate() + 1))
-          : null;
-        const operadorMatch = !filtros.operador || 
-          (veh.estadiaActual?.operadorNombre?.toLowerCase().includes(filtros.operador.toLowerCase()) ||
-          (veh.esTemporal && user?.nombre.toLowerCase().includes(filtros.operador.toLowerCase())));
+        const horaMatch = !filtros.horaEntrada || (horaEntrada && horaEntrada >= desde && horaEntrada < hasta);
 
-        return (
-          patenteMatch &&
-          operadorMatch &&
-          (!filtros.tipoVehiculo || veh.tipoVehiculo === filtros.tipoVehiculo) &&
-          (!filtros.horaEntrada || (horaEntrada && horaEntrada >= desde && horaEntrada < hasta)) &&
-          (!filtros.fechaDesde || (veh.estadiaActual?.entrada && new Date(veh.estadiaActual.entrada) >= fechaDesdeDate)) &&
-          (!filtros.fechaHasta || (veh.estadiaActual?.entrada && new Date(veh.estadiaActual.entrada) < fechaHastaDate))
-        );
+        // tipo
+        const tipoMatch = !filtros.tipoVehiculo || veh.tipoVehiculo === filtros.tipoVehiculo;
+
+        return patenteMatch && fechaMatch && horaMatch && tipoMatch;
       })
       .reverse();
-      
+
     const paginados = paginar(filtrados, paginaActual);
     const total = totalPaginas(filtrados);
+
+    const logout = () => {
+      localStorage.removeItem('token');
+      localStorage.removeItem('redirectAfterLogin');
+      navigate('/login', { replace: true });
+    };
 
     return (
       <>
@@ -476,11 +536,11 @@ const AuditoriaAdmin = forwardRef(({
                 onChange={(e) => setNuevoVehiculo({...nuevoVehiculo, tipoVehiculo: e.target.value})}
                 className="modal-input-audit"
               >
-                {tiposVehiculo.map(tipo => (
-                  <option key={tipo} value={tipo}>
-                    {tipo.nombre.charAt(0).toUpperCase() + tipo.nombre.slice(1)}
-                  </option>
-                ))}
+                {tiposVehiculo.map((tipo, idx) => {
+                  const label = (typeof tipo === 'string' ? tipo : tipo?.nombre) || 'auto';
+                  const value = (typeof tipo === 'string' ? tipo : tipo?.nombre) || 'auto';
+                  return <option key={idx} value={value}>{label.charAt(0).toUpperCase() + label.slice(1)}</option>;
+                })}
               </select>
             </div>
             <div className="modal-botones-audit">
@@ -493,6 +553,17 @@ const AuditoriaAdmin = forwardRef(({
             </div>
           </ModalAudit>
         )}
+
+        <div className="audit-toolbar">
+          <div className="toolbar-left">
+            <button className="register-audit-button" onClick={generarAuditoria} disabled={generandoAuditoria}>
+              {generandoAuditoria ? 'Generando...' : 'Generar Auditoría'}
+            </button>
+            <button className="register-audit-button add-button" title="Agregar vehículo temporal" onClick={() => setModalAbierto(true)}>
+              <FiPlus className="plus-icon" />
+            </button>
+          </div>
+        </div>
 
         <div className="table-container">
           <div className="table-wrapper">
@@ -515,7 +586,7 @@ const AuditoriaAdmin = forwardRef(({
                   let abonadoTurnoTexto = 'No';
                   if (veh.abonado) abonadoTurnoTexto = 'Abonado';
                   else if (veh.turno) abonadoTurnoTexto = 'Turno';
-                  const esTemporal = veh._id.toString().startsWith('temp-');
+                  const esTemporal = veh._id?.toString().startsWith('temp-');
                   const estaChequeado = vehiculosSeleccionados.includes(veh._id);
 
                   return (
@@ -544,7 +615,11 @@ const AuditoriaAdmin = forwardRef(({
                     </tr>
                   );
                 })}
-                {renderFilasVacias(ITEMS_POR_PAGINA - paginados.length, 8)}
+                {Array.from({ length: Math.max(0, ITEMS_POR_PAGINA - paginados.length) }, (_, i) => (
+                  <tr key={`empty-n-${i}`}>
+                    {Array.from({ length: 8 }, (_, j) => <td key={j}>---</td>)}
+                  </tr>
+                ))}
               </tbody>
             </table>
             {renderPaginado(total)}
@@ -554,12 +629,162 @@ const AuditoriaAdmin = forwardRef(({
     );
   };
 
+  /* =========================
+     Header + Filtros + Tabs
+  ========================= */
+  const logout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('redirectAfterLogin');
+    navigate('/login', { replace: true });
+  };
+
+  const limpiarFiltros = () => {
+    setFiltros({
+      fecha: '',
+      hora: '',
+      estado: '',
+      fechaNA: '',
+      horaEntrada: '',
+      tipoVehiculo: '',
+    });
+    setSearchTerm('');
+  };
+
   return (
-    <div className="caja">
-      {activeCajaTab === 'Histórico' && renderTablaHistorico()}
-      {activeCajaTab === 'Nueva Auditoría' && renderTablaNuevaAuditoria()}
+    <div className="auditor-wrap">
+      {/* Header que respeta Header.css */}
+      <div className="header-container">
+        <div className="header">
+          <div className="header-left">
+            <div className="logo-container">
+              <span className="header-title">Auditoría</span>
+            </div>
+            <nav>
+              <a
+                href="#!"
+                className={activeTab === 'Histórico' ? 'active' : ''}
+                onClick={() => setActiveTab('Histórico')}
+              >
+                Histórico
+              </a>
+              <a
+                href="#!"
+                className={activeTab === 'Nueva Auditoría' ? 'active' : ''}
+                onClick={() => setActiveTab('Nueva Auditoría')}
+              >
+                Nueva Auditoría
+              </a>
+            </nav>
+          </div>
+
+          <div className="header-right">
+            {/* (Opcional) Search del header si quisieras activarlo */}
+            {/* <div className="search-bar">
+              <span className="search-icon">🔎</span>
+              <input placeholder="Buscar..." />
+            </div> */}
+            <div className="profile-container" onClick={() => setOpenMenu(v => !v)}>
+              <div
+                className="profile-pic"
+                title={email}
+                style={{ backgroundImage: 'url(https://ui-avatars.com/api/?name=AU&background=497b97&color=fff)' }}
+              />
+              {openMenu && (
+                <div className="dropdown-menu" onMouseLeave={() => setOpenMenu(false)}>
+                  <button onClick={logout}>Salir</button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <main className="aud-main">
+        {/* Barra de filtros (solo lo necesario) */}
+        <div className="aud-topbar">
+          <div className="filters">
+            {activeTab === 'Histórico' ? (
+              <>
+                <input
+                  className="filter-input"
+                  type="date"
+                  value={filtros.fecha}
+                  onChange={e => setFiltros(s => ({ ...s, fecha: e.target.value }))}
+                />
+                <select
+                  className="filter-input"
+                  value={filtros.hora}
+                  onChange={e => setFiltros(s => ({ ...s, hora: e.target.value }))}
+                >
+                  <option value="">Hora (rango)</option>
+                  <option value="0-6">00-06</option>
+                  <option value="6-12">06-12</option>
+                  <option value="12-18">12-18</option>
+                  <option value="18-24">18-24</option>
+                </select>
+                <select
+                  className="filter-input"
+                  value={filtros.estado}
+                  onChange={e => setFiltros(s => ({ ...s, estado: e.target.value }))}
+                >
+                  <option value="">Estado</option>
+                  <option value="OK">OK</option>
+                  <option value="Conflicto">Conflicto</option>
+                  <option value="Pendiente">Pendiente</option>
+                </select>
+                <button className="filter-clear" onClick={limpiarFiltros}>Limpiar</button>
+              </>
+            ) : (
+              <>
+                <input
+                  className="filter-input"
+                  placeholder="Buscar por Patente"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <input
+                  className="filter-input"
+                  type="date"
+                  value={filtros.fechaNA}
+                  onChange={e => setFiltros(s => ({ ...s, fechaNA: e.target.value }))}
+                />
+                <select
+                  className="filter-input"
+                  value={filtros.horaEntrada}
+                  onChange={e => setFiltros(s => ({ ...s, horaEntrada: e.target.value }))}
+                >
+                  <option value="">Hora Entrada</option>
+                  <option value="0-6">00-06</option>
+                  <option value="6-12">06-12</option>
+                  <option value="12-18">12-18</option>
+                  <option value="18-24">18-24</option>
+                </select>
+                <select
+                  className="filter-input"
+                  value={filtros.tipoVehiculo}
+                  onChange={e => setFiltros(s => ({ ...s, tipoVehiculo: e.target.value }))}
+                >
+                  <option value="">Tipo</option>
+                  {tiposVehiculo.map((tipo, idx) => {
+                    const label = (typeof tipo === 'string' ? tipo : tipo?.nombre) || 'auto';
+                    const value = (typeof tipo === 'string' ? tipo : tipo?.nombre) || 'auto';
+                    return <option key={idx} value={value}>{label.charAt(0).toUpperCase() + label.slice(1)}</option>;
+                  })}
+                </select>
+                <button className="filter-clear" onClick={limpiarFiltros}>Limpiar</button>
+              </>
+            )}
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="loading">Cargando…</div>
+        ) : activeTab === 'Histórico' ? (
+          <VistaHistorico />
+        ) : (
+          <VistaNuevaAuditoria />
+        )}
+      </main>
     </div>
   );
-});
-
-export default AuditoriaAdmin;
+}

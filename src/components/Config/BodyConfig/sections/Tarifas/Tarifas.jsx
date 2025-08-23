@@ -30,13 +30,13 @@ const Tarifas = () => {
 
   useEffect(() => {
     // Cargar las tarifas desde la API
-    fetch('http://localhost:5000/api/tarifas')
+    fetch('https://api.garageia.com/api/tarifas')
       .then(res => res.json())
       .then(data => setTarifas(data))
       .catch(err => console.error('Error cargando tarifas:', err));
 
     // Cargar los parámetros por defecto desde el servidor o archivo JSON
-    fetch('http://localhost:5000/api/parametros')
+    fetch('https://api.garageia.com/api/parametros')
       .then(res => res.json())
       .then(data => {
         const newParametros = {
@@ -79,7 +79,7 @@ const Tarifas = () => {
     const data = { ...defaults[selectedTipo], ...nuevoInput };
 
     try {
-      const res = await fetch('http://localhost:5000/api/tarifas', {
+      const res = await fetch('https://api.garageia.com/api/tarifas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -97,7 +97,7 @@ const Tarifas = () => {
     if (!window.confirm("¿Estás seguro de que querés eliminar esta tarifa?")) return;
 
     try {
-      await fetch(`http://localhost:5000/api/tarifas/${id}`, {
+      await fetch(`https://api.garageia.com/api/tarifas/${id}`, {
         method: 'DELETE',
       });
       setTarifas(prev => prev.filter(t => t._id !== id));
@@ -107,7 +107,7 @@ const Tarifas = () => {
   };
 
   const guardarParametros = () => {
-    fetch('http://localhost:5000/api/parametros', {
+    fetch('https://api.garageia.com/api/parametros', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -132,7 +132,7 @@ const Tarifas = () => {
       const actualizada = { ...tarifa, [editandoCampo.campo]: editandoCampo.campo === 'nombre' ? valorTemporal : parseInt(valorTemporal) || 0 };
 
       try {
-        const res = await fetch(`http://localhost:5000/api/tarifas/${tarifa._id}`, {
+        const res = await fetch(`https://api.garageia.com/api/tarifas/${tarifa._id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(actualizada),
@@ -196,7 +196,7 @@ const Tarifas = () => {
 
     return (
       <div className="tarifa-section">
-        <h2>{`Tipo ${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`}</h2>
+        <h2>{`Tipo ${typeof tipo === 'string' ? tipo.charAt(0).toUpperCase() + tipo.slice(1) : ''}`}</h2>
         <table className="tarifa-table">
           <thead>
             <tr>
@@ -351,10 +351,10 @@ const Tarifas = () => {
                 <strong>Estadía</strong>
                 <span className="tarifasModal-subtitulo">Estacionamiento diario</span>
               </button> */}
-              <button onClick={() => handleTipoSeleccionado('abono')}>
+              {/* <button onClick={() => handleTipoSeleccionado('abono')}>
                 <strong>Abono</strong>
                 <span className="tarifasModal-subtitulo">Estacionamiento abono</span>
-              </button>
+              </button> */}
             </div>
             <button className="tarifasModal-cerrar" onClick={() => setShowModal(false)}>
               Cancelar
@@ -367,7 +367,7 @@ const Tarifas = () => {
 
       {renderTabla('hora', ['Etiqueta', 'Días', 'Horas', 'Minutos', 'Tolerancia (mins)', 'Acciones'], ['nombre', 'dias', 'horas', 'minutos', 'tolerancia'])}
       {renderTabla('turno', ['Etiqueta', 'Días', 'Horas', 'Minutos', 'Tolerancia (mins)', 'Acciones'], ['nombre', 'dias', 'horas', 'minutos', 'tolerancia'])}
-      {renderTabla('abono', ['Etiqueta', 'Días', 'Acciones'], ['nombre', 'dias'])}
+      {/* {renderTabla('abono', ['Etiqueta', 'Días', 'Acciones'], ['nombre', 'dias'])} */}
     </div>
   );
 };

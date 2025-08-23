@@ -1,12 +1,29 @@
+// src/components/Login/Login.jsx
 import "./Login.css";
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-function Login() {
+function homePathByRole(role) {
+  if (role === 'auditor') return '/auditor';
+  return '/';
+}
+
+function hasHostPermission(hostname, role) {
+  if (!role) return false;
+  if (hostname === 'admin.garageia.com') {
+    return role === 'admin' || role === 'superAdmin' || role === 'auditor';
+  }
+  if (hostname === 'operador.garageia.com') {
+    return role === 'operador' || role === 'admin' || role === 'superAdmin' || role === 'auditor';
+  }
+  return true; // localhost/dev
+}
+
+export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [error, setError]       = useState(null);
+  const [loading, setLoading]   = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -15,51 +32,64 @@ function Login() {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      // 1) Login → token
+      const response = await fetch('https://api.garageia.com/api/auth/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
       });
-
       const data = await response.json();
 
-      if (response.ok) {
-        // Obtenemos el token recibido
-        const token = data.token;
-
-        // Ahora fetch para obtener perfil con ese token
-        const profileResponse = await fetch('http://localhost:5000/api/auth/profile', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        const profileData = await profileResponse.json();
-
-        if (!profileResponse.ok) {
-          setError('No se pudo obtener el perfil del usuario');
-          setLoading(false);
-          return;
-        }
-
-        if (profileData.role !== 'superAdmin') {
-          alert('No tienes permisos para acceder a esta aplicación');
-          setLoading(false);
-          return; // No guardar token ni navegar
-        }
-
-        // Si es superAdmin, guardamos token y navegamos
-        localStorage.setItem('token', token);
-        const redirectTo = localStorage.getItem('redirectAfterLogin') || '/';
-        localStorage.removeItem('redirectAfterLogin');
-        navigate(redirectTo, { replace: true });
-      } else {
+      if (!response.ok) {
         setError(data.msg || 'Error en el login');
+        setLoading(false);
+        return;
       }
+
+      const token = data.token;
+      if (!token) {
+        setError('No se recibió token');
+        setLoading(false);
+        return;
+      }
+
+      // 2) Perfil con rol
+      const profileResponse = await fetch('https://api.garageia.com/api/auth/profile', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      const profileData = await profileResponse.json();
+
+      if (!profileResponse.ok) {
+        setError(profileData?.msg || 'No se pudo obtener el perfil del usuario');
+        setLoading(false);
+        return;
+      }
+
+      const role = profileData?.role;
+      if (!role) {
+        setError('Perfil sin rol');
+        setLoading(false);
+        return;
+      }
+
+      // 3) Permiso por host (igual criterio que App.jsx)
+      const hostname = window.location.hostname;
+      if (!hasHostPermission(hostname, role)) {
+        setError('No tienes permisos para acceder a esta aplicación');
+        setLoading(false);
+        return;
+      }
+
+      // 4) OK → guardar token y enviar a home por rol (auditor → /auditor)
+      localStorage.setItem('token', token);
+      const redirectTo =
+        localStorage.getItem('redirectAfterLogin') || homePathByRole(role);
+      localStorage.removeItem('redirectAfterLogin');
+      navigate(redirectTo, { replace: true });
     } catch (err) {
       setError('Hubo un problema con la conexión');
     } finally {
@@ -104,5 +134,3 @@ function Login() {
     </div>
   );
 }
-
-export default Login;

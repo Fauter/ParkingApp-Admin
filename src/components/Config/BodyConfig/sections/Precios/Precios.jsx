@@ -10,15 +10,15 @@ const Precios = () => {
   useEffect(() => {
     const fetchDatos = async () => {
       try {
-        const tarifasRes = await fetch('http://localhost:5000/api/tarifas/');
+        const tarifasRes = await fetch('https://api.garageia.com/api/tarifas/');
         const tarifasData = await tarifasRes.json();
         setTarifas(tarifasData);
 
-        const tiposRes = await fetch('http://localhost:5000/api/tipos-vehiculo');
+        const tiposRes = await fetch('https://api.garageia.com/api/tipos-vehiculo');
         const tiposData = await tiposRes.json();
         setTiposVehiculo(tiposData);
 
-        const preciosRes = await fetch('http://localhost:5000/api/precios');
+        const preciosRes = await fetch('https://api.garageia.com/api/precios');
         const preciosData = await preciosRes.json();
         setPrecios(preciosData);
       } catch (error) {
@@ -62,7 +62,7 @@ const Precios = () => {
       };
 
       try {
-        const res = await fetch(`http://localhost:5000/api/precios/${vehiculo}`, {
+        const res = await fetch(`https://api.garageia.com/api/precios/${vehiculo}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(nuevosPreciosVehiculo),
@@ -84,7 +84,10 @@ const Precios = () => {
     }
   };
 
-  const normalizar = (str) => str?.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const normalizar = (str) =>
+    typeof str === 'string'
+      ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+      : '';
 
   const tiposTarifa = ['hora', 'turno', 'estadia', 'abono'];
 
@@ -100,39 +103,45 @@ const Precios = () => {
   };
 
   const renderTablaPorTipo = (tipoTarifa) => {
-    const tarifasFiltradas = tarifas.filter(t => normalizar(t.tipo) === normalizar(tipoTarifa));
+    const tarifasFiltradas = tarifas.filter(
+      t => normalizar(t.tipo) === normalizar(tipoTarifa)
+    );
 
     if (tarifasFiltradas.length === 0) return null;
 
     return (
       <div key={tipoTarifa} style={{ margin: '20px 0' }}>
-       <h3 style={{ textAlign: 'center', fontWeight: 400 }}>Tarifas x {tipoTarifa.charAt(0).toUpperCase() + tipoTarifa.slice(1)}</h3>
+        <h3 style={{ textAlign: 'center', fontWeight: 400 }}>
+          Tarifas x {tipoTarifa.charAt(0).toUpperCase() + tipoTarifa.slice(1)}
+        </h3>
         <table className="precios-table" border="1" cellPadding="8">
           <thead>
             <tr>
               <th></th>
               {tiposVehiculo.map(tipo => (
-                <th key={tipo}>{tipo.charAt(0).toUpperCase() + tipo.slice(1)}</th>
+                <th key={tipo._id}>
+                  {tipo.nombre
+                    ? tipo.nombre.charAt(0).toUpperCase() + tipo.nombre.slice(1)
+                    : ''}
+                </th>
               ))}
             </tr>
           </thead>
           <tbody>
             {tarifasFiltradas.map(tarifa => {
-              const nombreTarifa = tarifa.nombre.toLowerCase();
+              const nombreTarifa = tarifa.nombre ? tarifa.nombre.toLowerCase() : '';
               return (
                 <tr key={tarifa._id}>
-                  <th style={{ textAlign: 'left' }}>
-                    {tarifa.nombre}
-                  </th>
+                  <th style={{ textAlign: 'left' }}>{tarifa.nombre}</th>
                   {tiposVehiculo.map(tipo => {
-                    const vehiculo = tipo.toLowerCase();
+                    const vehiculo = tipo.nombre ? tipo.nombre.toLowerCase() : '';
                     const esEditando =
                       editing.vehiculo === vehiculo && editing.tarifa === nombreTarifa;
                     const valor = precios[vehiculo]?.[nombreTarifa] ?? 'N/A';
 
                     return (
                       <td
-                        key={vehiculo}
+                        key={tipo._id}
                         onClick={() => handleCellClick(vehiculo, nombreTarifa)}
                         className={esEditando ? 'editing' : ''}
                       >

@@ -56,52 +56,40 @@ const AbonoForm = ({ onClose, user }) => {
       factura: '',
       tipoVehiculo: '',
     });
-    setFotoSeguro(null);
-    setFotoDNI(null);
-    setFotoCedulaVerde(null);
-    setFotoCedulaAzul(null);
+    setFotoSeguro(null); setFotoDNI(null); setFotoCedulaVerde(null); setFotoCedulaAzul(null);
     setNombreTemporal('');
   }, []);
 
-  // Cargar tarifas de tipo "abono" desde API
   useEffect(() => {
-    fetch('http://localhost:5000/api/tarifas')
+    fetch('https://api.garageia.com/api/tarifas')
       .then(res => res.json())
-      .then(data => {
-        const abonos = data.filter(tarifa => tarifa.tipo === 'abono');
-        setTarifas(abonos);
-      })
-      .catch(err => {
-        console.error('Error al cargar tarifas', err);
-      });
+      .then(data => setTarifas(data.filter(t => t.tipo === 'abono')))
+      .catch(err => console.error('Error al cargar tarifas', err));
   }, []);
 
-  // Cargar tipos de vehículo
   useEffect(() => {
-    fetch('http://localhost:5000/api/tipos-vehiculo')
+    fetch('https://api.garageia.com/api/tipos-vehiculo')
       .then(res => res.json())
       .then(data => setTiposVehiculo(data))
       .catch(err => console.error('Error al cargar tipos de vehículo', err));
 
-    fetch('http://localhost:5000/api/precios')
+    fetch('https://api.garageia.com/api/precios')
       .then(res => res.json())
       .then(data => setPrecios(data))
       .catch(err => console.error('Error al cargar precios', err));
   }, []);
 
-  // Cargar clientes
   useEffect(() => {
-    fetch('http://localhost:5000/api/clientes')
+    fetch('https://api.garageia.com/api/clientes')
       .then(res => res.json())
-      .then(data => setClientes(data))
+      .then(data => setClientes(Array.isArray(data) ? data : []))
       .catch(err => console.error('Error al cargar clientes', err));
   }, []);
 
-  // Buscar sugerencias de clientes
   useEffect(() => {
     if (nombreTemporal.trim().length >= 3) {
       const coincidencias = clientes.filter((c) =>
-        c.nombreApellido.toLowerCase().includes(nombreTemporal.trim().toLowerCase())
+        (c.nombreApellido || "").toLowerCase().includes(nombreTemporal.trim().toLowerCase())
       );
       setSugerencias(coincidencias);
     } else {
@@ -111,7 +99,7 @@ const AbonoForm = ({ onClose, user }) => {
 
   const buscarClientePorNombre = async (nombre) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/clientes/nombre/${encodeURIComponent(nombre)}`);
+      const res = await fetch(`https://api.garageia.com/api/clientes/nombre/${encodeURIComponent(nombre)}`);
       if (res.ok) {
         const cliente = await res.json();
         if (cliente) {
@@ -168,15 +156,8 @@ const AbonoForm = ({ onClose, user }) => {
     const { value } = e.target;
     setNombreTemporal(value);
     setFormData(prev => ({ ...prev, nombreApellido: value }));
-    
-    // Búsqueda con debounce
-    const delayDebounce = setTimeout(() => {
-      if (value.trim().length >= 3) {
-        buscarClientePorNombre(value);
-      }
-    }, 800);
-
-    return () => clearTimeout(delayDebounce);
+    const t = setTimeout(() => { if (value.trim().length >= 3) buscarClientePorNombre(value); }, 800);
+    return () => clearTimeout(t);
   };
 
   const handleFileChange = (e) => {
@@ -225,99 +206,59 @@ const AbonoForm = ({ onClose, user }) => {
     setLoading(true);
 
     try {
-      // Validación patente (mayúsculas y formato)
-      const patente = formData.patente.toUpperCase();
+      const patente = (formData.patente || '').toUpperCase();
       if (!validarPatente(patente)) {
-        alert('❌ Patente no válida. Debe ser en formato ABC123 (viejo) o AB123CD (nuevo).');
+        alert('❌ Patente inválida. ABC123 o AB123CD.');
         setLoading(false);
         return;
       }
-      formData.patente = patente;
-
-      // Verificamos tipo de vehículo
-      const tipoVehiculo = formData.tipoVehiculo;
-      if (!tipoVehiculo) {
+      if (!formData.tipoVehiculo) {
         alert('Debe seleccionar tipo de vehículo');
         setLoading(false);
         return;
       }
 
-      // Paso 1: Obtener precio mensual del tipo de vehículo
-      const precioMensual = precios[tipoVehiculo]?.mensual || 0;
-
-      // Paso 2: Buscar vehículo por patente
-      const vehiculoRes = await fetch(`http://localhost:5000/api/vehiculos/${encodeURIComponent(formData.patente)}`);
-      let vehiculo = null;
-      let vehiculoData = null;
-
-      if (!vehiculoRes.ok) {
-        vehiculoData = null;
-      } else {
-        vehiculoData = await vehiculoRes.json();
-      }
-
-      if (!vehiculoRes.ok || (vehiculoData && vehiculoData.msg === "Vehículo no encontrado")) {
-        // Crear vehículo si no existe
-        const nuevoVehiculoRes = await fetch('http://localhost:5000/api/vehiculos/sin-entrada', {
+      // 1) Vehículo
+      const vRes = await fetch(`https://api.garageia.com/api/vehiculos/${encodeURIComponent(patente)}`);
+      let vehiculo = vRes.ok ? await vRes.json() : null;
+      if (!vehiculo || vehiculo.msg === 'Vehículo no encontrado') {
+        const nv = await fetch('https://api.garageia.com/api/vehiculos/sin-entrada', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            patente: formData.patente,
+            patente,
             tipoVehiculo: formData.tipoVehiculo,
             abonado: false,
             turno: false
           }),
         });
-
-        let nuevoVehiculoJson = null;
-        try {
-          nuevoVehiculoJson = await nuevoVehiculoRes.json();
-        } catch {
-          alert('❌ No se pudo interpretar la respuesta al crear el vehículo.');
-          setLoading(false);
-          return;
-        }
-
-        if (!nuevoVehiculoJson || !nuevoVehiculoJson._id) {
-          // Retry para ver si ya está creado
-          await new Promise(resolve => setTimeout(resolve, 500));
-          const retryVehiculoRes = await fetch(`http://localhost:5000/api/vehiculos/${encodeURIComponent(formData.patente)}`);
-          if (!retryVehiculoRes.ok) {
-            alert('❌ El vehículo no se creó correctamente y no se encontró en el retry. No se continuará con el proceso.');
-            setLoading(false);
-            return;
-          }
-          const retryVehiculoJson = await retryVehiculoRes.json();
-          if (!retryVehiculoJson || !retryVehiculoJson._id) {
-            alert('❌ El vehículo no se creó correctamente y no se encontró en el retry. No se continuará con el proceso.');
-            setLoading(false);
-            return;
-          }
-          vehiculo = retryVehiculoJson;
+        const nvJson = await nv.json().catch(() => null);
+        if (!nv.ok || !nvJson?._id) {
+          await new Promise(r => setTimeout(r, 300));
+          const retry = await fetch(`https://api.garageia.com/api/vehiculos/${encodeURIComponent(patente)}`);
+          if (!retry.ok) throw new Error('El vehículo no se creó correctamente.');
+          vehiculo = await retry.json();
         } else {
-          vehiculo = nuevoVehiculoJson;
+          vehiculo = nvJson;
         }
-      } else {
-        vehiculo = vehiculoData;
       }
 
-      // Paso 3: Buscar cliente
-      const clientesRes = await fetch('http://localhost:5000/api/clientes');
+      // 2) Cliente
+      const clientesRes = await fetch('https://api.garageia.com/api/clientes');
       if (!clientesRes.ok) throw new Error('Error al obtener clientes');
-      const clientes = await clientesRes.json();
-      const clienteExistente = clientes.find(
-        c => c.nombreApellido.trim().toLowerCase() === formData.nombreApellido.trim().toLowerCase()
+      const lista = await clientesRes.json();
+      const clienteExistente = (Array.isArray(lista) ? lista : []).find(
+        c => (c.nombreApellido || '').trim().toLowerCase() === (formData.nombreApellido || '').trim().toLowerCase()
       );
 
       let clienteId;
       if (clienteExistente) {
         clienteId = clienteExistente._id;
-        
-        // Actualizar cliente existente con los nuevos datos
-        await fetch(`http://localhost:5000/api/clientes/${clienteExistente._id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ 
+        // opcional: update básico
+        await fetch(`https://api.garageia.com/api/clientes/${clienteId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
             nombreApellido: formData.nombreApellido,
             dniCuitCuil: formData.dniCuitCuil,
             domicilio: formData.domicilio,
@@ -326,14 +267,11 @@ const AbonoForm = ({ onClose, user }) => {
             telefonoEmergencia: formData.telefonoEmergencia,
             domicilioTrabajo: formData.domicilioTrabajo,
             telefonoTrabajo: formData.telefonoTrabajo,
-            email: formData.email,
-            tipoVehiculo: formData.tipoVehiculo,
-            precioAbono: formData.tipoVehiculo
-          }),
-        });
+            email: formData.email
+          })
+        }).catch(() => {});
       } else {
-        // Crear nuevo cliente
-        const nuevoClienteRes = await fetch('http://localhost:5000/api/clientes', {
+        const nuevoClienteRes = await fetch('https://api.garageia.com/api/clientes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -355,75 +293,26 @@ const AbonoForm = ({ onClose, user }) => {
         clienteId = nuevoCliente._id;
       }
 
-      // Paso 4: Registrar abono
-      const abonoFormData = new FormData();
+      // 3) Registrar abono (ATÓMICO: incluye movimientos)
+      const fd = new FormData();
+      Object.entries(formData).forEach(([k, v]) => { if (v) fd.append(k, v); });
+      fd.set('patente', patente);
+      fd.set('tipoVehiculo', formData.tipoVehiculo);
+      fd.append('cliente', clienteId);
+      fd.append('operador', user?.nombre || 'Sistema');
+      if (fotoSeguro) fd.append('fotoSeguro', fotoSeguro);
+      if (fotoDNI) fd.append('fotoDNI', fotoDNI);
+      if (fotoCedulaVerde) fd.append('fotoCedulaVerde', fotoCedulaVerde);
+      if (fotoCedulaAzul) fd.append('fotoCedulaAzul', fotoCedulaAzul);
 
-      for (const key in formData) {
-        if (formData[key]) {
-          abonoFormData.append(key, formData[key]);
-        }
-      }
-      abonoFormData.set('patente', formData.patente.toUpperCase());
-      abonoFormData.set('tipoVehiculo', formData.tipoVehiculo);
-      abonoFormData.append('cliente', clienteId); // Asegurar que el clienteId se envía
-
-      // Archivos fotos si existen
-      if (fotoSeguro) abonoFormData.append('fotoSeguro', fotoSeguro);
-      if (fotoDNI) abonoFormData.append('fotoDNI', fotoDNI);
-      if (fotoCedulaVerde) abonoFormData.append('fotoCedulaVerde', fotoCedulaVerde);
-      if (fotoCedulaAzul) abonoFormData.append('fotoCedulaAzul', fotoCedulaAzul);
-
-      // Mandar el abono
-      const abonoRes = await fetch('http://localhost:5000/api/abonos/registrar-abono', {
+      const abonoRes = await fetch('https://api.garageia.com/api/abonos/registrar-abono', {
         method: 'POST',
-        body: abonoFormData,
+        body: fd
       });
       if (!abonoRes.ok) throw new Error('Error al registrar abono');
 
-      // Obtener el precio desde el backend
-      const abonoJson = await abonoRes.json();
-      const precioCalculadoBackend = abonoJson.abono.precio;
-
-      // Registrar movimiento
-      const movimientoRes = await fetch('http://localhost:5000/api/movimientos/registrar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          patente: formData.patente,
-          operador: user.nombre,
-          tipoVehiculo: formData.tipoVehiculo,
-          metodoPago: formData.metodoPago,
-          factura: formData.factura || 'Sin factura',
-          monto: precioCalculadoBackend,
-          descripcion: `Pago Por Abono`,
-          tipoTarifa: `abono`
-        }),
-      });
-      if (!movimientoRes.ok) throw new Error('Error al registrar movimiento');
-
-      // Registrar movimiento del cliente
-      const movimientoClientePayload = {
-        nombreApellido: formData.nombreApellido,
-        email: formData.email,
-        descripcion: `Abono`,
-        monto: precioCalculadoBackend,
-        tipoVehiculo: formData.tipoVehiculo,
-        operador: user.nombre,
-        patente: formData.patente,
-      };
-      const movimientoClienteRes = await fetch('http://localhost:5000/api/movimientosclientes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(movimientoClientePayload),
-      });
-      if (!movimientoClienteRes.ok) {
-        const err = await movimientoClienteRes.json();
-        throw new Error(`Error al registrar MovimientoCliente: ${err.message}`);
-      }
-
       alert('✅ Abono registrado correctamente');
 
-      // Resetear formulario y fotos
       setFormData({
         nombreApellido: '',
         dniCuitCuil: '',
@@ -444,12 +333,9 @@ const AbonoForm = ({ onClose, user }) => {
         factura: '',
         tipoVehiculo: '',
       });
-      setFotoSeguro(null);
-      setFotoDNI(null);
-      setFotoCedulaVerde(null);
-      setFotoCedulaAzul(null);
+      setFotoSeguro(null); setFotoDNI(null); setFotoCedulaVerde(null); setFotoCedulaAzul(null);
       setNombreTemporal('');
-      if (onClose) onClose();
+      onClose && onClose();
 
     } catch (error) {
       console.error(error);
@@ -463,13 +349,13 @@ const AbonoForm = ({ onClose, user }) => {
     <form onSubmit={handleSubmit} className="abono-form">
       <div className="form-section grid-2">
         <input 
-            name="nombreApellido" 
-            placeholder="Nombre y Apellido" 
-            value={nombreTemporal} 
-            onChange={handleNombreChange} 
-            required 
+          name="nombreApellido"
+          placeholder="Nombre y Apellido"
+          value={nombreTemporal}
+          onChange={handleNombreChange}
+          required
         />
-        <input name="dniCuitCuil" type="dniCuitCuil" placeholder="DNI/CUIT/CUIL" value={formData.dniCuitCuil} onChange={handleChange} required />
+        <input name="dniCuitCuil" placeholder="DNI/CUIT/CUIL" value={formData.dniCuitCuil} onChange={handleChange} required />
         <input name="email" type="email" placeholder="Email" value={formData.email} onChange={handleChange} required />
         <input name="domicilio" placeholder="Domicilio" value={formData.domicilio} onChange={handleChange} required />
         <input name="localidad" placeholder="Localidad" value={formData.localidad} onChange={handleChange} required />
@@ -487,7 +373,7 @@ const AbonoForm = ({ onClose, user }) => {
       </div>
 
       <div className="form-section grid-2">
-        <input name="patente" placeholder="Patente" value={formData.patente} onChange={(e) => {const val = e.target.value.toUpperCase(); setFormData({...formData, patente: val}); }} required />
+        <input name="patente" placeholder="Patente" value={formData.patente} onChange={(e) => setFormData({...formData, patente: (e.target.value || '').toUpperCase()})} required />
         <input name="marca" placeholder="Marca" value={formData.marca} onChange={handleChange} />
         <input name="modelo" placeholder="Modelo" value={formData.modelo} onChange={handleChange} />
         <input name="color" placeholder="Color" value={formData.color} onChange={handleChange} />
@@ -497,53 +383,53 @@ const AbonoForm = ({ onClose, user }) => {
 
       <div className="form-section grid-3 compact-form">
         <div>
-            <label className="sr-only">Tipo de Vehículo</label>
-            <select
-                name="tipoVehiculo"
-                value={formData.tipoVehiculo}
-                onChange={handleChange}
-                required
-                className="select-input"
-            >
-                <option value="" disabled hidden>Seleccionar...</option>
-                {tiposVehiculo.map(tipo => (
-                <option key={tipo} value={tipo}>
-                    {tipo.charAt(0).toUpperCase() + tipo.slice(1)}
-                </option>
-                ))}
-            </select>
+          <label className="sr-only">Tipo de Vehículo</label>
+          <select
+            name="tipoVehiculo"
+            value={formData.tipoVehiculo}
+            onChange={handleChange}
+            required
+            className="select-input"
+          >
+            <option value="" disabled hidden>Seleccionar...</option>
+            {tiposVehiculo.map(tipo => (
+              <option key={tipo.nombre} value={tipo.nombre}>
+                {tipo.nombre.charAt(0).toUpperCase() + tipo.nombre.slice(1)}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div>
-            <label className="sr-only">Método de Pago</label>
-            <select
-                name="metodoPago"
-                value={formData.metodoPago}
-                onChange={handleChange}
-                required
-                className="select-input"
-            >
-                <option value="" disabled hidden>Seleccione</option>
-                <option value="Efectivo">Efectivo</option>
-                <option value="Débito">Débito</option>
-                <option value="Crédito">Crédito</option>
-                <option value="QR">QR</option>
-            </select>
+          <label className="sr-only">Método de Pago</label>
+          <select
+            name="metodoPago"
+            value={formData.metodoPago}
+            onChange={handleChange}
+            required
+            className="select-input"
+          >
+            <option value="" disabled hidden>Seleccione</option>
+            <option value="Efectivo">Efectivo</option>
+            <option value="Débito">Débito</option>
+            <option value="Crédito">Crédito</option>
+            <option value="QR">QR</option>
+          </select>
         </div>
 
         <div>
-            <label className="sr-only">Factura</label>
-            <select
-                name="factura"
-                value={formData.factura}
-                onChange={handleChange}
-                className="select-input"
-            >
-                <option value="" disabled hidden>Seleccionar...</option>
-                <option value="CC">CC</option>
-                <option value="A">A</option>
-                <option value="Final">Final</option>
-            </select>
+          <label className="sr-only">Factura</label>
+          <select
+            name="factura"
+            value={formData.factura}
+            onChange={handleChange}
+            className="select-input"
+          >
+            <option value="" disabled hidden>Seleccionar...</option>
+            <option value="CC">CC</option>
+            <option value="A">A</option>
+            <option value="Final">Final</option>
+          </select>
         </div>
       </div>
 

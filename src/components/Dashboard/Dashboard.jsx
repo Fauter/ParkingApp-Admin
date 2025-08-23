@@ -1,3 +1,4 @@
+// src/components/Dashboard.jsx
 import { Routes, Route } from "react-router-dom";
 import Header from "./Header/Header.jsx";
 import Body from "./Body/Body.jsx";
@@ -7,21 +8,21 @@ import DetalleCliente from "../Abonos/BodyAbonos/sections/DetalleCliente/Detalle
 import "./Dashboard.css";
 
 function Dashboard() {
-    return (
-        <div className="dashboard-container">
-            <Header />
-            <div className="dashboard-content">
-                <Routes>
-                    <Route path="/" element={<Body />} />
-                    <Route path="/config" element={<Config />} />
-                    <Route path="/tickets" element={<Abonos />} />
-                    <Route path="/detalle/:id" element={<DetalleCliente />} />
-                    <Route path="/cierresDeCaja" element={<Body />} />
-                    <Route path="/auditoria" element={<Body />} />
-                </Routes>
-            </div>
-        </div>
-    );
+  return (
+    <div className="dashboard-container">
+      <Header />
+      <div className="dashboard-content">
+        <Routes>
+          <Route path="/" element={<Body />} />
+          <Route path="/config" element={<Config />} />
+          <Route path="/tickets" element={<Abonos />} />
+          <Route path="/detalle/:id" element={<DetalleCliente />} />
+          <Route path="/cierresDeCaja" element={<Body />} />
+          <Route path="/auditoria" element={<Body />} />
+        </Routes>
+      </div>
+    </div>
+  );
 }
 
 export default Dashboard;

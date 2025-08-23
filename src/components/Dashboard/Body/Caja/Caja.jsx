@@ -33,7 +33,7 @@ const Caja = ({
     }));
 
     try {
-      const res = await fetch(`http://localhost:5000/api/vehiculos/ticket-admin/${ticket}`);
+      const res = await fetch(`https://api.garageia.com/api/vehiculos/ticket-admin/${ticket}`);
       if (!res.ok) throw new Error(`Error al obtener estadía ticket ${ticket}`);
       const json = await res.json();
 
@@ -55,7 +55,7 @@ const Caja = ({
     if (!url) return;
 
     // Si la url empieza con '/', la concateno con host backend
-    const baseBackendUrl = 'http://localhost:5000'; // Cambiar según tu entorno
+    const baseBackendUrl = 'https://api.garageia.com'; // Cambiar según tu entorno
     const urlCompleta = url.startsWith('/') ? baseBackendUrl + url : url;
 
     // Para evitar caché
@@ -99,7 +99,10 @@ const Caja = ({
 
   const renderTablaCaja = () => {
     const term = searchTerm.toUpperCase();
-    const filtrados = movimientos.filter(mov => mov.patente?.toUpperCase().includes(term));
+    const filtrados = movimientos
+      .filter(mov => mov.patente?.toUpperCase().includes(term))
+      .reverse(); // 🔹 invierte el orden
+    
     const paginados = paginar(filtrados, paginaActual);
     const total = totalPaginas(filtrados);
 

@@ -9,10 +9,10 @@ const TiposVehiculo = () => {
   const [nuevoTemporal, setNuevoTemporal] = useState(false);
 
   const fetchTipos = () => {
-    fetch('http://localhost:5000/api/tipos-vehiculo')
+    fetch('https://api.garageia.com/api/tipos-vehiculo')
       .then(res => res.json())
       .then(data => {
-        setTipos(data);
+        setTipos(data.map(t => typeof t === 'string' ? t : t.nombre));
         setLoading(false);
       })
       .catch(err => {
@@ -29,13 +29,15 @@ const TiposVehiculo = () => {
     setSelected(tipo === selected ? null : tipo);
   };
 
-  const capitalize = (text) =>
-    text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+  const capitalize = (text) => {
+    if (typeof text !== 'string') return '';
+    return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+  };
 
   const handleEliminar = async () => {
     if (!selected) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/tipos-vehiculo/${selected}`, {
+      const res = await fetch(`https://api.garageia.com/api/tipos-vehiculo/${selected}`, {
         method: 'DELETE',
       });
       if (res.ok) {
@@ -75,7 +77,7 @@ const TiposVehiculo = () => {
 
     if (nuevoTemporal) {
       try {
-        const res = await fetch(`http://localhost:5000/api/tipos-vehiculo`, {
+        const res = await fetch(`https://api.garageia.com/api/tipos-vehiculo`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -97,7 +99,7 @@ const TiposVehiculo = () => {
       }
     } else {
       try {
-        const res = await fetch(`http://localhost:5000/api/tipos-vehiculo/${editando}`, {
+        const res = await fetch(`https://api.garageia.com/api/tipos-vehiculo/${editando}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',

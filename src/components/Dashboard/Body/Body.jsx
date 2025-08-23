@@ -60,7 +60,7 @@ function Body() {
   useEffect(() => {
     const fetchData = async (endpoint, setState) => {
       try {
-        const response = await fetch(`http://localhost:5000/api/${endpoint}`);
+        const response = await fetch(`https://api.garageia.com/api/${endpoint}`);
         const data = await response.json();
         setState(data);
       } catch (error) {
