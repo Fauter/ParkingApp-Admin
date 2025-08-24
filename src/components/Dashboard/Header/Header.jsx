@@ -67,9 +67,6 @@ const Header = () => {
             <NavLink to="/auditoria">Auditoría</NavLink>
             <NavLink to="/tickets">Turnos/Abonos</NavLink>
             <NavLink to="/config">Config</NavLink>
-            <a href="https://operador.garageia.com/" target="_blank" rel="noopener noreferrer">
-              Operador
-            </a>
           </nav>
         </div>
         <div className="header-right">

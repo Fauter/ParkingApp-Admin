@@ -92,20 +92,22 @@ const Precios = () => {
   const tiposTarifa = ['hora', 'turno', 'estadia', 'abono'];
 
   const formatPrecio = (precio) => {
-    if (precio !== 'N/A') {
+    if (precio !== 'N/A' && precio !== undefined && precio !== null && precio !== '') {
       return new Intl.NumberFormat('es-AR', {
         style: 'decimal',
         minimumFractionDigits: 0,
         maximumFractionDigits: 0,
       }).format(precio);
     }
-    return precio;
+    return 'N/A';
   };
 
   const renderTablaPorTipo = (tipoTarifa) => {
-    const tarifasFiltradas = tarifas.filter(
-      t => normalizar(t.tipo) === normalizar(tipoTarifa)
-    );
+    // Para "abono", generamos una fila virtual "Mensual" sin depender de /api/tarifas
+    const tarifasFiltradas =
+      normalizar(tipoTarifa) === 'abono'
+        ? [{ _id: 'virtual-abono-mensual', nombre: 'Mensual', tipo: 'abono' }]
+        : tarifas.filter(t => normalizar(t.tipo) === normalizar(tipoTarifa));
 
     if (tarifasFiltradas.length === 0) return null;
 
@@ -129,6 +131,7 @@ const Precios = () => {
           </thead>
           <tbody>
             {tarifasFiltradas.map(tarifa => {
+              // El nombre de la tarifa (e.g. 'Hora', '4 Horas', 'Día', 'Mensual') define la clave en /precios (lowercase)
               const nombreTarifa = tarifa.nombre ? tarifa.nombre.toLowerCase() : '';
               return (
                 <tr key={tarifa._id}>
@@ -137,13 +140,14 @@ const Precios = () => {
                     const vehiculo = tipo.nombre ? tipo.nombre.toLowerCase() : '';
                     const esEditando =
                       editing.vehiculo === vehiculo && editing.tarifa === nombreTarifa;
-                    const valor = precios[vehiculo]?.[nombreTarifa] ?? 'N/A';
+                    const valor = precios[vehiculo]?.[nombreTarifa];
 
                     return (
                       <td
                         key={tipo._id}
                         onClick={() => handleCellClick(vehiculo, nombreTarifa)}
                         className={esEditando ? 'editing' : ''}
+                        style={{ cursor: 'pointer' }}
                       >
                         {esEditando ? (
                           <div style={{ position: 'relative' }}>
@@ -159,7 +163,11 @@ const Precios = () => {
                             />
                           </div>
                         ) : (
-                          <span className="precio-format">{`$${formatPrecio(valor)}`}</span>
+                          <span className="precio-format">
+                            {valor === undefined || valor === null || valor === ''
+                              ? '—'
+                              : `$${formatPrecio(valor)}`}
+                          </span>
                         )}
                       </td>
                     );
