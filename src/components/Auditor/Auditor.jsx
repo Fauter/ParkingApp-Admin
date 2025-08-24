@@ -41,10 +41,62 @@ function formatHora(fechaHora) {
   if (!fechaHora) return '---';
   try {
     const fecha = new Date(fechaHora);
-    return fecha.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+    return fecha.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
   } catch {
     return '---';
   }
+}
+
+// Compactos (también para Histórico)
+function fechaCorta(fechaHora) {
+  if (!fechaHora) return '---';
+  try {
+    const d = new Date(fechaHora);
+    return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' }); // dd/mm
+  } catch {
+    return '---';
+  }
+}
+function horaCorta(fechaHora) {
+  if (!fechaHora) return '';
+  try {
+    const d = new Date(fechaHora);
+    return d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false }); // HH:mm (24h)
+  } catch {
+    return '';
+  }
+}
+
+/* ==========
+   Helpers UI
+=========== */
+// Trunca conservando inicio y fin. Ej: "auditoria-vehiculos-2024-08-24.pdf" -> "auditoria-veh…08-24.pdf"
+function shortenNombreArchivo(nombre, max = 18) {
+  if (!nombre) return 'auditoria.pdf';
+  if (nombre.length <= max) return nombre;
+  const keepStart = Math.max(6, Math.floor(max * 0.55));
+  const keepEnd   = Math.max(6, max - keepStart - 1);
+  return `${nombre.slice(0, keepStart)}…${nombre.slice(-keepEnd)}`;
+}
+
+// hook para elegir cuántos caracteres mostrar según viewport
+function useAuditNameShortener() {
+  const getMax = () => {
+    const w = typeof window !== 'undefined' ? window.innerWidth : 1200;
+    if (w <= 340) return 10;
+    if (w <= 380) return 12;
+    if (w <= 450) return 13;
+    if (w <= 560) return 15;
+    if (w <= 720) return 16;
+    return 18; // desktop
+  };
+  const [maxChars, setMaxChars] = useState(getMax());
+  useEffect(() => {
+    const onResize = () => setMaxChars(getMax());
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  return (nombre) => shortenNombreArchivo(nombre, maxChars);
 }
 
 /* =========================
@@ -58,9 +110,7 @@ function ModalAudit({ titulo, onClose, children }) {
           <h2>{titulo}</h2>
           <button className="modal-cerrar-audit" onClick={onClose}>X</button>
         </div>
-        <div className="modal-body-audit">
-          {children}
-        </div>
+        <div className="modal-body-audit">{children}</div>
       </div>
     </div>
   );
@@ -78,17 +128,17 @@ export default function Auditor() {
   const [activeTab, setActiveTab] = useState('Histórico'); // 'Histórico' | 'Nueva Auditoría'
   const [loading, setLoading] = useState(false);
 
-  // filtros compactos (según pedido)
+  // filtros compactos
   const [searchTerm, setSearchTerm] = useState(''); // SOLO para "Nueva Auditoría" (patente)
   const [filtros, setFiltros] = useState({
     // Histórico
-    fecha: '',     // exacta
-    hora: '',      // rango
-    estado: '',    // OK | Conflicto | Pendiente
+    fecha: '',
+    hora: '',
+    estado: '',
     // Nueva Auditoría
-    fechaNA: '',       // exacta
-    horaEntrada: '',   // rango
-    tipoVehiculo: '',  // string
+    fechaNA: '',
+    horaEntrada: '',
+    tipoVehiculo: '',
   });
 
   // dropdown perfil
@@ -113,6 +163,8 @@ export default function Auditor() {
     color: '',
     tipoVehiculo: 'auto'
   });
+
+  const shortener = useAuditNameShortener();
 
   /* =========================
      Effects: fetch básicos
@@ -159,7 +211,6 @@ export default function Auditor() {
 
     const cargarVehiculos = async () => {
       try {
-        // Si tu API tiene un endpoint específico para "en playa", reemplazalo aquí
         const response = await fetch('https://api.garageia.com/api/vehiculos', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -181,11 +232,11 @@ export default function Auditor() {
   }, [activeTab, searchTerm, filtros.fecha, filtros.hora, filtros.estado, filtros.fechaNA, filtros.horaEntrada, filtros.tipoVehiculo]);
 
   /* =========================
-     Helpers core (idéntica lógica)
+     Helpers core
   ========================= */
   const crearAlertaConflicto = async (tipoConflicto) => {
     const fecha = new Date().toISOString().split('T')[0];
-    const hora = new Date().toLocaleTimeString('es-AR');
+    const hora = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
 
     const dataAlerta = {
       fecha,
@@ -394,47 +445,59 @@ export default function Auditor() {
     const paginados = paginar(filtrados, paginaActual);
     const total = totalPaginas(filtrados);
 
+    const nombreCompleto = (item) =>
+      item?.auditoria?.nombreArchivo || `auditoria-${item?._id || 'sin-id'}.pdf`;
+
     return (
       <div className="table-container">
         <div className="table-wrapper">
-          <table className="transaction-table">
+          <table className="transaction-table compact">
             <thead>
               <tr>
-                <th>Fecha</th>
-                <th>Hora</th>
-                <th>Operador</th>
-                <th>Auditoría</th>
-                <th>Estado</th>
+                <th className="col-fecha">Fecha</th>
+                <th className="col-operador">Operador</th>
+                <th className="col-archivo">Auditoría</th>
+                <th className="col-estado">Estado</th>
               </tr>
             </thead>
             <tbody>
-              {paginados.map((item) => (
-                <tr key={item._id || Math.random()}>
-                  <td>{formatFecha(item.fechaHora)}</td>
-                  <td>{formatHora(item.fechaHora)}</td>
-                  <td>{item.operador || '---'}</td>
-                  <td className="celda-archivo">
-                    {item.auditoria?.path ? (
-                      <a 
-                        href="#"
-                        onClick={(e) => descargarAuditoria(item, e)}
-                        className="enlace-auditoria"
-                        title={item.auditoria?.nombreArchivo || 'Descargar auditoría'}
-                      >
-                        {item.auditoria?.nombreArchivo || 'Auditoria.pdf'}
-                      </a>
-                    ) : '---'}
-                  </td>
-                  <td>
-                    <span className={`estado-badge estado-${(item.estado || 'pendiente').toLowerCase()}`}>
-                      {item.estado === 'OK' ? 'OK' : item.estado === 'Conflicto' ? 'Conflicto' : 'Pendiente'}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              {paginados.map((item) => {
+                const compFecha = `${fechaCorta(item.fechaHora)}${horaCorta(item.fechaHora) ? ` · ${horaCorta(item.fechaHora)}` : ''}`;
+                const tieneLink = Boolean(item?._id);
+                const fullName = nombreCompleto(item);
+                const shortName = shortener(fullName);
+
+                return (
+                  <tr key={item._id || Math.random()}>
+                    <td className="nowrap col-fecha" title={formatFecha(item.fechaHora) + ' ' + formatHora(item.fechaHora)}>
+                      {compFecha}
+                    </td>
+                    <td className="nowrap col-operador truncate-cell" title={item.operador || '---'}>
+                      {item.operador || '---'}
+                    </td>
+                    <td className="celda-archivo col-archivo">
+                      {tieneLink ? (
+                        <a
+                          href="#"
+                          onClick={(e) => descargarAuditoria(item, e)}
+                          className="enlace-auditoria trunc-link"
+                          title={fullName}
+                        >
+                          📄 {shortName}
+                        </a>
+                      ) : '---'}
+                    </td>
+                    <td className="col-estado">
+                      <span className={`estado-badge estado-${(item.estado || 'pendiente').toLowerCase()}`}>
+                        {item.estado === 'OK' ? 'OK' : item.estado === 'Conflicto' ? 'Conflicto' : 'Pendiente'}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
               {Array.from({ length: Math.max(0, ITEMS_POR_PAGINA - paginados.length) }, (_, i) => (
                 <tr key={`empty-h-${i}`}>
-                  {Array.from({ length: 5 }, (_, j) => <td key={j}>---</td>)}
+                  <td>---</td><td>---</td><td>---</td><td>---</td>
                 </tr>
               ))}
             </tbody>
@@ -477,12 +540,6 @@ export default function Auditor() {
 
     const paginados = paginar(filtrados, paginaActual);
     const total = totalPaginas(filtrados);
-
-    const logout = () => {
-      localStorage.removeItem('token');
-      localStorage.removeItem('redirectAfterLogin');
-      navigate('/login', { replace: true });
-    };
 
     return (
       <>
@@ -544,12 +601,8 @@ export default function Auditor() {
               </select>
             </div>
             <div className="modal-botones-audit">
-              <button onClick={() => setModalAbierto(false)} className="boton-cancelar-audit">
-                Cancelar
-              </button>
-              <button onClick={agregarVehiculoTemporal} className="boton-confirmar-audit">
-                Agregar
-              </button>
+              <button onClick={() => setModalAbierto(false)} className="boton-cancelar-audit">Cancelar</button>
+              <button onClick={agregarVehiculoTemporal} className="boton-confirmar-audit">Agregar</button>
             </div>
           </ModalAudit>
         )}
@@ -567,45 +620,49 @@ export default function Auditor() {
 
         <div className="table-container">
           <div className="table-wrapper">
-            <table className="transaction-table">
+            <table className="transaction-table compact">
               <thead>
                 <tr>
-                  <th>Patente</th>
-                  <th>Fecha</th>
-                  <th>Hora Entrada</th>
-                  <th>Operador</th>
-                  <th>Tipo de Vehículo</th>
-                  <th>Abonado/Turno</th>
-                  <th>Estado</th>
-                  <th className="td-check"></th>
+                  <th className="col-placa">Patente</th>
+                  <th className="col-fecha-na"><span className="th-singleline">Fecha</span></th>
+                  <th className="col-tipo">
+                    <span className="th-stack"><span>Tipo</span><span>Vehículo</span></span>
+                  </th>
+                  <th className="th-checkbox" aria-label="Seleccionar"></th>
                 </tr>
               </thead>
               <tbody>
                 {paginados.map(veh => {
                   const entrada = veh.estadiaActual?.entrada ? new Date(veh.estadiaActual.entrada) : null;
-                  let abonadoTurnoTexto = 'No';
-                  if (veh.abonado) abonadoTurnoTexto = 'Abonado';
-                  else if (veh.turno) abonadoTurnoTexto = 'Turno';
+                  const _fecha = entrada ? fechaCorta(entrada) : '---';
+                  const _hora = entrada ? horaCorta(entrada) : '';
                   const esTemporal = veh._id?.toString().startsWith('temp-');
                   const estaChequeado = vehiculosSeleccionados.includes(veh._id);
+                  const tipoLabel = veh.tipoVehiculo
+                    ? veh.tipoVehiculo[0].toUpperCase() + veh.tipoVehiculo.slice(1)
+                    : '---';
+
+                  const filaSeleccionada = esTemporal || estaChequeado;
 
                   return (
-                    <tr 
-                      key={veh._id} 
-                      className={`${estaChequeado ? 'checked' : ''} ${esTemporal ? 'vehiculo-temporal' : ''}`}
-                    >
-                      <td>{veh.patente?.toUpperCase() || '---'}</td>
-                      <td>{entrada?.toLocaleDateString() || '---'}</td>
-                      <td>{entrada?.toLocaleTimeString() || '---'}</td>
-                      <td>{veh.estadiaActual?.operadorNombre || (esTemporal ? user?.nombre : '---')}</td>
-                      <td>{veh.tipoVehiculo ? veh.tipoVehiculo[0].toUpperCase() + veh.tipoVehiculo.slice(1) : '---'}</td>
-                      <td>{abonadoTurnoTexto}</td>
-                      <td>{esTemporal ? 'Temporal' : 'Sistema'}</td>
+                    <tr key={veh._id} className={`${filaSeleccionada ? 'checked' : ''} ${esTemporal ? 'vehiculo-temporal' : ''}`}>
+                      <td className="nowrap col-placa" title={veh.patente?.toUpperCase() || '---'}>
+                        {veh.patente?.toUpperCase() || '---'}
+                      </td>
+                      <td className="col-fecha-na" title={`${_fecha}${_hora ? ' ' + _hora : ''}`}>
+                        <div className="fecha-stack">
+                          <span className="fs-dia">{_fecha}</span>
+                          <span className="fs-hora">{_hora}</span>
+                        </div>
+                      </td>
+                      <td className="col-tipo truncate-cell" title={tipoLabel}>
+                        <span className="tipo-wrap">{tipoLabel}</span>
+                      </td>
                       <td className="td-checkbox">
-                        <label className="checkbox-container">
+                        <label className={`checkbox-container ${filaSeleccionada ? 'is-selected' : ''}`} title={esTemporal ? 'Vehículo temporal' : 'Seleccionar'}>
                           <input
                             type="checkbox"
-                            checked={esTemporal || estaChequeado}
+                            checked={filaSeleccionada}
                             onChange={() => !esTemporal && handleCheckboxChange(veh._id)}
                             disabled={esTemporal}
                           />
@@ -617,7 +674,7 @@ export default function Auditor() {
                 })}
                 {Array.from({ length: Math.max(0, ITEMS_POR_PAGINA - paginados.length) }, (_, i) => (
                   <tr key={`empty-n-${i}`}>
-                    {Array.from({ length: 8 }, (_, j) => <td key={j}>---</td>)}
+                    <td>---</td><td>---</td><td>---</td><td>---</td>
                   </tr>
                 ))}
               </tbody>
@@ -652,18 +709,19 @@ export default function Auditor() {
 
   return (
     <div className="auditor-wrap">
-      {/* Header que respeta Header.css */}
+      {/* Header que respeta Header.css, con overrides responsivos locales */}
       <div className="header-container">
-        <div className="header">
-          <div className="header-left">
+        <div className="header header-audit-fix">
+          <div className="header-left header-left-fix">
             <div className="logo-container">
-              <span className="header-title">Auditoría</span>
+              <span className="header-title header-title-fix">Auditoría</span>
             </div>
-            <nav>
+            <nav className="nav-fix" aria-label="Secciones de auditoría">
               <a
                 href="#!"
                 className={activeTab === 'Histórico' ? 'active' : ''}
                 onClick={() => setActiveTab('Histórico')}
+                aria-current={activeTab === 'Histórico' ? 'page' : undefined}
               >
                 Histórico
               </a>
@@ -671,6 +729,7 @@ export default function Auditor() {
                 href="#!"
                 className={activeTab === 'Nueva Auditoría' ? 'active' : ''}
                 onClick={() => setActiveTab('Nueva Auditoría')}
+                aria-current={activeTab === 'Nueva Auditoría' ? 'page' : undefined}
               >
                 Nueva Auditoría
               </a>
@@ -678,11 +737,6 @@ export default function Auditor() {
           </div>
 
           <div className="header-right">
-            {/* (Opcional) Search del header si quisieras activarlo */}
-            {/* <div className="search-bar">
-              <span className="search-icon">🔎</span>
-              <input placeholder="Buscar..." />
-            </div> */}
             <div className="profile-container" onClick={() => setOpenMenu(v => !v)}>
               <div
                 className="profile-pic"
@@ -700,7 +754,7 @@ export default function Auditor() {
       </div>
 
       <main className="aud-main">
-        {/* Barra de filtros (solo lo necesario) */}
+        {/* Barra de filtros */}
         <div className="aud-topbar">
           <div className="filters">
             {activeTab === 'Histórico' ? (
