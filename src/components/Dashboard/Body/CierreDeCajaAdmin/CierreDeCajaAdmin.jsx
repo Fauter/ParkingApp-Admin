@@ -3,6 +3,20 @@ import '../Caja/Caja.css';
 
 const ITEMS_POR_PAGINA = 10;
 
+// 🔒 Defensa: normaliza cualquier variante de "operador" a texto legible
+const normalizarOperador = (op) => {
+  if (!op) return '---';
+  if (typeof op === 'string') {
+    if (op === '[object Object]') return '---';
+    if (/^[0-9a-fA-F]{24}$/.test(op)) return '---';
+    return op;
+  }
+  if (typeof op === 'object') {
+    return op.nombre || op.name || op.username || op.email || op._id || '---';
+  }
+  return String(op);
+};
+
 const CierreDeCajaAdmin = ({
   activeCajaTab,
   searchTerm,
@@ -21,30 +35,25 @@ const CierreDeCajaAdmin = ({
   const [dataARetirar, setDataARetirar] = useState([]);
   const [dataRetirado, setDataRetirado] = useState([]);
 
-  // Ref para controlar el interval
   const intervaloRef = useRef(null);
 
-  // Reset pagina al cambiar tab o búsqueda
   useEffect(() => {
     setPaginaActual(1);
   }, [activeCajaTab, searchTerm]);
 
-  // Reset retirados locales cuando cambian cierresDeCaja
   useEffect(() => {
     setRetiradosLocales(new Set());
   }, [cierresDeCaja]);
 
-  // Función para aplicar todos los filtros
   const aplicarFiltros = (datos) => {
     return datos.filter(item => {
-      // Filtro por búsqueda (operador)
-      const searchMatch = item.operador?.toUpperCase().includes(searchTerm.trim().toUpperCase());
-      
-      // Filtro por operador seleccionado
+      const opNombre = normalizarOperador(item.operador);
+
+      const searchMatch = opNombre?.toUpperCase().includes(searchTerm.trim().toUpperCase());
+
       const operadorMatch = !filtros.operador || 
-        item.operador?.toLowerCase().includes(filtros.operador.toLowerCase());
+        opNombre?.toLowerCase().includes(filtros.operador.toLowerCase());
       
-      // Filtro por hora
       let horaMatch = true;
       if (filtros.hora) {
         const [desde, hasta] = filtros.hora.split('-').map(Number);
@@ -52,14 +61,12 @@ const CierreDeCajaAdmin = ({
         horaMatch = horaItem >= desde && horaItem < hasta;
       }
       
-      // Filtro por fecha exacta
       let fechaMatch = true;
       if (filtros.fecha) {
         const fechaItem = new Date(item.fecha).toISOString().split('T')[0];
         fechaMatch = fechaItem === filtros.fecha;
       }
       
-      // Filtro por rango de fechas
       let rangoFechaMatch = true;
       if (filtros.fechaDesde || filtros.fechaHasta) {
         const fechaItem = new Date(item.fecha);
@@ -76,7 +83,6 @@ const CierreDeCajaAdmin = ({
     });
   };
 
-  // Cargar datos iniciales para A Retirar y Retirado
   useEffect(() => {
     const fetchCierresDeCaja = async () => {
       try {
@@ -84,11 +90,9 @@ const CierreDeCajaAdmin = ({
         if (!res.ok) throw new Error('Error al obtener cierres de caja');
         const data = await res.json();
         
-        // Filtrar cierres no retirados
         const aRetirarData = data.filter(item => !item.retirado);
         setDataARetirar(aRetirarData);
         
-        // Filtrar cierres retirados
         const retiradoData = data.filter(item => item.retirado);
         setDataRetirado(retiradoData);
       } catch (error) {
@@ -101,7 +105,6 @@ const CierreDeCajaAdmin = ({
     fetchCierresDeCaja();
   }, []);
 
-  // Función fetch para parciales
   const fetchParciales = async () => {
     try {
       const res = await fetch('https://api.garageia.com/api/cierresdecaja/parcial');
@@ -114,9 +117,7 @@ const CierreDeCajaAdmin = ({
     }
   };
 
-  // Efecto que maneja refresco automático según pestaña activa
   useEffect(() => {
-    // Limpiar cualquier intervalo anterior
     if (intervaloRef.current) {
       clearInterval(intervaloRef.current);
       intervaloRef.current = null;
@@ -139,21 +140,17 @@ const CierreDeCajaAdmin = ({
     };
 
     if (activeCajaTab === 'Parciales') {
-      // Fetch inicial inmediato
       fetchParciales();
-      // Set interval para fetch cada 5 segundos
       intervaloRef.current = setInterval(() => {
         fetchParciales();
       }, 5000);
     } else if (activeCajaTab === 'A Retirar' || activeCajaTab === 'Retirado') {
-      // Para estas pestañas disparar el fetch cada 5 segundos
-      fetchData(); // Llamar de entrada para cargar datos actualizados
+      fetchData();
       intervaloRef.current = setInterval(() => {
         fetchData();
       }, 5000);
     }
 
-    // Cleanup cuando cambia activeCajaTab o se desmonta
     return () => {
       if (intervaloRef.current) {
         clearInterval(intervaloRef.current);
@@ -200,9 +197,6 @@ const CierreDeCajaAdmin = ({
       if (!res.ok) throw new Error('Error al actualizar');
 
       const data = await res.json();
-      console.log('Marcado como retirado:', data);
-
-      // Actualizar los datos locales
       const updatedARetirar = dataARetirar.filter(item => item._id !== id);
       setDataARetirar(updatedARetirar);
       
@@ -244,7 +238,7 @@ const CierreDeCajaAdmin = ({
                 <tr key={item._id}>
                   <td>{item.fecha || '---'}</td>
                   <td>{item.hora || '---'}</td>
-                  <td>{item.operador || '---'}</td>
+                  <td>{normalizarOperador(item.operador)}</td>
                   <td>${item.totalRecaudado?.toLocaleString('es-AR') || '---'}</td>
                   <td>${item.dejoEnCaja?.toLocaleString('es-AR') || '---'}</td>
                   <td>${item.totalRendido?.toLocaleString('es-AR') || '---'}</td>
@@ -288,7 +282,7 @@ const CierreDeCajaAdmin = ({
                 <tr key={item._id}>
                   <td>{item.fecha || '---'}</td>
                   <td>{item.hora || '---'}</td>
-                  <td>{item.operador || '---'}</td>
+                  <td>{normalizarOperador(item.operador)}</td>
                   <td>${item.monto?.toLocaleString('es-AR') || '---'}</td>
                 </tr>
               ))}

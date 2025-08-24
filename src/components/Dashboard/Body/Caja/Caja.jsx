@@ -4,6 +4,21 @@ import './Caja.css';
 
 const ITEMS_POR_PAGINA = 10;
 
+// 🔒 Defensa: normaliza cualquier variante de "operador" a texto legible
+const normalizarOperador = (op) => {
+  if (!op) return '---';
+  if (typeof op === 'string') {
+    if (op === '[object Object]') return '---';
+    // Si quedó un ObjectId porque el backend viejo no normalizó
+    if (/^[0-9a-fA-F]{24}$/.test(op)) return '---';
+    return op;
+  }
+  if (typeof op === 'object') {
+    return op.nombre || op.name || op.username || op.email || op._id || '---';
+  }
+  return String(op);
+};
+
 const Caja = ({
   movimientos = [],
   vehiculos = [],
@@ -53,12 +68,8 @@ const Caja = ({
 
   const abrirFoto = (url) => {
     if (!url) return;
-
-    // Si la url empieza con '/', la concateno con host backend
-    const baseBackendUrl = 'https://api.garageia.com'; // Cambiar según tu entorno
+    const baseBackendUrl = 'https://api.garageia.com';
     const urlCompleta = url.startsWith('/') ? baseBackendUrl + url : url;
-
-    // Para evitar caché
     const urlConTimestamp = `${urlCompleta}?t=${Date.now()}`;
     setModalFotoUrl(urlConTimestamp);
   };
@@ -101,7 +112,7 @@ const Caja = ({
     const term = searchTerm.toUpperCase();
     const filtrados = movimientos
       .filter(mov => mov.patente?.toUpperCase().includes(term))
-      .reverse(); // 🔹 invierte el orden
+      .reverse();
     
     const paginados = paginar(filtrados, paginaActual);
     const total = totalPaginas(filtrados);
@@ -214,7 +225,7 @@ const Caja = ({
                     <td>{veh.patente?.toUpperCase() || '---'}</td>
                     <td>{entrada?.toLocaleDateString() || '---'}</td>
                     <td>{entrada?.toLocaleTimeString() || '---'}</td>
-                    <td>{veh.estadiaActual.operadorNombre || '---'}</td>
+                    <td>{veh.estadiaActual?.operadorNombre || '---'}</td>
                     <td>{veh.tipoVehiculo ? veh.tipoVehiculo[0].toUpperCase() + veh.tipoVehiculo.slice(1) : '---'}</td>
                     <td>{abonadoTurnoTexto}</td>
                     <td>
@@ -245,7 +256,7 @@ const Caja = ({
     const filtradas = alertas
       .filter(a =>
         a.tipoDeAlerta?.toUpperCase().includes(term) ||
-        a.operador?.toUpperCase().includes(term)
+        normalizarOperador(a.operador)?.toUpperCase().includes(term)
       )
       .reverse();
     const paginadas = paginar(filtradas, paginaActual);
@@ -269,7 +280,7 @@ const Caja = ({
                   <td>{alerta.tipoDeAlerta || '---'}</td>
                   <td>{alerta.fecha || '---'}</td>
                   <td>{alerta.hora || '---'}</td>
-                  <td>{alerta.operador || '---'}</td>
+                  <td>{normalizarOperador(alerta.operador)}</td>
                 </tr>
               ))}
               {renderFilasVacias(ITEMS_POR_PAGINA - paginadas.length, 4)}
@@ -286,7 +297,7 @@ const Caja = ({
     const filtrados = incidentes
       .filter(i =>
         i.texto?.toUpperCase().includes(term) ||
-        i.operador?.toUpperCase().includes(term)
+        normalizarOperador(i.operador)?.toUpperCase().includes(term)
       )
       .reverse();
     const paginados = paginar(filtrados, paginaActual);
@@ -312,7 +323,7 @@ const Caja = ({
                     <td>{inc.texto || '---'}</td>
                     <td>{fechaYHora?.toLocaleDateString() || '---'}</td>
                     <td>{fechaYHora?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || '---'}</td>
-                    <td>{inc.operador || '---'}</td>
+                    <td>{normalizarOperador(inc.operador)}</td>
                   </tr>
                 );
               })}
