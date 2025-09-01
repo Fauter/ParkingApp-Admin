@@ -69,7 +69,7 @@
 .modalabono {
   background: #ffffff;
   border-radius: 12px;
-  padding: 20px;
+  padding: 20px 20px 45px 20px;
   max-height: 85%;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
   position: relative;
@@ -293,4 +293,22 @@
   outline: none;
   box-shadow: 0 0 8px #ff3b3b;
   background: #fff0f0;
+}
+
+/* Forzar label arriba y control abajo en los selects del bloque final */
+.field-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;            /* espacio entre label y select */
+}
+
+.select-input {
+  width: 100%;
+  min-height: 36px;
+}
+
+/* (opcional) un poco más de aire en ese bloque compacto */
+.compact-form .field-vertical label {
+  font-size: 0.95rem;
+  color: #0d161c;
 }

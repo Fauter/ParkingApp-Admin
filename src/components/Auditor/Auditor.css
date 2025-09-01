@@ -279,9 +279,9 @@
 .modal-contenedor-audit{background:#fff;border-radius:12px;min-width:280px;max-width:92vw;border:1px solid var(--line)}
 .modal-header-audit{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--line)}
 .modal-body-audit{padding:12px}
-.modal-cerrar-audit{border:1px solid var(--line);background:#f6f8fc;border-radius:8px;padding:4px 8px;cursor:pointer}
+.modal-cerrar-audit{border:1px solid var(--line);background:#f6f8fc;border-radius:8px;padding:4px 8px;cursor:pointer;color: black;}
 .form-group-audit{display:grid;gap:6px;margin-bottom:8px}
-.modal-input-audit{border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.modal-input-audit{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background-color:#d5dadf;width: 95%;}
 .modal-botones-audit{display:flex;gap:8px;justify-content:flex-end}
 .boton-cancelar-audit{background:#f3f6fb;border:1px solid var(--line);border-radius:8px;padding:6px 10px}
 .boton-confirmar-audit{background:#2563eb;color:#fff;border:1px solid #1d4ed8;border-radius:8px;padding:6px 10px}

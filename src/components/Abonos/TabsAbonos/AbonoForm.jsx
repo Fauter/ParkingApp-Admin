@@ -35,6 +35,17 @@ const AbonoForm = ({ onClose, user }) => {
   const [sugerencias, setSugerencias] = useState([]);
   const [nombreTemporal, setNombreTemporal] = useState('');
 
+  // ===== Helpers =====
+  const formatARS = (n) => {
+    if (typeof n !== 'number') return null;
+    try {
+      return new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 }).format(n);
+    } catch {
+      return n?.toString() ?? '';
+    }
+  };
+
+  // ===== Efectos de inicialización =====
   useEffect(() => {
     setFormData({
       nombreApellido: '',
@@ -63,19 +74,20 @@ const AbonoForm = ({ onClose, user }) => {
   useEffect(() => {
     fetch('https://api.garageia.com/api/tarifas')
       .then(res => res.json())
-      .then(data => setTarifas(data.filter(t => t.tipo === 'abono')))
+      .then(data => setTarifas((Array.isArray(data) ? data : []).filter(t => t.tipo === 'abono')))
       .catch(err => console.error('Error al cargar tarifas', err));
   }, []);
 
   useEffect(() => {
+    // Tipos + Precios (para armar label "Tipo - $Precio")
     fetch('https://api.garageia.com/api/tipos-vehiculo')
       .then(res => res.json())
-      .then(data => setTiposVehiculo(data))
+      .then(data => setTiposVehiculo(Array.isArray(data) ? data : []))
       .catch(err => console.error('Error al cargar tipos de vehículo', err));
 
     fetch('https://api.garageia.com/api/precios')
       .then(res => res.json())
-      .then(data => setPrecios(data))
+      .then(data => setPrecios(data || {}))
       .catch(err => console.error('Error al cargar precios', err));
   }, []);
 
@@ -147,6 +159,7 @@ const AbonoForm = ({ onClose, user }) => {
     setSugerencias([]);
   };
 
+  // ===== Handlers =====
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -201,6 +214,7 @@ const AbonoForm = ({ onClose, user }) => {
     return formatoViejo.test(patente) || formatoNuevo.test(patente);
   };
 
+  // ===== Submit =====
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -339,7 +353,7 @@ const AbonoForm = ({ onClose, user }) => {
 
     } catch (error) {
       console.error(error);
-      alert('❌ ' + error.message);
+      alert('❌ ' + (error?.message || 'Error inesperado'));
     } finally {
       setLoading(false);
     }
@@ -354,7 +368,25 @@ const AbonoForm = ({ onClose, user }) => {
           value={nombreTemporal}
           onChange={handleNombreChange}
           required
+          autoComplete="off"
         />
+        {sugerencias.length > 0 && (
+          <ul className="sugerencias-lista">
+            {sugerencias.map((cliente) => (
+              <li
+                key={cliente._id}
+                onClick={(e) => {
+                  e.preventDefault();
+                  seleccionarCliente(cliente);
+                }}
+                className="sugerencia-item"
+              >
+                {cliente.nombreApellido}
+              </li>
+            ))}
+          </ul>
+        )}
+
         <input name="dniCuitCuil" placeholder="DNI/CUIT/CUIL" value={formData.dniCuitCuil} onChange={handleChange} required />
         <input name="email" type="email" placeholder="Email" value={formData.email} onChange={handleChange} required />
         <input name="domicilio" placeholder="Domicilio" value={formData.domicilio} onChange={handleChange} required />
@@ -373,7 +405,14 @@ const AbonoForm = ({ onClose, user }) => {
       </div>
 
       <div className="form-section grid-2">
-        <input name="patente" placeholder="Patente" value={formData.patente} onChange={(e) => setFormData({...formData, patente: (e.target.value || '').toUpperCase()})} required />
+        <input
+          name="patente"
+          placeholder="Patente"
+          value={formData.patente}
+          onChange={(e) => setFormData({...formData, patente: (e.target.value || '').toUpperCase()})}
+          required
+          maxLength={8}
+        />
         <input name="marca" placeholder="Marca" value={formData.marca} onChange={handleChange} />
         <input name="modelo" placeholder="Modelo" value={formData.modelo} onChange={handleChange} />
         <input name="color" placeholder="Color" value={formData.color} onChange={handleChange} />
@@ -381,9 +420,10 @@ const AbonoForm = ({ onClose, user }) => {
         <input name="companiaSeguro" placeholder="Compañía de Seguro" value={formData.companiaSeguro} onChange={handleChange} />
       </div>
 
+      {/* <<< AQUÍ van vertical: label arriba, select abajo >>> */}
       <div className="form-section grid-3 compact-form">
-        <div>
-          <label className="sr-only">Tipo de Vehículo</label>
+        <div className="field-vertical">
+          <label>Tipo de Vehículo</label>
           <select
             name="tipoVehiculo"
             value={formData.tipoVehiculo}
@@ -392,16 +432,22 @@ const AbonoForm = ({ onClose, user }) => {
             className="select-input"
           >
             <option value="" disabled hidden>Seleccionar...</option>
-            {tiposVehiculo.map(tipo => (
-              <option key={tipo.nombre} value={tipo.nombre}>
-                {tipo.nombre.charAt(0).toUpperCase() + tipo.nombre.slice(1)}
-              </option>
-            ))}
+            {tiposVehiculo.map((tipo) => {
+              const key = (tipo?.nombre || '').toLowerCase();
+              const mensual = precios?.[key]?.mensual;
+              const labelPrecio = typeof mensual === 'number' ? `$${formatARS(mensual)}` : 'N/A';
+              const capitalized = tipo?.nombre ? (tipo.nombre.charAt(0).toUpperCase() + tipo.nombre.slice(1)) : '';
+              return (
+                <option key={tipo?.nombre || key} value={tipo?.nombre || ''}>
+                  {capitalized} - {labelPrecio}
+                </option>
+              );
+            })}
           </select>
         </div>
 
-        <div>
-          <label className="sr-only">Método de Pago</label>
+        <div className="field-vertical">
+          <label>Método de Pago</label>
           <select
             name="metodoPago"
             value={formData.metodoPago}
@@ -417,8 +463,8 @@ const AbonoForm = ({ onClose, user }) => {
           </select>
         </div>
 
-        <div>
-          <label className="sr-only">Factura</label>
+        <div className="field-vertical">
+          <label>Factura</label>
           <select
             name="factura"
             value={formData.factura}

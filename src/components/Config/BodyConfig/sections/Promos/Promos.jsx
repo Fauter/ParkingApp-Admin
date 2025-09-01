@@ -30,17 +30,34 @@ const Promos = () => {
     setShowModal(true);
   };
 
+  // --- Helpers numéricos para descuento (solo dígitos) ---
+  const soloDigitos = (str) => (str || '').replace(/[^\d]/g, '');
+  const bloquearNoNumericos = (e) => {
+    const invalid = ['e', 'E', '+', '-', '.', ',', ' '];
+    if (invalid.includes(e.key)) e.preventDefault();
+  };
+
+  // Form modal: sanitiza descuento a solo dígitos
   const manejarCambioForm = (e) => {
     const { name, value } = e.target;
-    setPromoForm(prev => ({ ...prev, [name]: value }));
+    if (name === 'descuento') {
+      const limpio = soloDigitos(value);
+      setPromoForm(prev => ({ ...prev, [name]: limpio }));
+    } else {
+      setPromoForm(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const guardarPromo = async () => {
     try {
+      const body = {
+        ...promoForm,
+        descuento: Number(soloDigitos(promoForm.descuento || '0')),
+      };
       await fetch('https://api.garageia.com/api/promos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(promoForm),
+        body: JSON.stringify(body),
       });
       cargarPromos();
       setShowModal(false);
@@ -62,23 +79,25 @@ const Promos = () => {
   };
 
   // Editar inline
-  const comenzarEdicion = (id, field) => {
-    setEditing({ id, field });
-  };
+  const comenzarEdicion = (id, field) => setEditing({ id, field });
 
   const manejarCambioInline = (e, id, field) => {
-    const value = e.target.value;
-    setPromos(prev =>
-      prev.map(p => (p._id === id ? { ...p, [field]: field === 'descuento' ? Number(value) : value } : p))
-    );
+    let value = e.target.value;
+    if (field === 'descuento') {
+      value = soloDigitos(value);
+      setPromos(prev => prev.map(p => (p._id === id ? { ...p, [field]: Number(value) } : p)));
+    } else {
+      setPromos(prev => prev.map(p => (p._id === id ? { ...p, [field]: value } : p)));
+    }
   };
 
   const guardarInline = async (id, promo) => {
     try {
+      const body = { ...promo, descuento: Number(soloDigitos(String(promo.descuento ?? '0'))) };
       await fetch(`https://api.garageia.com/api/promos/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(promo),
+        body: JSON.stringify(body),
       });
       setEditing({ id: null, field: null });
       cargarPromos();
@@ -88,17 +107,14 @@ const Promos = () => {
   };
 
   const manejarKeyDown = (e, id, promo) => {
-    if (e.key === 'Enter') {
-      guardarInline(id, promo);
-    }
+    if (e.key === 'Enter') guardarInline(id, promo);
     if (e.key === 'Escape') {
-      cargarPromos(); // revertir cambios
+      cargarPromos();
       setEditing({ id: null, field: null });
     }
   };
 
   const manejarBlur = () => {
-    // Al perder foco cancelamos la edición (podrías cambiar por guardar si querés)
     setEditing({ id: null, field: null });
     cargarPromos();
   };
@@ -146,14 +162,16 @@ const Promos = () => {
                     <div className="input-con-porcentaje">
                       <input
                         ref={inputRef}
-                        type="number"
-                        value={promo.descuento}
+                        type="text"
+                        inputMode="numeric"
+                        pattern="\d*"
+                        value={String(promo.descuento ?? '')}
                         onChange={e => manejarCambioInline(e, promo._id, 'descuento')}
-                        onKeyDown={e => manejarKeyDown(e, promo._id, promo)}
+                        onKeyDown={bloquearNoNumericos}
                         onBlur={manejarBlur}
                         className="promo-input"
                       />
-                      <span className="porcentaje">%</span>
+                      <span className="porcentaje">% </span>
                     </div>
                   ) : (
                     `${promo.descuento}%`
@@ -170,7 +188,6 @@ const Promos = () => {
         </tbody>
       </table>
 
-      {/* Botón Crear Promo abajo de la tabla */}
       <button className="promos-boton boton-crear" onClick={abrirModalCrear}>
         Crear Promo
       </button>
@@ -179,22 +196,38 @@ const Promos = () => {
         <div className="modal-promo">
           <div className="modal-contenido-promo">
             <h3>Crear Promo</h3>
-            <input
-              type="text"
-              name="nombre"
-              placeholder="Nombre"
-              value={promoForm.nombre}
-              onChange={manejarCambioForm}
-              className="promo-input"
-            />
-            <input
-              type="number"
-              name="descuento"
-              placeholder="Descuento"
-              value={promoForm.descuento}
-              onChange={manejarCambioForm}
-              className="promo-input"
-            />
+
+            {/* Nombre con wrapper para igualar medidas */}
+            <div className="input-wrapper input-wrapper--modal">
+              <input
+                type="text"
+                name="nombre"
+                placeholder="Nombre"
+                value={promoForm.nombre}
+                onChange={manejarCambioForm}
+                className="promo-input promo-input--boxed"
+              />
+            </div>
+
+            {/* Descuento con % dentro y mismas medidas */}
+            <div className="input-con-porcentaje input-con-porcentaje--modal">
+              <input
+                type="text"
+                name="descuento"
+                placeholder="Descuento"
+                inputMode="numeric"
+                pattern="\d*"
+                min={0}
+                max={100}
+                step={1}
+                value={promoForm.descuento}
+                onChange={manejarCambioForm}
+                onKeyDown={bloquearNoNumericos}
+                className="promo-input promo-input--con-sufijo"
+              />
+              <span className="porcentaje porcentaje--modal">%</span>
+            </div>
+
             <div className="modal-promo-botones">
               <button className="creacionBoton" onClick={guardarPromo}>
                 Guardar

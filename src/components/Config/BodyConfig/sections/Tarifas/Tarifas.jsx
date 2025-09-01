@@ -1,6 +1,31 @@
 import React, { useEffect, useState } from 'react';
 import './Tarifas.css';
 
+const NUMERIC_FIELDS = ['dias', 'horas', 'minutos', 'tolerancia'];
+const isNumericCampo = (c) => NUMERIC_FIELDS.includes(c);
+const sanitizeDigits = (v) => (v ?? '').toString().replace(/\D+/g, '');
+
+// Bloquea teclas no numéricas en inputs "numéricos"
+const handleNumericKeyDown = (e) => {
+  const allow = ['Backspace','Delete','ArrowLeft','ArrowRight','Home','End','Tab'];
+  if (allow.includes(e.key)) return;
+  if (['e','E','+','-','.',',',' '].includes(e.key)) { e.preventDefault(); return; }
+  if (!/^\d$/.test(e.key)) { e.preventDefault(); }
+};
+
+// Evita inserciones no numéricas a nivel beforeinput
+const handleNumericBeforeInput = (e) => {
+  if (e.data && /\D/.test(e.data)) e.preventDefault();
+};
+
+// Sanitiza el pegado
+const handleNumericPaste = (e, onSanitizedValue) => {
+  const text = (e.clipboardData || window.clipboardData).getData('text');
+  const clean = sanitizeDigits(text);
+  if (clean !== text) e.preventDefault();
+  if (clean !== text && typeof onSanitizedValue === 'function') onSanitizedValue(clean);
+};
+
 const Tarifas = () => {
   const [tarifas, setTarifas] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -35,7 +60,7 @@ const Tarifas = () => {
       .then(data => setTarifas(data))
       .catch(err => console.error('Error cargando tarifas:', err));
 
-    // Cargar los parámetros por defecto desde el servidor o archivo JSON
+    // Cargar los parámetros por defecto
     fetch('https://api.garageia.com/api/parametros')
       .then(res => res.json())
       .then(data => {
@@ -49,8 +74,8 @@ const Tarifas = () => {
       })
       .catch(err => console.error('Error cargando parámetros:', err));
   }, []);
+
   useEffect(() => {
-    // Solo guardar los parámetros cuando se haya terminado de cargar los parámetros
     if (!cargandoParametros) {
       guardarParametros();
     }
@@ -76,7 +101,13 @@ const Tarifas = () => {
       // estadia: { nombre: 'Día', tipo: 'estadia' },
     };
 
-    const data = { ...defaults[selectedTipo], ...nuevoInput };
+    // Aseguramos que los numéricos vayan como enteros
+    const payload = { ...nuevoInput };
+    NUMERIC_FIELDS.forEach(f => {
+      if (payload[f] !== undefined) payload[f] = parseInt(payload[f], 10) || 0;
+    });
+
+    const data = { ...defaults[selectedTipo], ...payload };
 
     try {
       const res = await fetch('https://api.garageia.com/api/tarifas', {
@@ -109,9 +140,7 @@ const Tarifas = () => {
   const guardarParametros = () => {
     fetch('https://api.garageia.com/api/parametros', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(parametros),
     })
       .then(res => res.json())
@@ -119,8 +148,20 @@ const Tarifas = () => {
   };
 
   const activarEdicion = (id, campo, valorActual) => {
+    const numeric = isNumericCampo(campo);
+
+    let initial = valorActual;
+    // Si es numérico y viene 0 / null / '' => dejar el input vacío al editar
+    if (numeric && (initial === 0 || initial === null || initial === undefined || initial === '0' || initial === '')) {
+      initial = '';
+    } else if (initial !== null && initial !== undefined) {
+      initial = String(initial);
+    } else {
+      initial = '';
+    }
+
     setEditandoCampo({ id, campo });
-    setValorTemporal(valorActual);
+    setValorTemporal(initial);
   };
 
   const manejarCambio = (e) => {
@@ -129,13 +170,19 @@ const Tarifas = () => {
 
   const manejarTecla = async (e, tarifa) => {
     if (e.key === 'Enter') {
-      const actualizada = { ...tarifa, [editandoCampo.campo]: editandoCampo.campo === 'nombre' ? valorTemporal : parseInt(valorTemporal) || 0 };
+      const campo = editandoCampo.campo;
+      const actualizado = {
+        ...tarifa,
+        [campo]: campo === 'nombre'
+          ? valorTemporal
+          : (parseInt(valorTemporal, 10) || 0)
+      };
 
       try {
         const res = await fetch(`https://api.garageia.com/api/tarifas/${tarifa._id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(actualizada),
+          body: JSON.stringify(actualizado),
         });
         const nueva = await res.json();
         setTarifas(prev => prev.map(t => (t._id === tarifa._id ? nueva : t)));
@@ -150,26 +197,42 @@ const Tarifas = () => {
     }
   };
 
-  const renderInputField = (label, field) => (
-    <div className="input-group">
-      <label>{label}</label>
-      <input
-        type={field === 'nombre' ? 'text' : 'number'}
-        value={nuevoInput[field] || ''}
-        onChange={(e) =>
-          setNuevoInput(prev => ({
-            ...prev,
-            [field]: field === 'nombre' ? e.target.value : parseInt(e.target.value) || 0
-          }))
-        }
-      />
-    </div>
-  );
+  // ---- INPUT DEL MODAL (con validación numérica estrica en campos requeridos)
+  const renderInputField = (label, field) => {
+    const numeric = isNumericCampo(field);
 
+    const value = nuevoInput[field] ?? (numeric ? '' : '');
+    const setSanitized = (raw) => {
+      const v = numeric ? sanitizeDigits(raw) : raw;
+      setNuevoInput(prev => ({
+        ...prev,
+        [field]: v
+      }));
+    };
+
+    return (
+      <div className="input-group">
+        <label>{label}</label>
+        <input
+          type="text"                       // usamos text + defensas manuales
+          inputMode={numeric ? 'numeric' : 'text'}
+          pattern={numeric ? '[0-9]*' : undefined}
+          value={value}
+          onChange={(e) => setSanitized(e.target.value)}
+          onKeyDown={numeric ? handleNumericKeyDown : undefined}
+          onBeforeInput={numeric ? handleNumericBeforeInput : undefined}
+          onPaste={numeric ? (e) => handleNumericPaste(e, (clean) => setSanitized(clean)) : undefined}
+        />
+      </div>
+    );
+  };
+
+  // ---- CELDA DE TABLA (extiendo defensa cuando edites números en línea)
   const renderCelda = (tarifa, campo) => {
     const valor = tarifa[campo] ?? '';
     const esEditando = editandoCampo.id === tarifa._id && editandoCampo.campo === campo;
     const esPrimeraColumna = campo === 'nombre';
+    const numeric = isNumericCampo(campo);
 
     return (
       <td
@@ -179,9 +242,20 @@ const Tarifas = () => {
       >
         {esEditando ? (
           <input
+            type="text"
+            inputMode={numeric ? 'numeric' : 'text'}
+            pattern={numeric ? '[0-9]*' : undefined}
             value={valorTemporal}
-            onChange={manejarCambio}
-            onKeyDown={(e) => manejarTecla(e, tarifa)}
+            onChange={(e) => {
+              const v = numeric ? sanitizeDigits(e.target.value) : e.target.value;
+              setValorTemporal(v);
+            }}
+            onKeyDown={(e) => {
+              if (numeric) handleNumericKeyDown(e);
+              manejarTecla(e, tarifa);
+            }}
+            onBeforeInput={numeric ? handleNumericBeforeInput : undefined}
+            onPaste={numeric ? (e) => handleNumericPaste(e, (clean) => setValorTemporal(clean)) : undefined}
             autoFocus
           />
         ) : (
@@ -239,8 +313,8 @@ const Tarifas = () => {
               <label>Tolerancia Inicial:</label>
               <input
                 type="number"
-                value={parametros.toleranciaInicial || ""}
-                onChange={(e) => setParametros(prev => ({ ...prev, toleranciaInicial: Number(e.target.value) }))}
+                value={parametros.toleranciaInicial ?? ""}
+                onChange={(e) => setParametros(prev => ({ ...prev, toleranciaInicial: Number(e.target.value || 0) }))}
               />
             </div>
             <div className="config-item checkbox-item">
@@ -255,50 +329,9 @@ const Tarifas = () => {
             </div>
           </div>
         )}
-        {/* {tipo === 'turno' && (
-          <div className="configuracion-turno">
-            <div className="config-wrapper-turno">
-              <div className="lado-izquierdo-turno">
-                <div className="config-item-turno">
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={parametros.calcularExcedenteTurno || false}
-                      onChange={(e) => setParametros(prev => ({ ...prev, calcularExcedenteTurno: e.target.checked }))}
-                    />
-                    Calcular excedente por hora
-                  </label>
-                </div>
-              </div>
-              <div className="lado-derecho-turno">
-                <div className="config-item-turno">
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={parametros.permitirReservaTurno || false}
-                      onChange={(e) => setParametros(prev => ({ ...prev, permitirReservaTurno: e.target.checked }))}
-                    />
-                    Permitir reserva
-                  </label>
-                </div>
-                <div className="config-item-turno">
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={parametros.permitirCobroAnticipadoTurno || false}
-                      onChange={(e) => setParametros(prev => ({ ...prev, permitirCobroAnticipadoTurno: e.target.checked }))}
-                    />
-                    Permitir cobro anticipado
-                  </label>
-                </div>
-              </div>
-            </div>
-          </div>
-        )} */}
       </div>
     );
   };
-  
 
   const renderNuevoModal = () => {
     const campos = {

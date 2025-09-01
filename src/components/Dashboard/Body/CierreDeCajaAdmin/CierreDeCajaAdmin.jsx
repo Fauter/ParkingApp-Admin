@@ -17,6 +17,17 @@ const normalizarOperador = (op) => {
   return String(op);
 };
 
+// 🔎 Descripción según reglas: nombre/texto
+const buildDescripcion = (item) => {
+  const nombre = (item?.nombre || '').toString().trim();
+  const texto  = (item?.texto  || '').toString().trim();
+
+  if (nombre && texto) return `${nombre} - ${texto}`;
+  if (nombre) return `Nombre: ${nombre}`;
+  if (texto)  return texto;
+  return '---';
+};
+
 const CierreDeCajaAdmin = ({
   activeCajaTab,
   searchTerm,
@@ -27,7 +38,7 @@ const CierreDeCajaAdmin = ({
   parciales: parcialesProp = [],
   limpiarFiltros,
   onActualizar,
-  filtros // Añadimos filtros como prop
+  filtros = {} // default seguro
 }) => {
   const [paginaActual, setPaginaActual] = useState(1);
   const [retiradosLocales, setRetiradosLocales] = useState(new Set());
@@ -49,24 +60,25 @@ const CierreDeCajaAdmin = ({
     return datos.filter(item => {
       const opNombre = normalizarOperador(item.operador);
 
-      const searchMatch = opNombre?.toUpperCase().includes(searchTerm.trim().toUpperCase());
+      const search = (searchTerm || '').trim().toUpperCase();
+      const searchMatch = opNombre?.toUpperCase().includes(search);
 
-      const operadorMatch = !filtros.operador || 
-        opNombre?.toLowerCase().includes(filtros.operador.toLowerCase());
-      
+      const operadorMatch = !filtros.operador ||
+        opNombre?.toLowerCase().includes((filtros.operador || '').toLowerCase());
+
       let horaMatch = true;
       if (filtros.hora) {
         const [desde, hasta] = filtros.hora.split('-').map(Number);
         const horaItem = parseInt(item.hora?.split(':')[0], 10);
         horaMatch = horaItem >= desde && horaItem < hasta;
       }
-      
+
       let fechaMatch = true;
       if (filtros.fecha) {
         const fechaItem = new Date(item.fecha).toISOString().split('T')[0];
         fechaMatch = fechaItem === filtros.fecha;
       }
-      
+
       let rangoFechaMatch = true;
       if (filtros.fechaDesde || filtros.fechaHasta) {
         const fechaItem = new Date(item.fecha);
@@ -74,11 +86,11 @@ const CierreDeCajaAdmin = ({
         const fechaHasta = filtros.fechaHasta
           ? new Date(new Date(filtros.fechaHasta).setDate(new Date(filtros.fechaHasta).getDate() + 1))
           : null;
-        
+
         if (fechaDesde) rangoFechaMatch = fechaItem >= fechaDesde;
         if (fechaHasta) rangoFechaMatch = rangoFechaMatch && fechaItem < fechaHasta;
       }
-      
+
       return searchMatch && operadorMatch && horaMatch && fechaMatch && rangoFechaMatch;
     });
   };
@@ -89,10 +101,10 @@ const CierreDeCajaAdmin = ({
         const res = await fetch('https://api.garageia.com/api/cierresdecaja/');
         if (!res.ok) throw new Error('Error al obtener cierres de caja');
         const data = await res.json();
-        
+
         const aRetirarData = data.filter(item => !item.retirado);
         setDataARetirar(aRetirarData);
-        
+
         const retiradoData = data.filter(item => item.retirado);
         setDataRetirado(retiradoData);
       } catch (error) {
@@ -128,10 +140,10 @@ const CierreDeCajaAdmin = ({
         const res = await fetch('https://api.garageia.com/api/cierresdecaja/');
         if (!res.ok) throw new Error('Error al obtener cierres de caja');
         const data = await res.json();
-        
+
         const aRetirarData = data.filter(item => !item.retirado);
         setDataARetirar(aRetirarData);
-        
+
         const retiradoData = data.filter(item => item.retirado);
         setDataRetirado(retiradoData);
       } catch (error) {
@@ -199,7 +211,7 @@ const CierreDeCajaAdmin = ({
       const data = await res.json();
       const updatedARetirar = dataARetirar.filter(item => item._id !== id);
       setDataARetirar(updatedARetirar);
-      
+
       const updatedRetirado = [...dataRetirado, data];
       setDataRetirado(updatedRetirado);
     } catch (error) {
@@ -271,6 +283,7 @@ const CierreDeCajaAdmin = ({
           <table className="transaction-table">
             <thead>
               <tr>
+                <th>Descripción</th>
                 <th>Fecha</th>
                 <th>Hora</th>
                 <th>Operador</th>
@@ -280,13 +293,14 @@ const CierreDeCajaAdmin = ({
             <tbody>
               {paginados.map((item) => (
                 <tr key={item._id}>
+                  <td>{buildDescripcion(item)}</td>
                   <td>{item.fecha || '---'}</td>
                   <td>{item.hora || '---'}</td>
                   <td>{normalizarOperador(item.operador)}</td>
                   <td>${item.monto?.toLocaleString('es-AR') || '---'}</td>
                 </tr>
               ))}
-              {renderFilasVacias(ITEMS_POR_PAGINA - paginados.length, 4)}
+              {renderFilasVacias(ITEMS_POR_PAGINA - paginados.length, 5)}
             </tbody>
           </table>
           {renderPaginado(total)}

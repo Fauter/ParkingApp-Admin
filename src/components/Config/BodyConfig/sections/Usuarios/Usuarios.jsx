@@ -1,6 +1,29 @@
 import React, { useEffect, useState } from 'react';
 import './Usuarios.css';
 
+const TZ = 'America/Argentina/Buenos_Aires';
+
+function formatearFechaHora(v) {
+  if (!v) return '—';
+  let d;
+  if (typeof v === 'number') d = new Date(v);
+  else if (typeof v === 'string') d = new Date(v);
+  else if (v?._seconds) d = new Date(v._seconds * 1000);
+  else return '—';
+
+  if (Number.isNaN(d.getTime())) return '—';
+
+  // Ej: 01/09/2025 06:12
+  return d.toLocaleString('es-AR', {
+    timeZone: TZ,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
 const Usuarios = () => {
   const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -17,81 +40,71 @@ const Usuarios = () => {
   });
 
   useEffect(() => {
-    const obtenerUsuarios = async () => {
+    (async () => {
       try {
         const response = await fetch('https://api.garageia.com/api/auth/');
         if (!response.ok) throw new Error('Error al obtener usuarios');
         const data = await response.json();
-        setUsuarios(data);
+        setUsuarios(Array.isArray(data) ? data : []);
       } catch (err) {
-        setError(err.message);
+        setError(err.message || 'Error desconocido');
       } finally {
         setLoading(false);
       }
-    };
-    obtenerUsuarios();
+    })();
   }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormUsuario((prevState) => ({
-      ...prevState,
-      [name]: value,
-    }));
+    setFormUsuario((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleEliminar = async (id) => {
-    if (window.confirm("¿Seguro que querés eliminar este usuario?")) {
-      try {
-        const res = await fetch(`https://api.garageia.com/api/auth/${id}`, {
-          method: 'DELETE',
-        });
-
-        if (!res.ok) throw new Error('Error al eliminar el usuario');
-
-        setUsuarios(usuarios.filter((u) => u._id !== id));
-        alert("Usuario eliminado correctamente");
-      } catch (err) {
-        console.error(err);
-        alert("Hubo un error al eliminar el usuario");
-      }
+    if (!window.confirm('¿Seguro que querés eliminar este usuario?')) return;
+    try {
+      const res = await fetch(`https://api.garageia.com/api/auth/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Error al eliminar el usuario');
+      setUsuarios((prev) => prev.filter((u) => u._id !== id));
+      alert('Usuario eliminado correctamente');
+    } catch (err) {
+      console.error(err);
+      alert('Hubo un error al eliminar el usuario');
     }
   };
 
   const handleEditar = (id) => {
     const usuario = usuarios.find((u) => u._id === id);
-    if (usuario) {
-      setFormUsuario({ ...usuario, password: '' }); // No mostramos contraseña
-      setUsuarioEditadoId(id);
-      setEditando(true);
-      setModalOpen(true);
-    }
+    if (!usuario) return;
+    const { nombre='', apellido='', username='', role='operador' } = usuario;
+    setFormUsuario({ nombre, apellido, username, role, password: '' });
+    setUsuarioEditadoId(id);
+    setEditando(true);
+    setModalOpen(true);
   };
 
   const handleGuardarEdicion = async () => {
     try {
+      // No mandes password vacío
+      const payload = { ...formUsuario };
+      if (!payload.password) delete payload.password;
+
       const res = await fetch(`https://api.garageia.com/api/auth/${usuarioEditadoId}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formUsuario),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
+      if (!res.ok) throw new Error(data?.msg || 'Error al editar usuario');
 
-      if (!res.ok) throw new Error(data.msg || 'Error al editar usuario');
-
-      setUsuarios(usuarios.map((u) =>
-        u._id === usuarioEditadoId ? { ...u, ...formUsuario } : u
-      ));
-      setModalOpen(false);
-      setEditando(false);
-      setUsuarioEditadoId(null);
-      alert("Usuario actualizado correctamente");
+      setUsuarios((prev) =>
+        prev.map((u) => (u._id === usuarioEditadoId ? { ...u, ...data } : u))
+      );
+      cerrarModal();
+      alert('Usuario actualizado correctamente');
     } catch (err) {
       console.error(err);
-      alert("Hubo un error al editar el usuario");
+      alert('Hubo un error al editar el usuario');
     }
   };
 
@@ -99,23 +112,21 @@ const Usuarios = () => {
     try {
       const res = await fetch('https://api.garageia.com/api/auth/register', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formUsuario),
       });
 
       const data = await res.json();
+      if (!res.ok) throw new Error(data?.msg || 'Error al crear usuario');
 
-      if (res.ok) {
-        alert(data.msg);
-        setUsuarios([...usuarios, formUsuario]);
-        setModalOpen(false);
-      } else {
-        alert(data.msg || 'Error al crear usuario');
-      }
+      // Usá el usuario real que devuelve el backend
+      const creado = data?.usuario || data?.user || data;
+      setUsuarios((prev) => [...prev, creado]);
+      cerrarModal();
+      alert(data?.msg || 'Usuario creado');
     } catch (err) {
       console.error('Error al crear usuario:', err);
+      alert(err.message || 'Error al crear usuario');
     }
   };
 
@@ -134,9 +145,7 @@ const Usuarios = () => {
 
   return (
     <div className="usuarios-container">
-      <h2 style={{ fontSize: "20px", fontWeight: "bold", marginBottom: "16px" }}>
-        Gestión de Usuarios
-      </h2>
+      <h2 className="usuarios-titulo">Gestión de Usuarios</h2>
 
       {loading ? (
         <p>Cargando usuarios...</p>
@@ -158,13 +167,13 @@ const Usuarios = () => {
             </thead>
             <tbody>
               {usuarios.map((usuario, index) => (
-                <tr key={usuario._id}>
+                <tr key={usuario._id || usuario.id || index}>
                   <td className="fila-numero">{index + 1}</td>
-                  <td>{usuario.nombre}</td>
-                  <td>{usuario.apellido}</td>
-                  <td>{usuario.username}</td>
-                  <td>{usuario.role}</td>
-                  <td>{usuario.ultimoAcceso}</td>
+                  <td>{usuario.nombre || '—'}</td>
+                  <td>{usuario.apellido || '—'}</td>
+                  <td>{usuario.username || '—'}</td>
+                  <td>{usuario.role || '—'}</td>
+                  <td>{formatearFechaHora(usuario.ultimoAcceso || usuario.lastLogin || usuario.updatedAt)}</td>
                   <td>
                     <button
                       onClick={() => handleEditar(usuario._id)}
@@ -207,7 +216,7 @@ const Usuarios = () => {
         <div className="modalUsers">
           <div className="modal-content">
             <h3>{editando ? 'Editar Usuario' : 'Crear Usuario'}</h3>
-            <form>
+            <form onSubmit={(e) => e.preventDefault()}>
               <div>
                 <label>Nombre</label>
                 <input
@@ -242,7 +251,7 @@ const Usuarios = () => {
                   name="password"
                   value={formUsuario.password}
                   onChange={handleInputChange}
-                  placeholder={editando ? "(Dejar en blanco para no cambiar)" : ""}
+                  placeholder={editando ? '(Dejar en blanco para no cambiar)' : ''}
                 />
               </div>
               <div>
@@ -257,20 +266,24 @@ const Usuarios = () => {
                   <option value="auditor">Auditor</option>
                 </select>
               </div>
-              <button
-                type="button"
-                onClick={editando ? handleGuardarEdicion : handleCrearUsuario}
-                className="usuarios-boton boton-crear"
-              >
-                {editando ? 'Guardar Cambios' : 'Crear'}
-              </button>
-              <button
-                type="button"
-                onClick={cerrarModal}
-                className="usuarios-boton boton-cancelar"
-              >
-                Cancelar
-              </button>
+
+              {/* Acciones perfectamente alineadas */}
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  onClick={cerrarModal}
+                  className="usuarios-boton boton-cancelar"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={editando ? handleGuardarEdicion : handleCrearUsuario}
+                  className="usuarios-boton boton-crear"
+                >
+                  {editando ? 'Guardar Cambios' : 'Crear'}
+                </button>
+              </div>
             </form>
           </div>
         </div>

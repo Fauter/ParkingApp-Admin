@@ -5,9 +5,7 @@
   overflow-x: auto;
 }
 
-.promos-title {
-  margin-bottom: 20px;
-}
+.promos-title { margin-bottom: 20px; }
 
 .promos-table {
   width: 100%;
@@ -29,11 +27,12 @@
   text-overflow: ellipsis;
   border: 1px solid #ddd;
   cursor: pointer;
+  vertical-align: middle;
 }
 
 .promos-table tbody tr td {
-  height: 10px;
-  max-width: 2px;
+  height: auto;
+  min-height: 24px;
 }
 
 .promos-table thead th {
@@ -42,11 +41,9 @@
   height: 20px;
 }
 
-.promos-table tbody tr:nth-child(even) {
-  background-color: #eaf3f7;
-}
+.promos-table tbody tr:nth-child(even) { background-color: #eaf3f7; }
 
-/* Botón Crear Promo abajo, centrado y con padding mayor */
+/* Botón Crear Promo */
 .boton-crear {
   margin-top: 12px;
   background-color: #81c784;
@@ -59,154 +56,155 @@
   margin-left: auto;
   margin-right: auto;
 }
+.boton-crear:hover { background-color: #66bb6a; }
 
-.boton-crear:hover {
-  background-color: #66bb6a;
-}
+.editing { background-color: #d9d9d9 !important; }
 
-.editing {
-  background-color: #d9d9d9 !important;
-}
-
+/* Inputs generales */
 .promo-input {
   min-width: 60px;
   width: 100%;
   max-width: 100%;
-  padding: 0; 
+  padding: 6px 8px;
   font-size: 14px;
   text-align: center;
-  border: none;      
-  background: transparent; 
-  color: inherit;        
-  outline: none;      
-  
-  overflow-x: auto;
-  white-space: nowrap;  
+  border: none;
+  background: transparent;
+  color: inherit;
+  outline: none;
+  overflow: hidden;           /* ⬅ evita desborde */
+  white-space: nowrap;
+  min-height: 28px;
+  line-height: 1.2;
+  box-sizing: border-box;     /* ⬅ clave para no “salirse” */
 }
 
+/* ===== INLINE (tabla) ===== */
 .input-con-porcentaje {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: 6px;
+  max-width: 100%;
 }
+.input-con-porcentaje .promo-input { flex: 1 1 auto; }
 
-.porcentaje {
+/* % inline centrado por flex */
+.input-con-porcentaje:not(.input-con-porcentaje--modal) .porcentaje {
+  position: static;
+  transform: none;
   font-size: 14px;
+  opacity: 0.6;
   color: inherit;
-  user-select: none; /* no seleccionable */
+  user-select: none;
 }
 
-.eliminar-promo-btn {
-  background-color: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
-  margin-left: 5px;
-  cursor: pointer;
-  padding: 4px 8px;
+/* ===== MODAL: wrappers uniformes ===== */
+.input-wrapper,
+.input-con-porcentaje--modal {
+  position: relative;
+  display: block;        /* el alto sigue al input */
+  width: 100%;
+  max-width: 100%;
+  margin-bottom: 18px;
 }
 
-.eliminar-promo-btn:hover {
-  background-color: #f5c6cb;
+/* Input “boxed” (Nombre) */
+.promo-input--boxed {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1.5px solid #ccc;
+  border-radius: 6px;
+  background: #fff;
+  color: #1e1e1e;
+  font-size: 16px;
+  min-height: 40px;
+  line-height: 1.2;
+  box-sizing: border-box;   /* ⬅ no se sale */
 }
 
-/* Modal Crear Promo */
+/* Input con sufijo % (Descuento) */
+.promo-input--con-sufijo {
+  display: block;
+  width: 100%;
+  padding: 8px 30px 8px 10px;   /* espacio para % */
+  border: 1.5px solid #ccc;
+  border-radius: 6px;
+  background: #fff;
+  color: #1e1e1e;
+  font-size: 16px;
+  min-height: 40px;
+  line-height: 1.2;
+  box-sizing: border-box;       /* ⬅ no se sale */
+}
+
+/* % dentro del input del modal (centrado según el input) */
+.input-con-porcentaje--modal .porcentaje {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  opacity: 0.45;
+  pointer-events: none;
+  user-select: none;
+  color: #000;
+}
+
+/* Estados focus */
+.modal-contenido-promo input.promo-input,
+.promo-input--boxed,
+.promo-input--con-sufijo {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.modal-contenido-promo input.promo-input:focus,
+.promo-input--boxed:focus,
+.promo-input--con-sufijo:focus {
+  outline: none;
+  border-color: #5eab5e;
+  box-shadow: 0 0 8px #5eab5e55;
+}
+
+/* Modal base */
 .modal-promo {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  opacity: 1;
-  transition: opacity 0.3s ease;
+  inset: 0;
+  background-color: rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000; opacity: 1; transition: opacity 0.3s ease;
 }
 .modal-contenido-promo {
   background: #f9f9f9;
   padding: 32px 36px;
   border-radius: 12px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
-  width: 360px;
-  max-width: 90%;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.25);
+  width: 360px; max-width: 90%;
   color: #1e1e1e;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   text-align: center;
 }
 .modal-contenido-promo h3 {
   margin-bottom: 20px;
-  font-weight: 600;
-  font-size: 22px;
-  color: #2c3e50;
-}
-.modal-contenido-promo input.promo-input {
-  font-size: 16px;
-  border: 1.5px solid #ccc;
-  border-radius: 6px;
-  margin-bottom: 18px;
-  background: white;
-  color: #1e1e1e;
-  transition: border-color 0.2s ease;
-}
-.modal-contenido-promo input.promo-input:focus {
-  outline: none;
-  border-color: #5eab5e;
-  box-shadow: 0 0 8px #5eab5e55;
-}
-.modal-contenido input.promo-input {
-  box-sizing: border-box;
+  font-weight: 600; font-size: 22px; color: #2c3e50;
 }
 .modal-promo-botones {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-  margin-top: 10px;
+  display: flex; justify-content: center; gap: 12px; margin-top: 10px;
 }
-.promos-boton {
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  border: none;
-  transition: background-color 0.25s ease, color 0.25s ease;
-}
-.creacionBoton {
-  background-color: #2e7d32; /* verde oscuro sobrio */
-  color: white;
-  padding: 10px 22px;
-  border-radius: 6px;
-  font-weight: 500;
-  font-size: 15px;
-  border: none;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-.creacionBoton:hover {
-  background-color: #27642a;
-}
-.cancelarCreacionBoton {
-  background-color: #eaeaea; /* gris claro sobrio */
-  color: #333;
-  padding: 10px 22px;
-  border-radius: 6px;
-  font-weight: 500;
-  font-size: 15px;
-  border: none;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-.cancelarCreacionBoton:hover {
-|  background-color: #d6d6d6;
-}
+.promos-boton { border-radius: 6px; font-weight: 600; cursor: pointer; border: none; transition: background-color .25s ease, color .25s ease; }
+.creacionBoton { background-color: #2e7d32; color: #fff; padding: 10px 22px; border-radius: 6px; font-weight: 500; font-size: 15px; border: none; cursor: pointer; transition: background-color .2s ease; }
+.creacionBoton:hover { background-color: #27642a; }
+.cancelarCreacionBoton { background-color: #eaeaea; color: #333; padding: 10px 22px; border-radius: 6px; font-weight: 500; font-size: 15px; border: none; cursor: pointer; transition: background-color .2s ease; }
+.cancelarCreacionBoton:hover { background-color: #d6d6d6; }
 
+/* Botón eliminar */
+.eliminar-promo-btn {
+  background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;
+  margin-left: 5px; cursor: pointer; padding: 4px 8px;
+}
+.eliminar-promo-btn:hover { background-color: #f5c6cb; }
+
+/* WebKit: ocultar flechas si se usa type=number en otro lado */
 .promo-input::-webkit-outer-spin-button,
-.promo-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
+.promo-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 /* Firefox */
-.promo-input[type=number] {
-  -moz-appearance: textfield;
-}
+.promo-input[type=number] { -moz-appearance: textfield; }

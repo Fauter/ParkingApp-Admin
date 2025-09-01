@@ -30,6 +30,16 @@ const ModalVehiculo = ({
   const metodosPago = ["Efectivo", "Débito", "Crédito", "QR"];
   const tiposFactura = ["CC", "A", "Final"];
 
+  // ===== Helper para formatear $ARS (igual que en el otro componente) =====
+  const formatARS = (n) => {
+    if (typeof n !== "number") return null;
+    try {
+      return new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 }).format(n);
+    } catch {
+      return n?.toString() ?? "";
+    }
+  };
+
   // Obtener usuario autenticado
   useEffect(() => {
     const fetchUser = async () => {
@@ -86,8 +96,8 @@ const ModalVehiculo = ({
           preciosRes.json()
         ]);
 
-        setTiposVehiculo(tiposData);
-        setPrecios(preciosData);
+        setTiposVehiculo(Array.isArray(tiposData) ? tiposData : []);
+        setPrecios(preciosData || {});
       } catch (error) {
         console.error("Error fetching data:", error);
         setTiposError("No se pudieron cargar los datos necesarios");
@@ -476,10 +486,10 @@ const ModalVehiculo = ({
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    patente: e.target.value.toUpperCase(),
+                    patente: (e.target.value || "").toUpperCase(),
                   })
                 }
-                maxLength={7}
+                maxLength={8}
                 required
               />
               <input
@@ -518,6 +528,8 @@ const ModalVehiculo = ({
                 value={formData.companiaSeguro || ""}
                 onChange={onInputChange}
               />
+
+              {/* >>> Select de tipo de vehículo con precio (formato igual al otro) <<< */}
               <select
                 id="tipoVehiculo"
                 name="tipoVehiculo"
@@ -534,14 +546,19 @@ const ModalVehiculo = ({
                     ? "Error cargando tipos"
                     : "Seleccioná un tipo"}
                 </option>
-                {!tiposLoading &&
-                  !tiposError &&
-                  tiposVehiculo.map((tipo) => (
-                    <option key={tipo} value={tipo}>
-                      {tipo.nombre.charAt(0).toUpperCase() + tipo.nombre.slice(1)} - 
-                      ${precios[tipo]?.mensual?.toLocaleString() || "N/A"}
+
+                {!tiposLoading && !tiposError && Array.isArray(tiposVehiculo) && tiposVehiculo.map((tipo) => {
+                  const nombre = tipo?.nombre || "";
+                  const key = nombre.toLowerCase();
+                  const mensual = precios?.[key]?.mensual;
+                  const labelPrecio = typeof mensual === "number" ? `$${formatARS(mensual)}` : "N/A";
+                  const capitalized = nombre ? (nombre.charAt(0).toUpperCase() + nombre.slice(1)) : "";
+                  return (
+                    <option key={nombre || key} value={nombre}>
+                      {capitalized} - {labelPrecio}
                     </option>
-                  ))}
+                  );
+                })}
               </select>
             </div>
 
@@ -564,7 +581,7 @@ const ModalVehiculo = ({
             <h3>Cambio a abono más caro</h3>
             <p>El vehículo seleccionado tiene un abono más caro que el actual.</p>
             <p className="diferencia-monto">
-              Diferencia a pagar: <strong>${diferenciaAPagar.toLocaleString()}</strong>
+              Diferencia a pagar: <strong>${formatARS(diferenciaAPagar)}</strong>
             </p>
             <p className="diferencia-info">
               Esta diferencia cubre los días restantes del abono actual.

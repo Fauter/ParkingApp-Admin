@@ -84,21 +84,10 @@ const TabsAbonos = () => {
     window.history.replaceState(null, '', `${location.pathname}?${params.toString()}`);
   };
 
-  const openModal = (type) => {
-    setModalOpen(type);
-  };
-
-  const closeModal = () => {
-    setModalOpen(null);
-  };
-
-  const handleAddAbono = () => {
-    openModal('abono');
-  };
-
-  const handleAddTurno = () => {
-    openModal('turno');
-  };
+  const openModal = (type) => setModalOpen(type);
+  const closeModal = () => setModalOpen(null);
+  const handleAddAbono = () => openModal('abono');
+  const handleAddTurno = () => openModal('turno');
 
   return (
     <div className="abonoTab-container">
