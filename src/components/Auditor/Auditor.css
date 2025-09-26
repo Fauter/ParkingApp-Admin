@@ -1,3 +1,4 @@
+/* Auditor.css */
 /* ======= Scope total para que NO afecte otros módulos ======= */
 .auditor-wrap {
   --bg: #f5f7fb;
@@ -94,7 +95,7 @@
 
 .auditor-wrap .transaction-table th,
 .auditor-wrap .transaction-table td {
-  padding: 10px 6px; border: 1px #ddd solid; text-align: left; font-size: 12.5px;
+  padding: 10px 6px; border: 1px var(--line) solid; text-align: left; font-size: 12.5px;
   color: var(--text); min-width: 60px; max-width: 240px; vertical-align: middle;
 }
 .auditor-wrap .transaction-table th { font-weight: 700; background-color: #e5eef3; }
@@ -107,7 +108,7 @@
 /* Histórico: columnas (ajuste agresivo para que Estado no se corte) */
 .auditor-wrap .col-fecha   { width: 120px; max-width: 130px; }
 .auditor-wrap .col-operador{ width: 120px; max-width: 140px; }
-.auditor-wrap .col-archivo { width: 160px; max-width: 180px; } /* << reducido fuerte */
+.auditor-wrap .col-archivo { width: 160px; max-width: 180px; }
 .auditor-wrap .col-estado  { width: 100px; max-width: 110px; white-space: nowrap; }
 
 /* Nueva Auditoría: columnas */
@@ -130,25 +131,76 @@
 /* Tipo, permitir truncar si es largo */
 .auditor-wrap .tipo-wrap { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; max-width: 100%; }
 
-/* Checkbox */
-.auditor-wrap .td-checkbox,
-.auditor-wrap .th-checkbox {
-  text-align: center; vertical-align: middle; padding: 6px !important; width: 46px; min-width: 46px;
+/* ===== Checkbox column ===== */
+/* Importante: no usar flex en el TD para no “romper” bordes; centrado con text-align y margin:auto */
+.auditor-wrap .th-checkbox,
+.auditor-wrap .td-checkbox {
+  text-align: center;
+  vertical-align: middle;
+  padding: 0 !important;          /* sin padding para que el borde del td se vea perfecto */
+  width: 46px;
+  min-width: 46px;
 }
-.auditor-wrap .td-checkbox { display: flex; justify-content: center; align-items: center; }
-.auditor-wrap .th-checkbox { background-color: #e5eef3; }
 
-.auditor-wrap .checkbox-container { position: relative; cursor: pointer; user-select: none; width: 20px; height: 20px; display: inline-block; }
-.auditor-wrap .checkbox-container input { position: absolute; opacity: 0; cursor: pointer; height: 0; width: 0; }
-.auditor-wrap .checkmark {
-  position: absolute; top: 0; left: 0; height: 18px; width: 18px;
-  background-color: #f1f6f8; border: 1px solid #c0cbd1; border-radius: 3px; transition: all 0.2s ease;
+/* El label actúa como contenedor clickeable centrado */
+.auditor-wrap .checkbox-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  width: 24px;                    /* hit-area mayor */
+  height: 24px;
+  padding: 3px;                   /* separa el check del borde del TD */
+  margin: 0 auto;                 /* centra horizontalmente dentro del TD */
 }
-.auditor-wrap .checkbox-container:hover .checkmark { background-color: #e5eef3; }
-.auditor-wrap .checkbox-container input:checked ~ .checkmark { background-color: var(--accent); border-color: var(--accent); box-shadow: inset 0 0 0 9999px rgba(0,0,0,0.12); }
-.auditor-wrap .checkmark:after { content: ""; position: absolute; display: none; }
+
+/* El input queda oculto pero mantiene accesibilidad (label + input) */
+.auditor-wrap .checkbox-container input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;                       /* ocupa todo el label para mejor click-area */
+  cursor: pointer;
+}
+
+/* El cuadrado visible del check ocupa todo el “content box” del label */
+.auditor-wrap .checkmark {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background-color: #fff;         /* fondo blanco para que no simule bordes raros */
+  border: 1px solid #c0cbd1;      /* borde propio del checkbox */
+  border-radius: 3px;
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Hover: feedback sutil */
+.auditor-wrap .checkbox-container:hover .checkmark {
+  background-color: #f6f8fc;
+}
+
+/* Estado checked */
+.auditor-wrap .checkbox-container input:checked ~ .checkmark {
+  background-color: var(--accent);
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 9999px rgba(0,0,0,0.12);
+}
+
+/* Tilde */
+.auditor-wrap .checkmark:after {
+  content: "";
+  position: absolute;
+  display: none;
+  left: 6px;
+  top: 2px;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
 .auditor-wrap .checkbox-container input:checked ~ .checkmark:after { display: block; }
-.auditor-wrap .checkbox-container .checkmark:after { left: 6px; top: 2px; width: 5px; height: 10px; border: solid white; border-width: 0 2px 2px 0; transform: rotate(45deg); }
 
 /* Estados */
 .auditor-wrap .estado-badge {
@@ -200,7 +252,7 @@
   /* Histórico */
   .auditor-wrap .col-fecha   { width: 108px; max-width: 116px; }
   .auditor-wrap .col-operador{ width: 104px; max-width: 116px; }
-  .auditor-wrap .col-archivo { width: 140px; max-width: 150px; } /* más chico aún */
+  .auditor-wrap .col-archivo { width: 140px; max-width: 150px; }
   .auditor-wrap .col-estado  { width: 90px;  max-width: 96px; }
 
   /* Nueva Auditoría */
@@ -210,7 +262,7 @@
 
   .auditor-wrap .th-stack { align-items: center; }
   .auditor-wrap .th-checkbox,
-  .auditor-wrap .td-checkbox { width: 42px; min-width: 42px; padding: 4px !important; }
+  .auditor-wrap .td-checkbox { width: 42px; min-width: 42px; }
 }
 
 /* <= 450px */
@@ -244,9 +296,6 @@
   .auditor-wrap .col-placa    { width: 92px; }
   .auditor-wrap .col-fecha-na { width: 92px; }
   .auditor-wrap .col-tipo     { width: 92px; }
-
-  .auditor-wrap .th-checkbox,
-  .auditor-wrap .td-checkbox { width: 38px; min-width: 38px; }
 }
 
 /* <= 380px */

@@ -185,6 +185,7 @@ function Filtros({ filtros, setFiltros, activeTab, activeCajaTab, limpiarFiltros
             >
               <option value="">Todos</option>
               <option value="Efectivo">Efectivo</option>
+              <option value="Transferencia">Transferencia</option>
               <option value="Débito">Débito</option>
               <option value="Crédito">Crédito</option>
               <option value="QR">QR</option>

@@ -293,7 +293,7 @@ const DetalleCliente = () => {
           </button>
         </nav>
 
-        {tab === 'vehiculos' && (
+        {/* {tab === 'vehiculos' && (
           <button
             className="boton-plus"
             onClick={() => setModalAgregarVisible(true)}
@@ -301,7 +301,7 @@ const DetalleCliente = () => {
           >
             <FaPlus />
           </button>
-        )}
+        )} */}
 
         <div className="detalle-cliente-tab-content split-tab-content">
           {tab === 'cuenta' ? (
@@ -482,6 +482,7 @@ const DetalleCliente = () => {
                     required
                 >
                     <option value="Efectivo">Efectivo</option>
+                    <option value="Transferencia">Transferencia</option>
                     <option value="Débito">Débito</option>
                     <option value="Crédito">Crédito</option>
                     <option value="QR">QR</option>

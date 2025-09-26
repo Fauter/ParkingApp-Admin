@@ -1,73 +1,109 @@
-.tab-container {
-}
+.tab-container {}
 
 .tab-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
 }
 
 .tab-links {
-    display: flex;
-    gap: 16px;
+  display: flex;
+  gap: 16px;
 }
 
 .tab-link {
-    text-decoration: none;
-    color: #497b97;
-    font-weight: bold;
+  text-decoration: none;
+  color: #497b97;
+  font-weight: bold;
 }
 .tab-link.active {
-    border-bottom: 3px solid #276a91;
-    color: #0d161c;
+  border-bottom: 3px solid #276a91;
+  color: #0d161c;
 }
 
+/* -------- Botonera auditoría -------- */
+.audit-buttons-container {
+  display: flex;
+  align-items: center;
+  gap: 8px; /* separación estándar entre botones */
+  margin-right: 40px;
+}
+
+/* Base */
 .register-audit-button {
-    background-color: #276a91;
-    color: white;
-    border: none;
-    padding: 3px 8px;
-    border-radius: 4px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background-color 0.3s;
-    margin-right: 30px;
+  border: none;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s, box-shadow 0.2s, border-color 0.2s, color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.register-audit-button:hover {
-    background-color: #1d4f6e;
+/* Primario (Registrar y +) */
+.register-audit-button.primary {
+  background-color: #276a91;
+  color: #ffffff;
+}
+.register-audit-button.primary:hover {
+  background-color: #1d4f6e;
 }
 
+/* Imprimir: simple (fondo claro, texto azul), más separado */
+.register-audit-button.print {
+  background-color: #e0eaf0;
+  color: #276a91;
+  border: 1px solid #c2d3df;
+  margin-right: 18px; /* separa Imprimir del resto */
+}
+.register-audit-button.print:hover {
+  background-color: #d6e3ec;
+  border-color: #b8cddd;
+}
+
+/* + cuadrado y pegado a Registrar */
+.add-button {
+  width: 32px;
+  height: 32px;
+  padding: 0;               /* cuadrado real */
+  border-radius: 6px;       /* un toque más cuadrado */
+}
+.plus-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* -------- Buscador -------- */
 .search-container {
-    border-top: 2px solid #cbdce6;
-    padding-top: 12px;
-    padding-bottom: 12px;
+  border-top: 2px solid #cbdce6;
+  padding-top: 12px;
+  padding-bottom: 12px;
 }
-
-/* Estilo cuando no hay search bar visible */
 .search-container.no-search {
-    padding-bottom: 0;
+  padding-bottom: 0;
 }
 
 .search-input-container {
-    display: flex;
-    align-items: center;
-    border-radius: 4px;
-    background-color: #e0eaf0;
-    width: 99%;
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+  background-color: #e0eaf0;
+  width: 99%;
 }
 .search-icon {
-    display: flex;
-    margin: 0px 5px 0px 5px;
+  display: flex;
+  margin: 0px 5px 0px 5px;
 }
 .search-input {
-    width: 100%;
-    padding: 8px;
-    border: none;
-    font-size: 14px;
-    background-color: #e0eaf0;
+  width: 100%;
+  padding: 8px;
+  border: none;
+  font-size: 14px;
+  background-color: #e0eaf0;
 }
 .search-input:focus {
-    outline: none;
+  outline: none;
 }

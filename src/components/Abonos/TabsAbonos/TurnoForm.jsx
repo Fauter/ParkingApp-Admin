@@ -108,7 +108,7 @@ const TurnoForm = ({ onClose, user }) => {
         metodoPago,
         factura: factura || 'Sin factura',
         monto: precioVehiculo,
-        descripcion: `Pago por Turno: ${turnoData.nombre}`,
+        descripcion: `Pago por Anticipado: ${turnoData.nombre}`,
         tipoTarifa: 'turno'  // Cambiado de 'abono' a 'turno'
       };
 
@@ -120,7 +120,7 @@ const TurnoForm = ({ onClose, user }) => {
 
       if (!movimientoRes.ok) {
         const errorData = await movimientoRes.json();
-        setError('Turno registrado pero error al registrar movimiento: ' + (errorData.error || ''));
+        setError('Anticipado registrado pero error al registrar movimiento: ' + (errorData.error || ''));
         return;
       }
 
@@ -160,7 +160,7 @@ const TurnoForm = ({ onClose, user }) => {
           name="turno"
         >
           <option value="" disabled hidden>
-            Seleccionar Turno
+            Seleccionar Anticipado
           </option>
           {turnos.map((t) => (
             <option key={t._id} value={t._id}>
@@ -178,6 +178,7 @@ const TurnoForm = ({ onClose, user }) => {
           name="metodoPago"
         >
           <option value="Efectivo">Efectivo</option>
+          <option value="Transferencia">Transferencia</option>
           <option value="Débito">Débito</option>
           <option value="Crédito">Crédito</option>
           <option value="QR">QR</option>
@@ -198,7 +199,7 @@ const TurnoForm = ({ onClose, user }) => {
       </div>
 
       <div className="form-actions">
-        <button type="submit">Guardar Turno</button>
+        <button type="submit">Guardar Anticipado</button>
         <button type="button" onClick={onClose}>Cancelar</button>
       </div>
     </form>

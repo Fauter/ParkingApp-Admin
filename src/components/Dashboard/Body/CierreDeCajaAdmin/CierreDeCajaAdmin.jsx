@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+// CierreDeCajaAdmin.jsx
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import '../Caja/Caja.css';
 
 const ITEMS_POR_PAGINA = 10;
 
-// 🔒 Defensa: normaliza cualquier variante de "operador" a texto legible
+// 🔒 Normaliza cualquier variante de "operador" a texto legible
 const normalizarOperador = (op) => {
   if (!op) return '---';
   if (typeof op === 'string') {
@@ -28,7 +29,7 @@ const buildDescripcion = (item) => {
   return '---';
 };
 
-const CierreDeCajaAdmin = ({
+const CierreDeCajaAdmin = forwardRef(({
   activeCajaTab,
   searchTerm,
   onCajaTabChange,
@@ -38,30 +39,35 @@ const CierreDeCajaAdmin = ({
   parciales: parcialesProp = [],
   limpiarFiltros,
   onActualizar,
-  filtros = {} // default seguro
-}) => {
+  filtros = {}
+}, ref) => {
   const [paginaActual, setPaginaActual] = useState(1);
   const [retiradosLocales, setRetiradosLocales] = useState(new Set());
   const [parciales, setParciales] = useState([]);
   const [dataARetirar, setDataARetirar] = useState([]);
   const [dataRetirado, setDataRetirado] = useState([]);
-
   const intervaloRef = useRef(null);
 
+  // Reset de página al cambiar subpestaña o búsqueda
   useEffect(() => {
     setPaginaActual(1);
   }, [activeCajaTab, searchTerm]);
 
+  // Reset de cache de retirados locales si cambia dataset externo
   useEffect(() => {
     setRetiradosLocales(new Set());
   }, [cierresDeCaja]);
 
+  // Filtro común para las tres vistas
   const aplicarFiltros = (datos) => {
     return datos.filter(item => {
       const opNombre = normalizarOperador(item.operador);
 
       const search = (searchTerm || '').trim().toUpperCase();
-      const searchMatch = opNombre?.toUpperCase().includes(search);
+      const searchMatch =
+        opNombre?.toUpperCase().includes(search) ||
+        (item?.descripcion || '').toUpperCase().includes(search) ||
+        (item?.nombre || '').toUpperCase().includes(search);
 
       const operadorMatch = !filtros.operador ||
         opNombre?.toLowerCase().includes((filtros.operador || '').toLowerCase());
@@ -70,13 +76,17 @@ const CierreDeCajaAdmin = ({
       if (filtros.hora) {
         const [desde, hasta] = filtros.hora.split('-').map(Number);
         const horaItem = parseInt(item.hora?.split(':')[0], 10);
-        horaMatch = horaItem >= desde && horaItem < hasta;
+        if (!Number.isNaN(desde) && !Number.isNaN(hasta) && !Number.isNaN(horaItem)) {
+          horaMatch = horaItem >= desde && horaItem < hasta;
+        }
       }
 
       let fechaMatch = true;
       if (filtros.fecha) {
-        const fechaItem = new Date(item.fecha).toISOString().split('T')[0];
-        fechaMatch = fechaItem === filtros.fecha;
+        // item.fecha puede venir como YYYY-MM-DD
+        const fechaItem = new Date(item.fecha);
+        const ymd = !isNaN(fechaItem) ? fechaItem.toISOString().split('T')[0] : (item.fecha || '');
+        fechaMatch = ymd === filtros.fecha;
       }
 
       let rangoFechaMatch = true;
@@ -87,14 +97,15 @@ const CierreDeCajaAdmin = ({
           ? new Date(new Date(filtros.fechaHasta).setDate(new Date(filtros.fechaHasta).getDate() + 1))
           : null;
 
-        if (fechaDesde) rangoFechaMatch = fechaItem >= fechaDesde;
-        if (fechaHasta) rangoFechaMatch = rangoFechaMatch && fechaItem < fechaHasta;
+        if (fechaDesde && !isNaN(fechaItem)) rangoFechaMatch = fechaItem >= fechaDesde;
+        if (fechaHasta && !isNaN(fechaItem)) rangoFechaMatch = rangoFechaMatch && fechaItem < fechaHasta;
       }
 
       return searchMatch && operadorMatch && horaMatch && fechaMatch && rangoFechaMatch;
     });
   };
 
+  // Cargas iniciales de Cierres (A Retirar/Retirado)
   useEffect(() => {
     const fetchCierresDeCaja = async () => {
       try {
@@ -102,11 +113,8 @@ const CierreDeCajaAdmin = ({
         if (!res.ok) throw new Error('Error al obtener cierres de caja');
         const data = await res.json();
 
-        const aRetirarData = data.filter(item => !item.retirado);
-        setDataARetirar(aRetirarData);
-
-        const retiradoData = data.filter(item => item.retirado);
-        setDataRetirado(retiradoData);
+        setDataARetirar(data.filter(item => !item.retirado));
+        setDataRetirado(data.filter(item => item.retirado));
       } catch (error) {
         console.error('Error al cargar cierres de caja:', error);
         setDataARetirar([]);
@@ -117,35 +125,33 @@ const CierreDeCajaAdmin = ({
     fetchCierresDeCaja();
   }, []);
 
+  // Carga de Parciales
   const fetchParciales = async () => {
     try {
       const res = await fetch('https://api.garageia.com/api/cierresdecaja/parcial');
       if (!res.ok) throw new Error('Error al obtener parciales');
       const data = await res.json();
-      setParciales(data);
+      setParciales(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error al cargar parciales:', error);
       setParciales([]);
     }
   };
 
+  // Auto-refresh según subpestaña
   useEffect(() => {
     if (intervaloRef.current) {
       clearInterval(intervaloRef.current);
       intervaloRef.current = null;
     }
 
-    const fetchData = async () => {
+    const fetchCierres = async () => {
       try {
         const res = await fetch('https://api.garageia.com/api/cierresdecaja/');
         if (!res.ok) throw new Error('Error al obtener cierres de caja');
         const data = await res.json();
-
-        const aRetirarData = data.filter(item => !item.retirado);
-        setDataARetirar(aRetirarData);
-
-        const retiradoData = data.filter(item => item.retirado);
-        setDataRetirado(retiradoData);
+        setDataARetirar(data.filter(i => !i.retirado));
+        setDataRetirado(data.filter(i => i.retirado));
       } catch (error) {
         console.error('Error al actualizar cierres de caja:', error);
       }
@@ -153,14 +159,10 @@ const CierreDeCajaAdmin = ({
 
     if (activeCajaTab === 'Parciales') {
       fetchParciales();
-      intervaloRef.current = setInterval(() => {
-        fetchParciales();
-      }, 5000);
+      intervaloRef.current = setInterval(fetchParciales, 5000);
     } else if (activeCajaTab === 'A Retirar' || activeCajaTab === 'Retirado') {
-      fetchData();
-      intervaloRef.current = setInterval(() => {
-        fetchData();
-      }, 5000);
+      fetchCierres();
+      intervaloRef.current = setInterval(fetchCierres, 5000);
     }
 
     return () => {
@@ -171,28 +173,30 @@ const CierreDeCajaAdmin = ({
     };
   }, [activeCajaTab]);
 
+  // Helpers de tabla/paginado
   const paginar = (array, pagina) => {
     const startIndex = (pagina - 1) * ITEMS_POR_PAGINA;
     return array.slice(startIndex, startIndex + ITEMS_POR_PAGINA);
   };
 
-  const totalPaginas = (array) => Math.ceil(array.length / ITEMS_POR_PAGINA);
+  const totalPaginas = (array) => Math.ceil((array?.length || 0) / ITEMS_POR_PAGINA);
 
   const renderPaginado = (total) => (
     <div className="paginado">
       <button disabled={paginaActual === 1} onClick={() => setPaginaActual(paginaActual - 1)}>Anterior</button>
-      <span>Página {paginaActual} de {total}</span>
-      <button disabled={paginaActual === total} onClick={() => setPaginaActual(paginaActual + 1)}>Siguiente</button>
+      <span>Página {paginaActual} de {Math.max(total, 1)}</span>
+      <button disabled={paginaActual === total || total === 0} onClick={() => setPaginaActual(paginaActual + 1)}>Siguiente</button>
     </div>
   );
 
   const renderFilasVacias = (cantidad, columnas) =>
-    Array.from({ length: cantidad }, (_, i) => (
+    Array.from({ length: Math.max(0, cantidad) }, (_, i) => (
       <tr key={`empty-${i}`}>
         {Array.from({ length: columnas }, (_, j) => <td key={j}>---</td>)}
       </tr>
     ));
 
+  // Acción “Retirado”
   const handleRetiradoClick = async (id) => {
     const confirmado = window.confirm('¿Estás seguro de que querés marcar este cierre como retirado?');
     if (!confirmado) return;
@@ -209,11 +213,8 @@ const CierreDeCajaAdmin = ({
       if (!res.ok) throw new Error('Error al actualizar');
 
       const data = await res.json();
-      const updatedARetirar = dataARetirar.filter(item => item._id !== id);
-      setDataARetirar(updatedARetirar);
-
-      const updatedRetirado = [...dataRetirado, data];
-      setDataRetirado(updatedRetirado);
+      setDataARetirar(prev => prev.filter(item => item._id !== id));
+      setDataRetirado(prev => [...prev, data]);
     } catch (error) {
       console.error('Error al marcar como retirado:', error);
       setRetiradosLocales(prev => {
@@ -224,8 +225,12 @@ const CierreDeCajaAdmin = ({
     }
   };
 
+  // Tablas
   const renderTablaCierres = (datos) => {
-    const filtrados = aplicarFiltros(datos).filter(item => !retiradosLocales.has(item._id)).reverse();
+    const filtrados = aplicarFiltros(datos)
+      .filter(item => !retiradosLocales.has(item._id))
+      .reverse();
+
     const paginados = paginar(filtrados, paginaActual);
     const total = totalPaginas(filtrados);
     const isARetirar = activeCajaTab === 'A Retirar';
@@ -251,9 +256,9 @@ const CierreDeCajaAdmin = ({
                   <td>{item.fecha || '---'}</td>
                   <td>{item.hora || '---'}</td>
                   <td>{normalizarOperador(item.operador)}</td>
-                  <td>${item.totalRecaudado?.toLocaleString('es-AR') || '---'}</td>
-                  <td>${item.dejoEnCaja?.toLocaleString('es-AR') || '---'}</td>
-                  <td>${item.totalRendido?.toLocaleString('es-AR') || '---'}</td>
+                  <td>${item.totalRecaudado != null ? Number(item.totalRecaudado).toLocaleString('es-AR') : '---'}</td>
+                  <td>${item.dejoEnCaja != null ? Number(item.dejoEnCaja).toLocaleString('es-AR') : '---'}</td>
+                  <td>${item.totalRendido != null ? Number(item.totalRendido).toLocaleString('es-AR') : '---'}</td>
                   {isARetirar && (
                     <td className="td-retirado">
                       <button className="btn-retirado" onClick={() => handleRetiradoClick(item._id)}>
@@ -297,7 +302,7 @@ const CierreDeCajaAdmin = ({
                   <td>{item.fecha || '---'}</td>
                   <td>{item.hora || '---'}</td>
                   <td>{normalizarOperador(item.operador)}</td>
-                  <td>${item.monto?.toLocaleString('es-AR') || '---'}</td>
+                  <td>${item.monto != null ? Number(item.monto).toLocaleString('es-AR') : '---'}</td>
                 </tr>
               ))}
               {renderFilasVacias(ITEMS_POR_PAGINA - paginados.length, 5)}
@@ -309,6 +314,114 @@ const CierreDeCajaAdmin = ({
     );
   };
 
+  // ================================
+  // Impresión (expuesto vía ref)
+  // ================================
+  const estilosPrint = `
+    <style>
+      body { font-family: Arial, Helvetica, sans-serif; padding: 16px; }
+      h1,h2,h3 { margin: 0; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { border: 1px solid #ddd; padding: 6px 8px; font-size: 12px; }
+      th { background: #f5f5f5; text-align: left; }
+      tr:nth-child(even) { background: #fafafa; }
+      @page { size: A4 portrait; margin: 12mm; }
+      @media print { .no-print { display: none !important; } }
+    </style>
+  `;
+
+  const abrirVentanaImpresion = (titulo, encabezados, filasHtml) => {
+    const win = window.open('', '_blank', 'width=1024,height=768');
+    if (!win) {
+      alert('El bloqueador de ventanas emergentes impidió abrir la vista de impresión.');
+      return;
+    }
+    const fecha = new Date();
+    const header = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div>
+          <div style="font-size:18px;font-weight:700;">${titulo}</div>
+          <div style="font-size:12px;color:#555">Generado: ${fecha.toLocaleDateString('es-AR')} ${fecha.toLocaleTimeString('es-AR')}</div>
+        </div>
+        <div style="font-size:12px;color:#555"></div>
+      </div>
+    `;
+
+    const html = `
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>${titulo}</title>
+          ${estilosPrint}
+        </head>
+        <body>
+          ${header}
+          <table>
+            <thead>
+              <tr>${encabezados.map(h => `<th>${h}</th>`).join('')}</tr>
+            </thead>
+            <tbody>
+              ${filasHtml || '<tr><td colspan="${encabezados.length}">Sin datos</td></tr>'}
+            </tbody>
+          </table>
+          <div class="no-print" style="margin-top:12px;text-align:right;">
+            <button onclick="window.print()">Imprimir</button>
+          </div>
+          <script>window.addEventListener('load', () => { setTimeout(() => { window.print(); }, 200); });</script>
+        </body>
+      </html>
+    `;
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+  };
+
+  const imprimirListadoCierre = () => {
+    // 1) PARCIALES
+    if (activeCajaTab === 'Parciales') {
+      const datos = aplicarFiltros(parciales).reverse();
+      const encabezados = ['Descripción', 'Fecha', 'Hora', 'Operador', 'Monto'];
+      const filas = datos.map(item => `
+        <tr>
+          <td>${buildDescripcion(item)}</td>
+          <td>${item.fecha || '---'}</td>
+          <td>${item.hora || '---'}</td>
+          <td>${normalizarOperador(item.operador)}</td>
+          <td>${item.monto != null ? ('$' + Number(item.monto).toLocaleString('es-AR')) : '---'}</td>
+        </tr>
+      `).join('');
+      abrirVentanaImpresion('Parciales - Cierre de Caja', encabezados, filas);
+      return;
+    }
+
+    // 2) A RETIRAR / RETIRADO
+    const isARetirar = activeCajaTab === 'A Retirar';
+    const base = isARetirar ? dataARetirar : dataRetirado;
+    const datos = aplicarFiltros(base)
+      .filter(item => !retiradosLocales.has(item._id))
+      .reverse();
+
+    const encabezados = ['Fecha', 'Hora', 'Operador', 'Total Recaudado', 'Dejó en Caja', 'Total Rendido'];
+    const filas = datos.map(item => `
+      <tr>
+        <td>${item.fecha || '---'}</td>
+        <td>${item.hora || '---'}</td>
+        <td>${normalizarOperador(item.operador)}</td>
+        <td>${item.totalRecaudado != null ? ('$' + Number(item.totalRecaudado).toLocaleString('es-AR')) : '---'}</td>
+        <td>${item.dejoEnCaja != null ? ('$' + Number(item.dejoEnCaja).toLocaleString('es-AR')) : '---'}</td>
+        <td>${item.totalRendido != null ? ('$' + Number(item.totalRendido).toLocaleString('es-AR')) : '---'}</td>
+      </tr>
+    `).join('');
+
+    abrirVentanaImpresion('Cierre de Caja', encabezados, filas);
+  };
+
+  // Exponer método de impresión al padre (Body.jsx)
+  useImperativeHandle(ref, () => ({
+    imprimirListadoCierre
+  }));
+
+  // Render principal
   return (
     <div className="caja">
       {activeCajaTab === 'A Retirar' && renderTablaCierres(dataARetirar)}
@@ -316,6 +429,6 @@ const CierreDeCajaAdmin = ({
       {activeCajaTab === 'Parciales' && renderTablaParciales(parciales)}
     </div>
   );
-};
+});
 
 export default CierreDeCajaAdmin;

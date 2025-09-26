@@ -1,6 +1,6 @@
 import React from 'react';
 import './Tabs.css';
-import { FiPlus } from 'react-icons/fi';
+import { FiPlus, FiPrinter } from 'react-icons/fi';
 
 const Tabs = ({
   activeTab,
@@ -10,7 +10,9 @@ const Tabs = ({
   setSearchTerm,
   onSearchBarVisibilityChange,
   onRegisterAuditClick,
-  onAddVehicleClick
+  onAddVehicleClick,
+  onPrintAuditClick,     // Auditoría -> Nueva Auditoría
+  onPrintCierreClick     // Cierre -> imprime la subpestaña activa
 }) => {
   const tabs =
     activeTab === 'Cierre'
@@ -19,15 +21,17 @@ const Tabs = ({
       ? ['Histórico', 'Nueva Auditoría']
       : ['Caja', 'Ingresos', 'Alertas', 'Incidentes'];
 
-  // Determinar si debemos mostrar el searchbar
-  const showSearchBar = 
-    (activeTab !== 'Cierre') && 
+  // Mostrar searchbar solo donde corresponde
+  const showSearchBar =
+    (activeTab !== 'Cierre') &&
     (activeTab !== 'Auditoria' || activeCajaTab === 'Nueva Auditoría');
 
-  // Mostrar botones de auditoría solo en pestaña Auditoria y en Nueva Auditoría
+  // Botones de auditoría solo en Auditoria -> Nueva Auditoría
   const showAuditButtons = activeTab === 'Auditoria' && activeCajaTab === 'Nueva Auditoría';
 
-  // Notificar al padre cuando cambia la visibilidad
+  // Botón de imprimir para Cierre (cualquier subpestaña)
+  const showCierrePrint = activeTab === 'Cierre';
+
   React.useEffect(() => {
     if (onSearchBarVisibilityChange) {
       onSearchBarVisibilityChange(showSearchBar);
@@ -53,20 +57,50 @@ const Tabs = ({
           ))}
         </div>
 
+        {/* Botonera a la derecha */}
         {showAuditButtons && (
           <div className="audit-buttons-container">
-            <button 
-              className="register-audit-button add-button"
+            {/* Imprimir listado (Auditoría / Nueva Auditoría) */}
+            <button
+              className="register-audit-button print"
+              onClick={onPrintAuditClick}
+              title="Imprimir listado (PDF)"
+            >
+              <FiPrinter style={{ marginRight: 6 }} />
+              Imprimir
+            </button>
+
+            {/* Registrar auditoría */}
+            <button
+              className="register-audit-button primary"
+              onClick={onRegisterAuditClick}
+              title="Registrar Auditoría"
+            >
+              Registrar Auditoría
+            </button>
+
+            {/* Agregar vehículo temporal */}
+            <button
+              className="register-audit-button add-button primary"
               onClick={onAddVehicleClick}
               title="Agregar vehículo temporal"
+              aria-label="Agregar vehículo temporal"
             >
               <FiPlus className="plus-icon" />
             </button>
-            <button 
-              className="register-audit-button"
-              onClick={onRegisterAuditClick}
+          </div>
+        )}
+
+        {showCierrePrint && (
+          <div className="audit-buttons-container">
+            <button
+              className="register-audit-button print"
+              onClick={onPrintCierreClick}
+              title="Imprimir"
+              style={{ marginLeft: 10 }}
             >
-              Registrar Auditoría
+              <FiPrinter style={{ marginRight: 6 }} />
+              Imprimir
             </button>
           </div>
         )}

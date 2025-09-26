@@ -10,6 +10,7 @@ import Tabs from "./Tabs/Tabs.jsx";
 function Body() {
   const location = useLocation();
   const auditoriaRef = useRef();
+  const cierreRef = useRef(); // <-- NUEVO
 
   const [activeTab, setActiveTab] = useState("Caja");
   const [activeCajaTab, setActiveCajaTab] = useState("Caja");
@@ -107,8 +108,7 @@ function Body() {
     return String(op);
   };
 
-  // ⚠️ Ojo: acá filtramos SOLO por datos del MOVIMIENTO (no entrada/salida).
-  // Los filtros de entrada/salida de la estadía se aplican dentro de Caja.jsx.
+  // ⚠️ Filtrado de movimientos por campos del movimiento
   const movimientosFiltrados = movimientos.filter(mov => {
     const patenteMatch = !searchTerm || (mov.patente || '').toUpperCase().includes(searchTerm.toUpperCase());
 
@@ -117,10 +117,10 @@ function Body() {
 
     const [desdeH, hastaH] = filtros.hora ? filtros.hora.split("-").map(Number) : [null, null];
 
-    // Fecha exacta (YYYY-MM-DD local)
+    // Fecha exacta (YYYY-MM-DD local, usamos sv-SE para ISO local)
     const fechaMovimientoStr = d ? d.toLocaleDateString("sv-SE") : null;
 
-    // Rango de fecha (interpreto fechaHasta como exclusivo +1 día)
+    // Rango de fechas
     const fechaDesdeDate = filtros.fechaDesde ? new Date(filtros.fechaDesde) : null;
     const fechaHastaDate = filtros.fechaHasta
       ? new Date(new Date(filtros.fechaHasta).setDate(new Date(filtros.fechaHasta).getDate() + 1))
@@ -249,6 +249,20 @@ function Body() {
     }
   };
 
+  // Imprimir listado de "Nueva Auditoría"
+  const handlePrintAuditClick = () => {
+    if (auditoriaRef.current && typeof auditoriaRef.current.imprimirListadoAuditoria === 'function') {
+      auditoriaRef.current.imprimirListadoAuditoria();
+    }
+  };
+
+  // NUEVO: Imprimir en Cierre (A Retirar / Retirado / Parciales)
+  const handlePrintCierreClick = () => {
+    if (cierreRef.current && typeof cierreRef.current.imprimirListadoCierre === 'function') {
+      cierreRef.current.imprimirListadoCierre();
+    }
+  };
+
   return (
     <div className="body">
       <div className="filtros-container">
@@ -271,6 +285,8 @@ function Body() {
           onSearchBarVisibilityChange={setIsSearchBarVisible}
           onRegisterAuditClick={handleRegisterAuditClick}
           onAddVehicleClick={handleAddVehicleClick}
+          onPrintAuditClick={handlePrintAuditClick}
+          onPrintCierreClick={handlePrintCierreClick} // <-- NUEVO
         />
 
         {activeTab === "Caja" && (
@@ -289,6 +305,7 @@ function Body() {
 
         {activeTab === "Cierre" && (
           <CierreDeCajaAdmin
+            ref={cierreRef} // <-- NUEVO
             activeCajaTab={activeCajaTab}
             searchTerm={searchTerm}
             onCajaTabChange={setActiveCajaTab}

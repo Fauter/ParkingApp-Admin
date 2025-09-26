@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+// Auditor.jsx
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { saveAs } from 'file-saver';
-import { FiPlus } from 'react-icons/fi';
+import { FiPlus, FiPrinter } from 'react-icons/fi';
 import './Auditor.css';
 
 const ITEMS_POR_PAGINA = 10;
@@ -52,7 +53,7 @@ function fechaCorta(fechaHora) {
   if (!fechaHora) return '---';
   try {
     const d = new Date(fechaHora);
-    return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' }); // dd/mm
+    return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
   } catch {
     return '---';
   }
@@ -61,7 +62,7 @@ function horaCorta(fechaHora) {
   if (!fechaHora) return '';
   try {
     const d = new Date(fechaHora);
-    return d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false }); // HH:mm (24h)
+    return d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
   } catch {
     return '';
   }
@@ -70,7 +71,6 @@ function horaCorta(fechaHora) {
 /* ==========
    Helpers UI
 =========== */
-// Trunca conservando inicio y fin. Ej: "auditoria-vehiculos-2024-08-24.pdf" -> "auditoria-veh…08-24.pdf"
 function shortenNombreArchivo(nombre, max = 18) {
   if (!nombre) return 'auditoria.pdf';
   if (nombre.length <= max) return nombre;
@@ -151,7 +151,6 @@ export default function Auditor() {
   const [vehiculos, setVehiculos] = useState([]);
 
   // estado Nueva Auditoría
-  const [paginaActual, setPaginaActual] = useState(1);
   const [vehiculosSeleccionados, setVehiculosSeleccionados] = useState([]);
   const [vehiculosTemporales, setVehiculosTemporales] = useState([]);
   const [generandoAuditoria, setGenerandoAuditoria] = useState(false);
@@ -191,7 +190,11 @@ export default function Auditor() {
       try {
         const response = await fetch('https://api.garageia.com/api/tipos-vehiculo');
         const data = await response.json();
-        setTiposVehiculo(Array.isArray(data) ? data : []);
+        setTiposVehiculo(
+          Array.isArray(data)
+            ? data.map(t => (typeof t === 'string' ? t : t?.nombre)).filter(Boolean)
+            : []
+        );
       } catch (err) {
         console.error('Error al cargar tipos de vehículo:', err);
       }
@@ -226,14 +229,50 @@ export default function Auditor() {
       .finally(() => setLoading(false));
   }, [token]);
 
-  // reset paginado al cambiar de tab o filtros
-  useEffect(() => {
-    setPaginaActual(1);
-  }, [activeTab, searchTerm, filtros.fecha, filtros.hora, filtros.estado, filtros.fechaNA, filtros.horaEntrada, filtros.tipoVehiculo]);
-
   /* =========================
      Helpers core
   ========================= */
+
+  const compararPatenteAZ = useCallback((a, b) => {
+    const pa = (a?.patente || '').toString().toUpperCase();
+    const pb = (b?.patente || '').toString().toUpperCase();
+    return pa.localeCompare(pb, 'es-AR', { numeric: true, sensitivity: 'base' });
+  }, []);
+
+  // Listado NA SIN paginado, ordenado A→Z por patente
+  const obtenerListadoNuevaAuditoria = useCallback(() => {
+    const term = (searchTerm || '').toUpperCase();
+    const vehiculosCombinados = [...vehiculos, ...vehiculosTemporales];
+
+    const filtrados = vehiculosCombinados
+      .filter(veh => veh.estadiaActual?.entrada && !veh.estadiaActual?.salida)
+      .filter(veh => {
+        const patenteMatch = !term || veh.patente?.toUpperCase().includes(term);
+
+        // fecha exacta
+        let fechaMatch = true;
+        if (filtros.fechaNA) {
+          const fechaItem = veh.estadiaActual?.entrada
+            ? new Date(veh.estadiaActual.entrada).toISOString().split('T')[0]
+            : null;
+          fechaMatch = !filtros.fechaNA || (fechaItem === filtros.fechaNA);
+        }
+
+        // rango hora entrada
+        const horaEntrada = veh.estadiaActual?.entrada ? new Date(veh.estadiaActual.entrada).getHours() : null;
+        const [desde, hasta] = filtros.horaEntrada ? filtros.horaEntrada.split("-").map(Number) : [null, null];
+        const horaMatch = !filtros.horaEntrada || (horaEntrada !== null && horaEntrada >= desde && horaEntrada < hasta);
+
+        // tipo
+        const tipoMatch = !filtros.tipoVehiculo || veh.tipoVehiculo === filtros.tipoVehiculo;
+
+        return patenteMatch && fechaMatch && horaMatch && tipoMatch;
+      });
+
+    filtrados.sort(compararPatenteAZ);
+    return filtrados;
+  }, [vehiculos, vehiculosTemporales, filtros.fechaNA, filtros.horaEntrada, filtros.tipoVehiculo, searchTerm, compararPatenteAZ]);
+
   const crearAlertaConflicto = async (tipoConflicto) => {
     const fecha = new Date().toISOString().split('T')[0];
     const hora = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
@@ -303,8 +342,8 @@ export default function Auditor() {
       window.URL.revokeObjectURL(url);
 
       // Detección de conflictos
-      const todosLosVehiculosEnSistema = vehiculos.length;
-      const vehiculosNoVerificados = todosLosVehiculosEnSistema - idsNormales.length;
+      const todosLosVehiculosEnSistema = vehiculos.filter(v => v.estadiaActual?.entrada && !v.estadiaActual?.salida).length;
+      const vehiculosNoVerificados = Math.max(0, todosLosVehiculosEnSistema - idsNormales.length);
       const hayVehiculosTemporales = vehiculosTemporales.length > 0;
 
       if (vehiculosNoVerificados > 0 && hayVehiculosTemporales) {
@@ -318,9 +357,9 @@ export default function Auditor() {
         await crearAlertaConflicto('Vehículos temporales agregados');
       }
 
-      // Reset selección y temporales
       setVehiculosSeleccionados([]);
       setVehiculosTemporales([]);
+
       // Refrescar histórico
       try {
         const histRes = await fetch('https://api.garageia.com/api/auditorias', { headers: { Authorization: `Bearer ${token}` }});
@@ -403,6 +442,11 @@ export default function Auditor() {
     return Math.ceil(array.length / ITEMS_POR_PAGINA);
   };
 
+  const [paginaActual, setPaginaActual] = useState(1);
+  useEffect(() => {
+    setPaginaActual(1);
+  }, [activeTab, searchTerm, filtros.fecha, filtros.hora, filtros.estado, filtros.fechaNA, filtros.horaEntrada, filtros.tipoVehiculo]);
+
   const renderPaginado = (total) => (
     <div className="paginado">
       <button disabled={paginaActual === 1} onClick={() => setPaginaActual(paginaActual - 1)}>Anterior</button>
@@ -434,6 +478,93 @@ export default function Auditor() {
       console.error('Error al descargar auditoría:', error);
       alert(error.message || 'Error al descargar el archivo de auditoría');
     }
+  };
+
+  // ===== Imprimir listado (cliente) =====
+  const imprimirListadoAuditoria = () => {
+    if (activeTab !== 'Nueva Auditoría') return;
+    const listado = obtenerListadoNuevaAuditoria();
+
+    const win = window.open('', '_blank', 'width=1024,height=768');
+    if (!win) {
+      alert('El bloqueador de ventanas impidió abrir la vista de impresión.');
+      return;
+    }
+
+    const fecha = new Date();
+    const header = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div>
+          <div style="font-size:18px;font-weight:700;">Listado de Vehículos en Auditoría</div>
+          <div style="font-size:12px;color:#555">Generado: ${fecha.toLocaleDateString('es-AR')} ${fecha.toLocaleTimeString('es-AR')}</div>
+          <div style="font-size:12px;color:#555">Operador: ${user?.nombre || '---'}</div>
+        </div>
+        <div style="font-size:12px;color:#555">Total: ${listado.length}</div>
+      </div>
+    `;
+
+    const rows = listado.map(veh => {
+      const entrada = veh.estadiaActual?.entrada ? new Date(veh.estadiaActual.entrada) : null;
+      const operador = veh.estadiaActual?.operadorNombre || (veh._id?.toString().startsWith('temp-') ? (user?.nombre || '---') : '---');
+      const tipo = veh.tipoVehiculo ? veh.tipoVehiculo[0].toUpperCase() + veh.tipoVehiculo.slice(1) : '---';
+
+      return `
+        <tr>
+          <td>${(veh.patente || '').toString().toUpperCase()}</td>
+          <td>${entrada ? entrada.toLocaleDateString('es-AR') : '---'}</td>
+          <td>${entrada ? entrada.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : '---'}</td>
+          <td>${operador}</td>
+          <td>${tipo}</td>
+        </tr>
+      `;
+    }).join('');
+
+    const styles = `
+      <style>
+        body { font-family: Arial, Helvetica, sans-serif; padding: 16px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 6px 8px; font-size: 12px; }
+        th { background: #f5f5f5; text-align: left; }
+        tr:nth-child(even) { background: #fafafa; }
+        @page { size: A4 portrait; margin: 12mm; }
+        @media print { .no-print { display: none !important; } }
+      </style>
+    `;
+
+    const html = `
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>Listado Auditoría</title>
+          ${styles}
+        </head>
+        <body>
+          ${header}
+          <table>
+            <thead>
+              <tr>
+                <th>Patente</th>
+                <th>Fecha</th>
+                <th>Hora Entrada</th>
+                <th>Operador</th>
+                <th>Tipo de Vehículo</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows || '<tr><td colspan="5">Sin datos</td></tr>'}
+            </tbody>
+          </table>
+          <div class="no-print" style="margin-top:12px;text-align:right;">
+            <button onclick="window.print()">Imprimir</button>
+          </div>
+          <script>window.addEventListener('load', () => { setTimeout(() => { window.print(); }, 200); });</script>
+        </body>
+      </html>
+    `;
+
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
   };
 
   /* =========================
@@ -509,37 +640,8 @@ export default function Auditor() {
   };
 
   const VistaNuevaAuditoria = () => {
-    const term = searchTerm.toUpperCase();
-    const vehiculosCombinados = [...vehiculos, ...vehiculosTemporales];
-
-    const filtrados = vehiculosCombinados
-      .filter(veh => veh.estadiaActual?.entrada && !veh.estadiaActual?.salida)
-      .filter(veh => {
-        const patenteMatch = !searchTerm || veh.patente?.toUpperCase().includes(term);
-
-        // fecha exacta
-        let fechaMatch = true;
-        if (filtros.fechaNA) {
-          const fechaItem = veh.estadiaActual?.entrada
-            ? new Date(veh.estadiaActual.entrada).toISOString().split('T')[0]
-            : null;
-          fechaMatch = !filtros.fechaNA || (fechaItem === filtros.fechaNA);
-        }
-
-        // rango hora entrada
-        const horaEntrada = veh.estadiaActual?.entrada ? new Date(veh.estadiaActual.entrada).getHours() : null;
-        const [desde, hasta] = filtros.horaEntrada ? filtros.horaEntrada.split("-").map(Number) : [null, null];
-        const horaMatch = !filtros.horaEntrada || (horaEntrada && horaEntrada >= desde && horaEntrada < hasta);
-
-        // tipo
-        const tipoMatch = !filtros.tipoVehiculo || veh.tipoVehiculo === filtros.tipoVehiculo;
-
-        return patenteMatch && fechaMatch && horaMatch && tipoMatch;
-      })
-      .reverse();
-
-    const paginados = paginar(filtrados, paginaActual);
-    const total = totalPaginas(filtrados);
+    // SIN paginado; ORDEN A→Z por patente
+    const list = obtenerListadoNuevaAuditoria();
 
     return (
       <>
@@ -593,11 +695,11 @@ export default function Auditor() {
                 onChange={(e) => setNuevoVehiculo({...nuevoVehiculo, tipoVehiculo: e.target.value})}
                 className="modal-input-audit"
               >
-                {tiposVehiculo.map((tipo, idx) => {
-                  const label = (typeof tipo === 'string' ? tipo : tipo?.nombre) || 'auto';
-                  const value = (typeof tipo === 'string' ? tipo : tipo?.nombre) || 'auto';
-                  return <option key={idx} value={value}>{label.charAt(0).toUpperCase() + label.slice(1)}</option>;
-                })}
+                {tiposVehiculo.map((nombre, idx) => (
+                  <option key={`${nombre}-${idx}`} value={nombre}>
+                    {nombre?.charAt(0).toUpperCase() + nombre?.slice(1)}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="modal-botones-audit">
@@ -607,6 +709,7 @@ export default function Auditor() {
           </ModalAudit>
         )}
 
+        {/* Toolbar con botones */}
         <div className="audit-toolbar">
           <div className="toolbar-left">
             <button className="register-audit-button" onClick={generarAuditoria} disabled={generandoAuditoria}>
@@ -614,6 +717,14 @@ export default function Auditor() {
             </button>
             <button className="register-audit-button add-button" title="Agregar vehículo temporal" onClick={() => setModalAbierto(true)}>
               <FiPlus className="plus-icon" />
+            </button>
+            <button
+              className="register-audit-button"
+              title="Imprimir listado"
+              onClick={imprimirListadoAuditoria}
+              style={{ marginLeft: '25px' }}
+            >
+              <FiPrinter /> Imprimir
             </button>
           </div>
         </div>
@@ -632,7 +743,7 @@ export default function Auditor() {
                 </tr>
               </thead>
               <tbody>
-                {paginados.map(veh => {
+                {list.map(veh => {
                   const entrada = veh.estadiaActual?.entrada ? new Date(veh.estadiaActual.entrada) : null;
                   const _fecha = entrada ? fechaCorta(entrada) : '---';
                   const _hora = entrada ? horaCorta(entrada) : '';
@@ -659,7 +770,10 @@ export default function Auditor() {
                         <span className="tipo-wrap">{tipoLabel}</span>
                       </td>
                       <td className="td-checkbox">
-                        <label className={`checkbox-container ${filaSeleccionada ? 'is-selected' : ''}`} title={esTemporal ? 'Vehículo temporal' : 'Seleccionar'}>
+                        <label
+                          className={`checkbox-container ${filaSeleccionada ? 'is-selected' : ''}`}
+                          title={esTemporal ? 'Vehículo temporal' : 'Seleccionar'}
+                        >
                           <input
                             type="checkbox"
                             checked={filaSeleccionada}
@@ -672,14 +786,12 @@ export default function Auditor() {
                     </tr>
                   );
                 })}
-                {Array.from({ length: Math.max(0, ITEMS_POR_PAGINA - paginados.length) }, (_, i) => (
-                  <tr key={`empty-n-${i}`}>
-                    <td>---</td><td>---</td><td>---</td><td>---</td>
-                  </tr>
-                ))}
+                {list.length === 0 && (
+                  <tr><td colSpan={4}>---</td></tr>
+                )}
               </tbody>
             </table>
-            {renderPaginado(total)}
+            {/* SIN paginado para Nueva Auditoría */}
           </div>
         </div>
       </>

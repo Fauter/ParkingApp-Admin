@@ -46,220 +46,12 @@ const AuditoriaAdmin = forwardRef(({
   });
   const [user, setUser] = useState(null);
 
-  // Función para abrir el modal que será expuesta al padre
+  // Abrir modal desde el padre
   const abrirModalAgregarVehiculo = () => {
     setModalAbierto(true);
   };
 
-  // Exponer funciones al padre mediante ref
-  useImperativeHandle(ref, () => ({
-    generarAuditoria,
-    abrirModalAgregarVehiculo
-  }));
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) return;
-
-      try {
-        const response = await fetch('https://api.garageia.com/api/auth/profile', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        const data = await response.json();
-        if (response.ok) {
-          setUser(data);
-        }
-      } catch (error) {
-        console.error('Error fetching user:', error);
-      }
-    };
-
-    const cargarTiposVehiculo = async () => {
-      try {
-        const response = await fetch('https://api.garageia.com/api/tipos-vehiculo');
-        const data = await response.json();
-        setTiposVehiculo(data);
-      } catch (err) {
-        console.error('Error al cargar tipos de vehículo:', err);
-      }
-    };
-
-    fetchUser();
-    cargarTiposVehiculo();
-    setPaginaActual(1);
-  }, [activeCajaTab, searchTerm]);
-
-  const crearAlertaConflicto = async (tipoConflicto) => {
-    const fecha = new Date().toISOString().split('T')[0];
-    const hora = new Date().toLocaleTimeString();
-    
-    const dataAlerta = {
-      fecha,
-      hora,
-      tipoDeAlerta: `Conflicto Auditoría: ${tipoConflicto}`,
-      operador: user?.nombre || 'Operador Desconocido',
-    };
-
-    try {
-      const resAlerta = await fetch('https://api.garageia.com/api/alertas/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify(dataAlerta),
-      });
-
-      if (!resAlerta.ok) {
-        console.error('Error al crear la alerta de conflicto');
-      }
-    } catch (err) {
-      console.error('Error al enviar la alerta:', err);
-    }
-  };
-
-  const generarAuditoria = async () => {
-    if (vehiculosSeleccionados.length === 0 && vehiculosTemporales.length === 0) {
-      alert('Por favor seleccione al menos un vehículo para auditar o agregue vehículos temporales');
-      return;
-    }
-
-    setGenerandoAuditoria(true);
-    
-    try {
-      const operador = user?.nombre || 'Operador Desconocido';
-
-      const idsNormales = vehiculosSeleccionados.filter(id => !id.toString().startsWith('temp-'));
-      const vehiculosTemporalesAuditados = vehiculosTemporales;
-
-      const response = await fetch('https://api.garageia.com/api/auditorias', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({ 
-          vehiculos: idsNormales,
-          vehiculosTemporales: vehiculosTemporalesAuditados,
-          operador 
-        }),
-      });
-
-      if (!response.ok) throw new Error('Error al generar auditoría');
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `auditoria-vehiculos-${new Date().toISOString().split('T')[0]}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-
-      // Detección de conflictos
-      const todosLosVehiculosEnSistema = vehiculos.length;
-      const vehiculosNoVerificados = todosLosVehiculosEnSistema - idsNormales.length;
-      const hayVehiculosTemporales = vehiculosTemporales.length > 0;
-      
-      if (vehiculosNoVerificados > 0 && hayVehiculosTemporales) {
-        alert('Atención: Auditoría generada con CONFLICTO. Hay vehículos no verificados y vehículos temporales.');
-        await crearAlertaConflicto('Vehículos no verificados y vehículos temporales agregados');
-      } else if (vehiculosNoVerificados > 0) {
-        alert('Atención: Auditoría generada con CONFLICTO. Hay vehículos no verificados.');
-        await crearAlertaConflicto('Vehículos no verificados');
-      } else if (hayVehiculosTemporales) {
-        alert('Atención: Auditoría generada con CONFLICTO. Hay vehículos temporales agregados.');
-        await crearAlertaConflicto('Vehículos temporales agregados');
-      }
-
-      setVehiculosSeleccionados([]);
-      setVehiculosTemporales([]);
-    } catch (error) {
-      console.error('Error:', error);
-      alert('Error al generar el reporte de auditoría');
-    } finally {
-      setGenerandoAuditoria(false);
-    }
-  };
-
-  const agregarVehiculoTemporal = () => {
-    if (!nuevoVehiculo.patente) {
-      alert('La patente es obligatoria');
-      return;
-    }
-
-    const vehiculoTemporal = {
-      ...nuevoVehiculo,
-      _id: `temp-${Date.now()}`,
-      esTemporal: true,
-      estadiaActual: {
-        entrada: new Date().toISOString(),
-        operadorNombre: user?.nombre || 'Operador Temporal'
-      }
-    };
-
-    setVehiculosTemporales(prev => [...prev, vehiculoTemporal]);
-    setVehiculosSeleccionados(prev => [...prev, vehiculoTemporal._id]);
-    
-    setNuevoVehiculo({
-      patente: '',
-      marca: '',
-      modelo: '',
-      color: '',
-      tipoVehiculo: 'auto'
-    });
-    setModalAbierto(false);
-  };
-
-  const aplicarFiltros = (datos) => {
-    if (!Array.isArray(datos)) return [];
-    
-    return datos.filter(item => {
-      if (!item) return false;
-      
-      const searchMatch = item.operador?.toUpperCase().includes(searchTerm.trim().toUpperCase());
-      const operadorMatch = !filtros.operador || 
-        item.operador?.toLowerCase().includes(filtros.operador.toLowerCase());
-      
-      const estadoMatch = !filtros.estado || 
-        item.estado?.toLowerCase() === filtros.estado.toLowerCase();
-      
-      let horaMatch = true;
-      if (filtros.hora && item.fechaHora) {
-        const [desde, hasta] = filtros.hora.split('-').map(Number);
-        const horaItem = new Date(item.fechaHora).getHours();
-        horaMatch = horaItem >= desde && horaItem < hasta;
-      }
-      
-      let fechaMatch = true;
-      if (filtros.fecha && item.fechaHora) {
-        const fechaItem = new Date(item.fechaHora).toISOString().split('T')[0];
-        fechaMatch = fechaItem === filtros.fecha;
-      }
-      
-      let rangoFechaMatch = true;
-      if ((filtros.fechaDesde || filtros.fechaHasta) && item.fechaHora) {
-        const fechaItem = new Date(item.fechaHora);
-        const fechaDesde = filtros.fechaDesde ? new Date(filtros.fechaDesde) : null;
-        const fechaHasta = filtros.fechaHasta
-          ? new Date(new Date(filtros.fechaHasta).setDate(new Date(filtros.fechaHasta).getDate() + 1))
-          : null;
-        
-        if (fechaDesde) rangoFechaMatch = fechaItem >= fechaDesde;
-        if (fechaHasta) rangoFechaMatch = rangoFechaMatch && fechaItem < fechaHasta;
-      }
-      
-      return searchMatch && operadorMatch && estadoMatch && horaMatch && fechaMatch && rangoFechaMatch;
-    });
-  };
-
+  // ===== Helpers de formato =====
   const formatFecha = (fechaHora) => {
     if (!fechaHora) return '---';
     try {
@@ -295,6 +87,328 @@ const AuditoriaAdmin = forwardRef(({
     if (!Array.isArray(array)) return 1;
     return Math.ceil(array.length / ITEMS_POR_PAGINA);
   };
+
+  // ===== Fetch inicial =====
+  useEffect(() => {
+    const fetchUser = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      try {
+        const response = await fetch('https://api.garageia.com/api/auth/profile', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+          setUser(data);
+        }
+      } catch (error) {
+        console.error('Error fetching user:', error);
+      }
+    };
+
+    const cargarTiposVehiculo = async () => {
+      try {
+        const response = await fetch('https://api.garageia.com/api/tipos-vehiculo');
+        const data = await response.json();
+        // normalizo: espero array de objetos { nombre: 'auto' }
+        const nombres = Array.isArray(data)
+          ? data.map(t => (typeof t === 'string' ? t : t?.nombre)).filter(Boolean)
+          : [];
+        setTiposVehiculo(nombres);
+      } catch (err) {
+        console.error('Error al cargar tipos de vehículo:', err);
+      }
+    };
+
+    fetchUser();
+    cargarTiposVehiculo();
+    setPaginaActual(1);
+  }, [activeCajaTab, searchTerm]);
+
+  // ===== Filtros comunes =====
+  const aplicarFiltrosHistorico = (datos) => {
+    if (!Array.isArray(datos)) return [];
+    return datos.filter(item => {
+      if (!item) return false;
+
+      const searchMatch = item.operador?.toUpperCase().includes(searchTerm.trim().toUpperCase());
+      const operadorMatch = !filtros.operador ||
+        item.operador?.toLowerCase().includes(filtros.operador.toLowerCase());
+
+      const estadoMatch = !filtros.estado ||
+        item.estado?.toLowerCase() === filtros.estado.toLowerCase();
+
+      let horaMatch = true;
+      if (filtros.hora && item.fechaHora) {
+        const [desde, hasta] = filtros.hora.split('-').map(Number);
+        const horaItem = new Date(item.fechaHora).getHours();
+        horaMatch = horaItem >= desde && horaItem < hasta;
+      }
+
+      let fechaMatch = true;
+      if (filtros.fecha && item.fechaHora) {
+        const fechaItem = new Date(item.fechaHora).toISOString().split('T')[0];
+        fechaMatch = fechaItem === filtros.fecha;
+      }
+
+      let rangoFechaMatch = true;
+      if ((filtros.fechaDesde || filtros.fechaHasta) && item.fechaHora) {
+        const fechaItem = new Date(item.fechaHora);
+        const fechaDesde = filtros.fechaDesde ? new Date(filtros.fechaDesde) : null;
+        const fechaHasta = filtros.fechaHasta
+          ? new Date(new Date(filtros.fechaHasta).setDate(new Date(filtros.fechaHasta).getDate() + 1))
+          : null;
+
+        if (fechaDesde) rangoFechaMatch = fechaItem >= fechaDesde;
+        if (fechaHasta) rangoFechaMatch = rangoFechaMatch && fechaItem < fechaHasta;
+      }
+
+      return searchMatch && operadorMatch && estadoMatch && horaMatch && fechaMatch && rangoFechaMatch;
+    });
+  };
+
+  // ===== Orden patente A→Z =====
+  const compararPatenteAZ = (a, b) => {
+    const pa = (a?.patente || '').toString().toUpperCase();
+    const pb = (b?.patente || '').toString().toUpperCase();
+    // localeCompare con numeric para ordenar “ABC2” antes que “ABC10”
+    return pa.localeCompare(pb, 'es-AR', { numeric: true, sensitivity: 'base' });
+  };
+
+  // ===== Listado (Nueva Auditoría) filtrado y ordenado =====
+  const obtenerListadoNuevaAuditoria = () => {
+    const term = (searchTerm || '').toUpperCase();
+    const vehiculosCombinados = [...vehiculos, ...vehiculosTemporales];
+
+    const filtrados = vehiculosCombinados
+      .filter(veh => veh.estadiaActual?.entrada && !veh.estadiaActual?.salida)
+      .filter(veh => {
+        const patenteMatch = !term || veh.patente?.toUpperCase().includes(term);
+        const horaEntrada = veh.estadiaActual?.entrada ? new Date(veh.estadiaActual.entrada).getHours() : null;
+        const [desde, hasta] = filtros.horaEntrada ? filtros.horaEntrada.split("-").map(Number) : [null, null];
+        const fechaDesdeDate = filtros.fechaDesde ? new Date(filtros.fechaDesde) : null;
+        const fechaHastaDate = filtros.fechaHasta
+          ? new Date(new Date(filtros.fechaHasta).setDate(new Date(filtros.fechaHasta).getDate() + 1))
+          : null;
+
+        const operadorMatch = !filtros.operador ||
+          (veh.estadiaActual?.operadorNombre?.toLowerCase().includes((filtros.operador || '').toLowerCase()) ||
+            (veh.esTemporal && user?.nombre?.toLowerCase()?.includes((filtros.operador || '').toLowerCase())));
+
+        return (
+          patenteMatch &&
+          operadorMatch &&
+          (!filtros.tipoVehiculo || veh.tipoVehiculo === filtros.tipoVehiculo) &&
+          (!filtros.horaEntrada || (horaEntrada !== null && horaEntrada >= desde && horaEntrada < hasta)) &&
+          (!filtros.fechaDesde || (veh.estadiaActual?.entrada && new Date(veh.estadiaActual.entrada) >= fechaDesdeDate)) &&
+          (!filtros.fechaHasta || (veh.estadiaActual?.entrada && new Date(veh.estadiaActual.entrada) < fechaHastaDate))
+        );
+      });
+
+    // ORDEN ALFABÉTICO POR PATENTE (A→Z)
+    filtrados.sort(compararPatenteAZ);
+
+    return filtrados;
+  };
+
+  // ===== Exponer funciones al padre =====
+  useImperativeHandle(ref, () => ({
+    generarAuditoria,
+    abrirModalAgregarVehiculo,
+    imprimirListadoAuditoria, // NUEVO
+  }));
+
+  // ===== Alertas de conflicto =====
+  const crearAlertaConflicto = async (tipoConflicto) => {
+    const fecha = new Date().toISOString().split('T')[0];
+    const hora = new Date().toLocaleTimeString();
+
+    const dataAlerta = {
+      fecha,
+      hora,
+      tipoDeAlerta: `Conflicto Auditoría: ${tipoConflicto}`,
+      operador: user?.nombre || 'Operador Desconocido',
+    };
+
+    try {
+      const resAlerta = await fetch('https://api.garageia.com/api/alertas/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify(dataAlerta),
+      });
+
+      if (!resAlerta.ok) {
+        console.error('Error al crear la alerta de conflicto');
+      }
+    } catch (err) {
+      console.error('Error al enviar la alerta:', err);
+    }
+  };
+
+  // ===== Generar auditoría (servidor) =====
+  const generarAuditoria = async () => {
+    if (vehiculosSeleccionados.length === 0 && vehiculosTemporales.length === 0) {
+      alert('Por favor seleccione al menos un vehículo para auditar o agregue vehículos temporales');
+      return;
+    }
+
+    setGenerandoAuditoria(true);
+
+    try {
+      const operador = user?.nombre || 'Operador Desconocido';
+
+      const idsNormales = vehiculosSeleccionados.filter(id => !id.toString().startsWith('temp-'));
+      const vehiculosTemporalesAuditados = vehiculosTemporales;
+
+      const response = await fetch('https://api.garageia.com/api/auditorias', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ 
+          vehiculos: idsNormales,
+          vehiculosTemporales: vehiculosTemporalesAuditados,
+          operador 
+        }),
+      });
+
+      if (!response.ok) throw new Error('Error al generar auditoría');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `auditoria-vehiculos-${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      // Detección de conflictos
+      const todosLosVehiculosEnSistema = vehiculos.length;
+      const vehiculosNoVerificados = todosLosVehiculosEnSistema - idsNormales.length;
+      const hayVehiculosTemporales = vehiculosTemporales.length > 0;
+
+      if (vehiculosNoVerificados > 0 && hayVehiculosTemporales) {
+        alert('Atención: Auditoría generada con CONFLICTO. Hay vehículos no verificados y vehículos temporales.');
+        await crearAlertaConflicto('Vehículos no verificados y vehículos temporales agregados');
+      } else if (vehiculosNoVerificados > 0) {
+        alert('Atención: Auditoría generada con CONFLICTO. Hay vehículos no verificados.');
+        await crearAlertaConflicto('Vehículos no verificados');
+      } else if (hayVehiculosTemporales) {
+        alert('Atención: Auditoría generada con CONFLICTO. Hay vehículos temporales agregados.');
+        await crearAlertaConflicto('Vehículos temporales agregados');
+      }
+
+      setVehiculosSeleccionados([]);
+      setVehiculosTemporales([]);
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al generar el reporte de auditoría');
+    } finally {
+      setGenerandoAuditoria(false);
+    }
+  };
+
+  // ===== Imprimir listado (cliente -> PDF via print) =====
+  const imprimirListadoAuditoria = () => {
+    if (activeCajaTab !== 'Nueva Auditoría') return;
+    const listado = obtenerListadoNuevaAuditoria();
+
+    const win = window.open('', '_blank', 'width=1024,height=768');
+    if (!win) {
+      alert('El bloqueador de ventanas emergentes impidió abrir la vista de impresión.');
+      return;
+    }
+
+    const fecha = new Date();
+    const header = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div>
+          <div style="font-size:18px;font-weight:700;">Listado de Vehículos en Auditoría</div>
+          <div style="font-size:12px;color:#555">Generado: ${fecha.toLocaleDateString('es-AR')} ${fecha.toLocaleTimeString('es-AR')}</div>
+          <div style="font-size:12px;color:#555">Operador: ${user?.nombre || '---'}</div>
+        </div>
+        <div style="font-size:12px;color:#555">Total: ${listado.length}</div>
+      </div>
+    `;
+
+    const rows = listado.map(veh => {
+      const entrada = veh.estadiaActual?.entrada ? new Date(veh.estadiaActual.entrada) : null;
+      const operador = veh.estadiaActual?.operadorNombre || (veh._id?.toString()?.startsWith('temp-') ? (user?.nombre || '---') : '---');
+      const tipo = veh.tipoVehiculo ? veh.tipoVehiculo[0].toUpperCase() + veh.tipoVehiculo.slice(1) : '---';
+
+      return `
+        <tr>
+          <td>${(veh.patente || '').toString().toUpperCase()}</td>
+          <td>${entrada ? entrada.toLocaleDateString('es-AR') : '---'}</td>
+          <td>${entrada ? entrada.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : '---'}</td>
+          <td>${operador}</td>
+          <td>${tipo}</td>
+        </tr>
+      `;
+    }).join('');
+
+    const styles = `
+      <style>
+        body { font-family: Arial, Helvetica, sans-serif; padding: 16px; }
+        h1,h2,h3 { margin: 0; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 6px 8px; font-size: 12px; }
+        th { background: #f5f5f5; text-align: left; }
+        tr:nth-child(even) { background: #fafafa; }
+        @page { size: A4 portrait; margin: 12mm; }
+        @media print { .no-print { display: none !important; } }
+      </style>
+    `;
+
+    const html = `
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>Listado Auditoría</title>
+          ${styles}
+        </head>
+        <body>
+          ${header}
+          <table>
+            <thead>
+              <tr>
+                <th>Patente</th>
+                <th>Fecha</th>
+                <th>Hora Entrada</th>
+                <th>Operador</th>
+                <th>Tipo de Vehículo</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows || '<tr><td colspan="5">Sin datos</td></tr>'}
+            </tbody>
+          </table>
+          <div class="no-print" style="margin-top:12px;text-align:right;">
+            <button onclick="window.print()">Imprimir</button>
+          </div>
+          <script>window.addEventListener('load', () => { setTimeout(() => { window.print(); }, 200); });</script>
+        </body>
+      </html>
+    `;
+
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+  };
+
+  // ===== UI =====
 
   const renderPaginado = (total) => (
     <div className="paginado">
@@ -332,7 +446,7 @@ const AuditoriaAdmin = forwardRef(({
       if (!response.ok) throw new Error('Error al descargar el archivo');
       
       const blob = await response.blob();
-      saveAs(blob, auditoria.auditoria.nombreArchivo || `auditoria-${auditoria._id}.pdf`);
+      saveAs(blob, auditoria.auditoria?.nombreArchivo || `auditoria-${auditoria._id}.pdf`);
     } catch (error) {
       console.error('Error al descargar auditoría:', error);
       alert(error.message || 'Error al descargar el archivo de auditoría');
@@ -341,7 +455,7 @@ const AuditoriaAdmin = forwardRef(({
 
   const renderTablaHistorico = () => {
     const datosAuditorias = Array.isArray(auditorias) ? auditorias : [];
-    const filtrados = aplicarFiltros(datosAuditorias).sort((a, b) => new Date(b.fechaHora) - new Date(a.fechaHora));
+    const filtrados = aplicarFiltrosHistorico(datosAuditorias).sort((a, b) => new Date(b.fechaHora) - new Date(a.fechaHora));
     const paginados = paginar(filtrados, paginaActual);
     const total = totalPaginas(filtrados);
 
@@ -370,9 +484,9 @@ const AuditoriaAdmin = forwardRef(({
                         href="#"
                         onClick={(e) => descargarAuditoria(item, e)}
                         className="enlace-auditoria"
-                        title={item.auditoria.nombreArchivo || 'Descargar auditoría'}
+                        title={item.auditoria?.nombreArchivo || 'Descargar auditoría'}
                       >
-                        {formatNombreArchivo(item.auditoria.nombreArchivo || 'Auditoria.pdf')}
+                        {formatNombreArchivo(item.auditoria?.nombreArchivo || 'Auditoria.pdf')}
                       </a>
                     ) : '---'}
                   </td>
@@ -393,36 +507,8 @@ const AuditoriaAdmin = forwardRef(({
   };
 
   const renderTablaNuevaAuditoria = () => {
-    const term = searchTerm.toUpperCase();
-    const vehiculosCombinados = [...vehiculos, ...vehiculosTemporales];
-    
-    const filtrados = vehiculosCombinados
-      .filter(veh => veh.estadiaActual?.entrada && !veh.estadiaActual?.salida)
-      .filter(veh => {
-        const patenteMatch = !searchTerm || veh.patente?.toUpperCase().includes(term);
-        const horaEntrada = veh.estadiaActual?.entrada ? new Date(veh.estadiaActual.entrada).getHours() : null;
-        const [desde, hasta] = filtros.horaEntrada ? filtros.horaEntrada.split("-").map(Number) : [null, null];
-        const fechaDesdeDate = filtros.fechaDesde ? new Date(filtros.fechaDesde) : null;
-        const fechaHastaDate = filtros.fechaHasta
-          ? new Date(new Date(filtros.fechaHasta).setDate(new Date(filtros.fechaHasta).getDate() + 1))
-          : null;
-        const operadorMatch = !filtros.operador || 
-          (veh.estadiaActual?.operadorNombre?.toLowerCase().includes(filtros.operador.toLowerCase()) ||
-          (veh.esTemporal && user?.nombre.toLowerCase().includes(filtros.operador.toLowerCase())));
-
-        return (
-          patenteMatch &&
-          operadorMatch &&
-          (!filtros.tipoVehiculo || veh.tipoVehiculo === filtros.tipoVehiculo) &&
-          (!filtros.horaEntrada || (horaEntrada && horaEntrada >= desde && horaEntrada < hasta)) &&
-          (!filtros.fechaDesde || (veh.estadiaActual?.entrada && new Date(veh.estadiaActual.entrada) >= fechaDesdeDate)) &&
-          (!filtros.fechaHasta || (veh.estadiaActual?.entrada && new Date(veh.estadiaActual.entrada) < fechaHastaDate))
-        );
-      })
-      .reverse();
-      
-    const paginados = paginar(filtrados, paginaActual);
-    const total = totalPaginas(filtrados);
+    // SIN paginado; orden A→Z por patente
+    const list = obtenerListadoNuevaAuditoria();
 
     return (
       <>
@@ -476,9 +562,9 @@ const AuditoriaAdmin = forwardRef(({
                 onChange={(e) => setNuevoVehiculo({...nuevoVehiculo, tipoVehiculo: e.target.value})}
                 className="modal-input-audit"
               >
-                {tiposVehiculo.map(tipo => (
-                  <option key={tipo} value={tipo}>
-                    {tipo.nombre.charAt(0).toUpperCase() + tipo.nombre.slice(1)}
+                {tiposVehiculo.map(nombre => (
+                  <option key={nombre} value={nombre}>
+                    {nombre.charAt(0).toUpperCase() + nombre.slice(1)}
                   </option>
                 ))}
               </select>
@@ -510,7 +596,7 @@ const AuditoriaAdmin = forwardRef(({
                 </tr>
               </thead>
               <tbody>
-                {paginados.map(veh => {
+                {list.map(veh => {
                   const entrada = veh.estadiaActual?.entrada ? new Date(veh.estadiaActual.entrada) : null;
                   let abonadoTurnoTexto = 'No';
                   if (veh.abonado) abonadoTurnoTexto = 'Abonado';
@@ -520,12 +606,12 @@ const AuditoriaAdmin = forwardRef(({
 
                   return (
                     <tr 
-                      key={veh._id} 
+                      key={veh._id}
                       className={`${estaChequeado ? 'checked' : ''} ${esTemporal ? 'vehiculo-temporal' : ''}`}
                     >
                       <td>{veh.patente?.toUpperCase() || '---'}</td>
-                      <td>{entrada?.toLocaleDateString() || '---'}</td>
-                      <td>{entrada?.toLocaleTimeString() || '---'}</td>
+                      <td>{entrada?.toLocaleDateString('es-AR') || '---'}</td>
+                      <td>{entrada?.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) || '---'}</td>
                       <td>{veh.estadiaActual?.operadorNombre || (esTemporal ? user?.nombre : '---')}</td>
                       <td>{veh.tipoVehiculo ? veh.tipoVehiculo[0].toUpperCase() + veh.tipoVehiculo.slice(1) : '---'}</td>
                       <td>{abonadoTurnoTexto}</td>
@@ -544,10 +630,10 @@ const AuditoriaAdmin = forwardRef(({
                     </tr>
                   );
                 })}
-                {renderFilasVacias(ITEMS_POR_PAGINA - paginados.length, 8)}
+                {/* sin filas vacías ni paginado */}
               </tbody>
             </table>
-            {renderPaginado(total)}
+            {/* SIN paginado en Nueva Auditoría */}
           </div>
         </div>
       </>

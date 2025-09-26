@@ -1,3 +1,4 @@
+// Precios.jsx
 import React, { useEffect, useState } from 'react';
 import './Precios.css';
 
@@ -111,10 +112,16 @@ const Precios = () => {
 
     if (tarifasFiltradas.length === 0) return null;
 
+    // 🔁 Si el tipo es "turno", mostrar "Anticipado" en el título
+    const tituloTipo =
+      normalizar(tipoTarifa) === 'turno'
+        ? 'Anticipado'
+        : tipoTarifa.charAt(0).toUpperCase() + tipoTarifa.slice(1);
+
     return (
       <div key={tipoTarifa} style={{ margin: '20px 0' }}>
         <h3 style={{ textAlign: 'center', fontWeight: 400 }}>
-          Tarifas x {tipoTarifa.charAt(0).toUpperCase() + tipoTarifa.slice(1)}
+          Tarifas x {tituloTipo}
         </h3>
         <table className="precios-table" border="1" cellPadding="8">
           <thead>

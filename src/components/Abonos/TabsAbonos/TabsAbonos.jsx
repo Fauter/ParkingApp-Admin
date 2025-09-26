@@ -9,7 +9,7 @@ import TicketsAbiertos from '../BodyAbonos/sections/TicketsAbiertos/TicketsAbier
 import AbonosSection from '../BodyAbonos/sections/AbonosSection/AbonosSection';
 
 const TabsAbonos = () => {
-  const tabs = ['Abonos y Turnos Activos', 'Clientes Abonados'];
+  const tabs = ['Abonos y Anticipados Activos', 'Clientes Abonados'];
   const [viewMode, setViewMode] = useState('grid');
   const location = useLocation();
   const navigate = useNavigate();
@@ -18,7 +18,7 @@ const TabsAbonos = () => {
     const params = new URLSearchParams(location.search);
     const tab = params.get('tab');
     if (tabs.includes(tab)) return tab;
-    return 'Abonos y Turnos Activos';
+    return 'Abonos y Anticipados Activos';
   };
 
   const [activeTab, setActiveTab] = useState(getTabFromQuery());
@@ -68,7 +68,7 @@ const TabsAbonos = () => {
 
   const renderSection = () => {
     switch (activeTab) {
-      case 'Abonos y Turnos Activos':
+      case 'Abonos y Anticipados Activos':
         return <TicketsAbiertos viewMode={viewMode} />;
       case 'Clientes Abonados':
         return <AbonosSection />
@@ -92,7 +92,7 @@ const TabsAbonos = () => {
   return (
     <div className="abonoTab-container">
       <div className="abonoTab-header">
-        {activeTab === 'Abonos y Turnos Activos' && (
+        {activeTab === 'Abonos y Anticipados Activos' && (
           <div className="abonoTab-viewmode">
             <button
               className={`viewmode-btn ${viewMode === 'grid' ? 'active' : ''}`}
@@ -129,7 +129,7 @@ const TabsAbonos = () => {
           ))}
         </div>
         <div className="abonoTab-buttons">
-          <button
+          {/* <button
             className="simuladorabono-btn btn-abono"
             onClick={handleAddAbono}
             type="button"
@@ -144,7 +144,7 @@ const TabsAbonos = () => {
             title="Registrar Turno"
           >
             + Turno
-          </button>
+          </button> */}
         </div>
       </div>
 
@@ -154,7 +154,7 @@ const TabsAbonos = () => {
         <div className="modalabono-overlay" onClick={closeModal}>
           <div className={`modalabono ${modalOpen === 'turno' ? 'modal-turno' : 'modal-abono'}`} onClick={(e) => e.stopPropagation()}>
             <div className="modalabono-header">
-              <h3>{modalOpen === 'abono' ? 'Nuevo Abono' : 'Nuevo Turno'}</h3>
+              <h3>{modalOpen === 'abono' ? 'Nuevo Abono' : 'Nuevo Anticipado'}</h3>
               <button className="modalabono-close" onClick={closeModal} aria-label="Cerrar modal">
                 &times;
               </button>

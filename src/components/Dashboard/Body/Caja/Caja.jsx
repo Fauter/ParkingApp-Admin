@@ -1,15 +1,20 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Tabs from '../Tabs/Tabs';
 import './Caja.css';
 
 const ITEMS_POR_PAGINA = 10;
+
+// 👉 Base de API (puede venir por Vite): VITE_API_BASE=https://api.garageia.com
+const API_BASE = (typeof import.meta !== 'undefined' && import.meta?.env?.VITE_API_BASE
+  ? import.meta.env.VITE_API_BASE
+  : 'https://api.garageia.com'
+).replace(/\/+$/, '');
 
 // 🔒 Defensa: normaliza cualquier variante de "operador" a texto legible
 const normalizarOperador = (op) => {
   if (!op) return '---';
   if (typeof op === 'string') {
     if (op === '[object Object]') return '---';
-    // Si quedó un ObjectId porque el backend viejo no normalizó
     if (/^[0-9a-fA-F]{24}$/.test(op)) return '---';
     return op;
   }
@@ -22,13 +27,9 @@ const normalizarOperador = (op) => {
 /** ================================
  *  FECHAS (CREACIÓN DEL MOVIMIENTO)
  *  ================================
- *  ⚠️ SOLO usamos createdAt; si no hay, usamos fecha.
- *  ❌ Nunca usamos updatedAt para evitar “hora actual”.
  */
-
-// 🕒 Helper: Fecha/hora de creación del movimiento en AR, sin año
 function fmtMovimientoFecha(mov) {
-  const src = mov?.createdAt || mov?.fecha; // ← sin updatedAt
+  const src = mov?.createdAt || mov?.fecha;
   if (!src) return '---';
   const d = new Date(src);
   if (isNaN(d)) return '---';
@@ -38,38 +39,73 @@ function fmtMovimientoFecha(mov) {
     timeZone: tz,
     day: '2-digit',
     month: '2-digit',
-  }).format(d); // ej: 29/08
+  }).format(d);
 
   const hhmm = new Intl.DateTimeFormat('es-AR', {
     timeZone: tz,
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
-  }).format(d); // ej: 17:51
+  }).format(d);
 
-  return `${ddmm} ${hhmm}`; // "29/08 17:51"
+  return `${ddmm} ${hhmm}`;
 }
 
-// ⏱️ Helper: timestamp (ms) de creación del movimiento
 function movCreatedTs(mov) {
-  const src = mov?.createdAt || mov?.fecha; // ← sin updatedAt
+  const src = mov?.createdAt || mov?.fecha;
   const t = src ? new Date(src).getTime() : NaN;
   return Number.isFinite(t) ? t : -Infinity;
 }
 
-// ⏱️ Helper: timestamp (ms) de entrada de estadía
 function entradaTs(veh) {
   const src = veh?.estadiaActual?.entrada;
   const t = src ? new Date(src).getTime() : NaN;
   return Number.isFinite(t) ? t : -Infinity;
 }
 
-// 🧮 rango horario "a-b" vs Date
 function hourRangeMatches(dateObj, rangeStr) {
   if (!dateObj || !rangeStr) return true;
   const h = dateObj.getHours();
   const [a, b] = rangeStr.split('-').map(Number);
   return h >= a && h < b;
+}
+
+/** =========================================
+ *  RESOLUCIÓN ROBUSTA DE URL DE FOTO (uploads)
+ *  =========================================
+ */
+function resolverFotoUrl(raw) {
+  if (!raw) return null;
+
+  let url = String(raw).trim();
+
+  // Ya absoluta
+  if (/^https?:\/\//i.test(url)) return url;
+
+  // Si es data URL
+  if (/^data:image\//i.test(url)) return url;
+
+  // Normalizar separadores y asegurar que empiece con /
+  if (url.startsWith('/')) {
+    // ok
+  } else if (url.startsWith('uploads')) {
+    url = '/' + url;
+  } else if (!url.includes('/')) {
+    // Sólo nombre de archivo
+    url = '/uploads/fotos/entradas/' + url;
+  } else {
+    url = '/' + url.replace(/^\/+/, '');
+  }
+
+  // Encodear cada segmento (sin romper slashes)
+  const [pathOnly, query] = url.split('?');
+  const encodedPath = pathOnly
+    .split('/')
+    .map((seg, idx) => (idx === 0 ? seg : encodeURIComponent(seg)))
+    .join('/');
+
+  const rebuilt = encodedPath + (query ? `?${query}` : '');
+  return `${API_BASE}${rebuilt}`.replace(/([^:])\/{2,}/g, '$1/');
 }
 
 const Caja = ({
@@ -80,12 +116,16 @@ const Caja = ({
   limpiarFiltros,
   activeCajaTab = 'Caja',
   isSearchBarVisible = true,
-  // ➕ Recibimos filtros para aplicar horaEntradaMov/horaSalidaMov
   filtros = {}
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [paginaActual, setPaginaActual] = useState(1);
+
+  // Modal foto
   const [modalFotoUrl, setModalFotoUrl] = useState(null);
+  const [modalAlternativas, setModalAlternativas] = useState([]);
+
+  // Cache de estadías por ticket para mostrar entrada/salida, etc.
   const [estadiaCache, setEstadiaCache] = useState({});
   const fetchingTickets = useRef({});
 
@@ -103,7 +143,7 @@ const Caja = ({
     }));
 
     try {
-      const res = await fetch(`https://api.garageia.com/api/vehiculos/ticket-admin/${ticket}`);
+      const res = await fetch(`${API_BASE}/api/vehiculos/ticket-admin/${ticket}`);
       if (!res.ok) throw new Error(`Error al obtener estadía ticket ${ticket}`);
       const json = await res.json();
 
@@ -121,15 +161,65 @@ const Caja = ({
     }
   };
 
-  const abrirFoto = (url) => {
-    if (!url) return;
-    const baseBackendUrl = 'https://api.garageia.com';
-    const urlCompleta = url.startsWith('/') ? baseBackendUrl + url : url;
-    const urlConTimestamp = `${urlCompleta}?t=${Date.now()}`;
-    setModalFotoUrl(urlConTimestamp);
-  };
+  // Construye lista de candidatos (para fallback) y abre el modal
+  const abrirFoto = useCallback((rawUrl) => {
+    if (!rawUrl) return;
 
-  const cerrarModal = () => setModalFotoUrl(null);
+    // Principal (resuelto a /uploads/... absoluto)
+    const primary = resolverFotoUrl(rawUrl);
+
+    const candidatos = new Set();
+    const add = (u) => { if (u) candidatos.add(u); };
+
+    // 1) principal con cache-buster
+    add(`${primary}${primary.includes('?') ? '&' : '?'}t=${Date.now()}`);
+
+    try {
+      const u = new URL(primary);
+      const path = u.pathname; // /uploads/fotos/entradas/XXXX.jpg
+      const filename = path.split('/').pop();
+      const bust = `t=${Date.now()}`;
+
+      // 2) API explícita que sí monta tu router (lee del mismo lugar real)
+      //    /api/fotos/entradas/:filename
+      add(`${u.origin}/api/fotos/entradas/${encodeURIComponent(filename)}?${bust}`);
+
+      // 3) Variante /uploads (por si el host reescribe encabezados entre mounts)
+      add((`${u.origin}${path}?${bust}`).replace(/([^:])\/{2,}/g, '$1/'));
+    } catch {
+      // si falla URL(), nos quedamos con primary+timestamp
+    }
+
+    const lista = Array.from(candidatos);
+    setModalAlternativas(lista);
+    setModalFotoUrl(lista[0] || primary);
+  }, []);
+
+  const cerrarModal = useCallback(() => {
+    setModalFotoUrl(null);
+    setModalAlternativas([]);
+  }, []);
+
+  const siguienteFallback = useCallback(() => {
+    if (!modalAlternativas.length) return;
+    const idx = modalAlternativas.indexOf(modalFotoUrl);
+    const next = modalAlternativas[idx + 1];
+    if (next) setModalFotoUrl(next);
+    else {
+      alert('No se pudo cargar la imagen desde ninguna variante.');
+      cerrarModal();
+    }
+  }, [modalAlternativas, modalFotoUrl, cerrarModal]);
+
+  // Cerrar modal con ESC y click fuera
+  useEffect(() => {
+    if (!modalFotoUrl) return;
+    const onKey = (e) => {
+      if (e.key === 'Escape') cerrarModal();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [modalFotoUrl, cerrarModal]);
 
   const paginar = (array, pagina) => {
     const startIndex = (pagina - 1) * ITEMS_POR_PAGINA;
@@ -151,14 +241,11 @@ const Caja = ({
       <tr key={`empty-${i}`}>{Array.from({ length: columnas }, (_, j) => <td key={j}>---</td>)}</tr>
     ));
 
-  // Pre-carga de estadías PARA LA PÁGINA ACTUAL ya ordenada por fecha de movimiento
   useEffect(() => {
     if (activeCajaTab !== 'Caja') return;
 
-    // Si NO hay filtros por entrada/salida (movimientos), prefetch sólo la página
     if (!filtros?.horaEntradaMov && !filtros?.horaSalidaMov) {
       const term = searchTerm.toUpperCase();
-      // Filtramos por patente y ORDENAMOS por fecha de movimiento DESC
       const preliminares = movimientos
         .filter(mov => (mov.patente || '').toUpperCase().includes(term))
         .sort((a, b) => movCreatedTs(b) - movCreatedTs(a));
@@ -171,7 +258,6 @@ const Caja = ({
     }
   }, [activeCajaTab, movimientos, paginaActual, searchTerm, filtros?.horaEntradaMov, filtros?.horaSalidaMov]);
 
-  // Si hay filtros de hora de ENTRADA/SALIDA (en movimientos), necesitamos la estadía de todos los movimientos visibles (post filtro básico + search)
   useEffect(() => {
     if (activeCajaTab !== 'Caja') return;
     const needsEntrada = Boolean(filtros?.horaEntradaMov);
@@ -190,18 +276,14 @@ const Caja = ({
   const renderTablaCaja = () => {
     const term = searchTerm.toUpperCase();
 
-    // 1) filtro por patente
     let filtrados = movimientos
       .filter(mov => (mov.patente || '').toUpperCase().includes(term));
 
-    // 2) si hay filtros de horaEntradaMov / horaSalidaMov, aplicarlos usando estadía
     if (filtros?.horaEntradaMov || filtros?.horaSalidaMov) {
       filtrados = filtrados.filter(mov => {
-        if (!mov.ticket) return false; // sin ticket no hay entrada/salida asociada
+        if (!mov.ticket) return false;
         const info = estadiaCache[mov.ticket];
         const est  = info?.data;
-
-        // si aún no cargó la estadía, por ahora NO lo mostramos (filtro estricto)
         if (!est) return false;
 
         const okEntrada = !filtros.horaEntradaMov || (est.entrada && hourRangeMatches(new Date(est.entrada), filtros.horaEntradaMov));
@@ -210,10 +292,8 @@ const Caja = ({
       });
     }
 
-    // 3) ORDENAR SIEMPRE POR FECHA DEL MOVIMIENTO DESC (más nuevos arriba)
     filtrados.sort((a, b) => movCreatedTs(b) - movCreatedTs(a));
 
-    // 4) paginar
     const paginados = paginar(filtrados, paginaActual);
     const total = totalPaginas(filtrados);
 
@@ -233,12 +313,11 @@ const Caja = ({
                 <th>Método de Pago</th>
                 <th>Factura</th>
                 <th>Monto</th>
-                <th></th>
+                <th>Foto</th>
               </tr>
             </thead>
             <tbody>
               {paginados.map(movimiento => {
-                // ⬇️ Fechas para la estadía (solo para mostrar Entrada/Salida si hay ticket)
                 const estadiaInfo = movimiento.ticket ? estadiaCache[movimiento.ticket] : null;
                 const estadia = estadiaInfo?.data || null;
                 const loading = estadiaInfo?.loading || false;
@@ -246,23 +325,19 @@ const Caja = ({
 
                 const entrada = estadia?.entrada ? new Date(estadia.entrada) : null;
                 const salida = estadia?.salida ? new Date(estadia.salida) : null;
-                const fotoUrl = estadia?.fotoUrl;
 
-                // ⬇️ Patente y monto con defensas
+                // ✅ FOTO: preferí la de la estadía; si no hay, usá la del movimiento
+                const fotoUrl = estadia?.fotoUrl || movimiento?.fotoUrl || null;
+
                 const patenteKey = movimiento.patente ? movimiento.patente.toUpperCase() : null;
                 const montoSeguro = typeof movimiento.monto === 'number' ? movimiento.monto : 0;
 
                 return (
                   <tr key={movimiento._id}>
                     <td>{patenteKey || '---'}</td>
-
-                    {/* ✅ Fecha de creación del movimiento (sin año) */}
                     <td>{fmtMovimientoFecha(movimiento)}</td>
-
-                    {/* ℹ️ Entrada/Salida (solo referencia visual de la estadía) */}
                     <td>{loading ? 'Cargando...' : error ? 'Error' : (entrada?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || '---')}</td>
                     <td>{loading ? 'Cargando...' : error ? 'Error' : (salida?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || '---')}</td>
-
                     <td>{movimiento.descripcion || '---'}</td>
                     <td>{movimiento.operador || '---'}</td>
                     <td>{movimiento.tipoVehiculo ? movimiento.tipoVehiculo[0].toUpperCase() + movimiento.tipoVehiculo.slice(1) : '---'}</td>
@@ -272,8 +347,8 @@ const Caja = ({
                     <td>
                       {loading && '...'}
                       {!loading && fotoUrl && (
-                        <button 
-                          onClick={() => abrirFoto(fotoUrl)} 
+                        <button
+                          onClick={() => abrirFoto(fotoUrl)}
                           title="Ver foto"
                           className="btn-ver-foto"
                         >
@@ -300,7 +375,7 @@ const Caja = ({
     const filtrados = vehiculos
       .filter(veh => veh.estadiaActual?.entrada && !veh.estadiaActual?.salida)
       .filter(veh => (veh.patente || '').toUpperCase().includes(term))
-      .sort((a, b) => entradaTs(b) - entradaTs(a)); // ⬅️ más reciente por hora de entrada
+      .sort((a, b) => entradaTs(b) - entradaTs(a));
     const paginados = paginar(filtrados, paginaActual);
     const total = totalPaginas(filtrados);
 
@@ -316,7 +391,7 @@ const Caja = ({
                 <th>Operador</th>
                 <th>Tipo de Vehículo</th>
                 <th>Abonado/Turno</th>
-                <th></th>
+                <th>Foto</th>
               </tr>
             </thead>
             <tbody>
@@ -325,6 +400,8 @@ const Caja = ({
                 let abonadoTurnoTexto = 'No';
                 if (veh.abonado) abonadoTurnoTexto = 'Abonado';
                 else if (veh.turno) abonadoTurnoTexto = 'Turno';
+
+                const rawFoto = veh.estadiaActual?.fotoUrl;
 
                 return (
                   <tr key={veh._id}>
@@ -335,15 +412,15 @@ const Caja = ({
                     <td>{veh.tipoVehiculo ? veh.tipoVehiculo[0].toUpperCase() + veh.tipoVehiculo.slice(1) : '---'}</td>
                     <td>{abonadoTurnoTexto}</td>
                     <td>
-                      {veh.estadiaActual?.fotoUrl && (
-                        <button 
-                          onClick={() => abrirFoto(veh.estadiaActual.fotoUrl)} 
+                      {rawFoto ? (
+                        <button
+                          onClick={() => abrirFoto(rawFoto)}
                           title="Ver foto"
                           className="btn-ver-foto"
                         >
                           Foto
                         </button>
-                      )}
+                      ) : '---'}
                     </td>
                   </tr>
                 );
@@ -364,7 +441,7 @@ const Caja = ({
         (a.tipoDeAlerta || '').toUpperCase().includes(term) ||
         normalizarOperador(a.operador)?.toUpperCase().includes(term)
       )
-      .reverse(); // si luego tenés createdAt, podemos ordenarlas también
+      .reverse();
     const paginadas = paginar(filtradas, paginaActual);
     const total = totalPaginas(filtradas);
 
@@ -405,7 +482,7 @@ const Caja = ({
         (i.texto || '').toUpperCase().includes(term) ||
         normalizarOperador(i.operador)?.toUpperCase().includes(term)
       )
-      .reverse(); // idem
+      .reverse();
     const paginados = paginar(filtrados, paginaActual);
     const total = totalPaginas(filtrados);
 
@@ -455,19 +532,19 @@ const Caja = ({
   return (
     <div className="caja">
       {renderContent()}
-      
+
       {modalFotoUrl && (
         <div className="modal-foto-overlay" onClick={cerrarModal}>
           <div className="modal-foto-content" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close-btn" onClick={cerrarModal}>&times;</button>
-            <img 
-              src={modalFotoUrl} 
-              alt="Foto del vehículo" 
+            <button className="modal-close-btn" onClick={cerrarModal} aria-label="Cerrar">×</button>
+            <img
+              src={modalFotoUrl}
+              alt="Foto del vehículo"
+              referrerPolicy="no-referrer"
+              crossOrigin="anonymous"
               onError={(e) => {
-                e.target.onerror = null;
-                e.target.src = '';
-                alert('No se pudo cargar la imagen. Por favor intente nuevamente.');
-                cerrarModal();
+                e.currentTarget.onerror = null;
+                siguienteFallback();
               }}
             />
           </div>

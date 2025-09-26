@@ -26,6 +26,12 @@ const handleNumericPaste = (e, onSanitizedValue) => {
   if (clean !== text && typeof onSanitizedValue === 'function') onSanitizedValue(clean);
 };
 
+const prettyTipo = (tipo) => {
+  if (typeof tipo !== 'string') return '';
+  if (tipo === 'turno') return 'Anticipado';
+  return tipo.charAt(0).toUpperCase() + tipo.slice(1);
+};
+
 const Tarifas = () => {
   const [tarifas, setTarifas] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -96,7 +102,7 @@ const Tarifas = () => {
   const crearTarifaFinal = async () => {
     const defaults = {
       hora: { nombre: 'Hora', tipo: 'hora' },
-      turno: { nombre: 'Turno', tipo: 'turno' },
+      turno: { nombre: 'Anticipado', tipo: 'turno' }, // <-- corregido
       abono: { nombre: 'Abono', tipo: 'abono' },
       // estadia: { nombre: 'Día', tipo: 'estadia' },
     };
@@ -197,7 +203,7 @@ const Tarifas = () => {
     }
   };
 
-  // ---- INPUT DEL MODAL (con validación numérica estrica en campos requeridos)
+  // ---- INPUT DEL MODAL (con validación numérica estricta en campos requeridos)
   const renderInputField = (label, field) => {
     const numeric = isNumericCampo(field);
 
@@ -214,7 +220,7 @@ const Tarifas = () => {
       <div className="input-group">
         <label>{label}</label>
         <input
-          type="text"                       // usamos text + defensas manuales
+          type="text"
           inputMode={numeric ? 'numeric' : 'text'}
           pattern={numeric ? '[0-9]*' : undefined}
           value={value}
@@ -270,7 +276,7 @@ const Tarifas = () => {
 
     return (
       <div className="tarifa-section">
-        <h2>{`Tipo ${typeof tipo === 'string' ? tipo.charAt(0).toUpperCase() + tipo.slice(1) : ''}`}</h2>
+        <h2>{`Tipo ${prettyTipo(tipo)}`}</h2>
         <table className="tarifa-table">
           <thead>
             <tr>
@@ -377,7 +383,7 @@ const Tarifas = () => {
                 <span className="tarifasModal-subtitulo">Estacionamiento x hora</span>
               </button>
               <button onClick={() => handleTipoSeleccionado('turno')}>
-                <strong>Turno</strong>
+                <strong>Anticipado</strong>
                 <span className="tarifasModal-subtitulo">Estacionamiento x turno</span>
               </button>
               {/* <button onClick={() => handleTipoSeleccionado('estadia')}>

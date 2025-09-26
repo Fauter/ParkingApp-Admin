@@ -27,7 +27,7 @@ const ModalVehiculo = ({
   const [errorMessage, setErrorMessage] = useState("");
   const navigate = useNavigate();
 
-  const metodosPago = ["Efectivo", "Débito", "Crédito", "QR"];
+  const metodosPago = ["Efectivo", "Transferencia", "Débito", "Crédito", "QR"];
   const tiposFactura = ["CC", "A", "Final"];
 
   // ===== Helper para formatear $ARS (igual que en el otro componente) =====
