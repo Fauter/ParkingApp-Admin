@@ -1,35 +1,85 @@
 // Precios.jsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import './Precios.css';
+
+const API_BASE = 'https://api.garageia.com/api';
 
 const Precios = () => {
   const [tarifas, setTarifas] = useState([]);
   const [tiposVehiculo, setTiposVehiculo] = useState([]);
   const [precios, setPrecios] = useState({});
+  const [preciosCache, setPreciosCache] = useState({ efectivo: null, otros: null });
   const [editing, setEditing] = useState({});
+  const [paymentMode, setPaymentMode] = useState('efectivo'); // 'efectivo' | 'otros'
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchDatos = async () => {
-      try {
-        const tarifasRes = await fetch('https://api.garageia.com/api/tarifas/');
-        const tarifasData = await tarifasRes.json();
-        setTarifas(tarifasData);
-
-        const tiposRes = await fetch('https://api.garageia.com/api/tipos-vehiculo');
-        const tiposData = await tiposRes.json();
-        setTiposVehiculo(tiposData);
-
-        const preciosRes = await fetch('https://api.garageia.com/api/precios');
-        const preciosData = await preciosRes.json();
-        setPrecios(preciosData);
-      } catch (error) {
-        console.error('Error cargando datos:', error);
-      }
-    };
-
-    fetchDatos();
+  // ============ CATALOGOS ============
+  const fetchCatalogos = useCallback(async () => {
+    const [tarifasRes, tiposRes] = await Promise.all([
+      fetch(`${API_BASE}/tarifas/`),
+      fetch(`${API_BASE}/tipos-vehiculo`)
+    ]);
+    const [tarifasData, tiposData] = await Promise.all([
+      tarifasRes.json(),
+      tiposRes.json()
+    ]);
+    setTarifas(tarifasData);
+    setTiposVehiculo(tiposData);
   }, []);
 
+  // ============ PRECARGA DE PRECIOS (AMBOS MODOS) ============
+  const prefetchPrecios = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [efRes, otRes] = await Promise.all([
+        fetch(`${API_BASE}/precios?metodo=efectivo`),
+        fetch(`${API_BASE}/precios?metodo=otros`)
+      ]);
+
+      const [efData, otData] = await Promise.all([
+        efRes.ok ? efRes.json() : {},
+        otRes.ok ? otRes.json() : {}
+      ]);
+
+      const cache = { efectivo: efData || {}, otros: otData || {} };
+      setPreciosCache(cache);
+      // Muestra por defecto efectivo ya precargado (sin flicker)
+      setPrecios(cache.efectivo || {});
+    } catch (e) {
+      console.error('Error prefetch precios:', e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Montaje: catálogos + prefetch de ambos modos
+  useEffect(() => {
+    (async () => {
+      try {
+        await fetchCatalogos();
+      } catch (e) {
+        console.error('Error catálogos:', e);
+      }
+      await prefetchPrecios();
+    })();
+  }, [fetchCatalogos, prefetchPrecios]);
+
+  // Cambiar modo: siempre instantáneo con cache (sin mostrar loading)
+  useEffect(() => {
+    const cached = preciosCache[paymentMode];
+    if (cached) setPrecios(cached);
+    // Si quisieras refrescar silenciosamente en background, podrías hacerlo aquí:
+    // (async () => {
+    //   try {
+    //     const res = await fetch(`${API_BASE}/precios?metodo=${paymentMode}`);
+    //     const fresh = await res.json();
+    //     setPreciosCache(prev => ({ ...prev, [paymentMode]: fresh || {} }));
+    //     setPrecios(fresh || {});
+    //   } catch {}
+    // })();
+  }, [paymentMode, preciosCache]);
+
+  // ============ EDICION ============
   const handleCellClick = (vehiculo, tarifa) => {
     const valorActual = precios[vehiculo]?.[tarifa] ?? '';
     setEditing({ vehiculo, tarifa, value: valorActual.toString() });
@@ -63,7 +113,7 @@ const Precios = () => {
       };
 
       try {
-        const res = await fetch(`https://api.garageia.com/api/precios/${vehiculo}`, {
+        const res = await fetch(`${API_BASE}/precios/${vehiculo}?metodo=${paymentMode}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(nuevosPreciosVehiculo),
@@ -71,9 +121,12 @@ const Precios = () => {
 
         if (!res.ok) throw new Error('Error al actualizar precio');
 
-        setPrecios(prev => ({
+        // Estado visible
+        setPrecios(prev => ({ ...prev, [vehiculo]: nuevosPreciosVehiculo }));
+        // Cache coherente por modo actual
+        setPreciosCache(prev => ({
           ...prev,
-          [vehiculo]: nuevosPreciosVehiculo,
+          [paymentMode]: { ...(prev[paymentMode] || {}), [vehiculo]: nuevosPreciosVehiculo }
         }));
 
         setEditing({});
@@ -85,6 +138,7 @@ const Precios = () => {
     }
   };
 
+  // ============ RENDER ============
   const normalizar = (str) =>
     typeof str === 'string'
       ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
@@ -104,15 +158,13 @@ const Precios = () => {
   };
 
   const renderTablaPorTipo = (tipoTarifa) => {
-    // Para "abono", generamos una fila virtual "Mensual" sin depender de /api/tarifas
     const tarifasFiltradas =
       normalizar(tipoTarifa) === 'abono'
         ? [{ _id: 'virtual-abono-mensual', nombre: 'Mensual', tipo: 'abono' }]
-        : tarifas.filter(t => normalizar(t.tipo) === normalizar(tipoTarifa));
+        : (tarifas || []).filter(t => normalizar(t.tipo) === normalizar(tipoTarifa));
 
     if (tarifasFiltradas.length === 0) return null;
 
-    // 🔁 Si el tipo es "turno", mostrar "Anticipado" en el título
     const tituloTipo =
       normalizar(tipoTarifa) === 'turno'
         ? 'Anticipado'
@@ -138,7 +190,6 @@ const Precios = () => {
           </thead>
           <tbody>
             {tarifasFiltradas.map(tarifa => {
-              // El nombre de la tarifa (e.g. 'Hora', '4 Horas', 'Día', 'Mensual') define la clave en /precios (lowercase)
               const nombreTarifa = tarifa.nombre ? tarifa.nombre.toLowerCase() : '';
               return (
                 <tr key={tarifa._id}>
@@ -155,6 +206,7 @@ const Precios = () => {
                         onClick={() => handleCellClick(vehiculo, nombreTarifa)}
                         className={esEditando ? 'editing' : ''}
                         style={{ cursor: 'pointer' }}
+                        title={`${vehiculo} · ${nombreTarifa} · ${paymentMode}`}
                       >
                         {esEditando ? (
                           <div style={{ position: 'relative' }}>
@@ -190,8 +242,43 @@ const Precios = () => {
 
   return (
     <div className="precios-container">
-      <h2>Configuración de Precios</h2>
-      {tiposTarifa.map(renderTablaPorTipo)}
+      {/* Header: título centrado. El switch vive "pegado" al título sin afectarlo */}
+      <div className="precios-header">
+        <div />{/* izquierda vacía */}
+        <div className="title-wrap">
+          <h2 className="precios-title">Configuración de Precios</h2>
+
+          {/* Switch “tecla de luz” pegado al h2 */}
+          <div className="light-switch" role="group" aria-label="Modo de pago">
+            <button
+              type="button"
+              onClick={() => setPaymentMode('efectivo')}
+              className={paymentMode === 'efectivo' ? 'switch-seg active' : 'switch-seg'}
+              aria-pressed={paymentMode === 'efectivo'}
+              title="Efectivo"
+            >
+              Efectivo
+            </button>
+            <button
+              type="button"
+              onClick={() => setPaymentMode('otros')}
+              className={paymentMode === 'otros' ? 'switch-seg active' : 'switch-seg'}
+              aria-pressed={paymentMode === 'otros'}
+              title="Otros métodos"
+            >
+              Otros
+            </button>
+          </div>
+        </div>
+        <div />{/* derecha vacía */}
+      </div>
+
+      {/* No mostramos spinner al alternar modo para evitar parpadeo visual */}
+      {loading && !(preciosCache.efectivo && preciosCache.otros) ? (
+        <p style={{ marginTop: 16 }}>Cargando configuración…</p>
+      ) : (
+        tiposTarifa.map(renderTablaPorTipo)
+      )}
     </div>
   );
 };
