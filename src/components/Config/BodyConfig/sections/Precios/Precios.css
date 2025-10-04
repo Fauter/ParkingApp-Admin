@@ -11,7 +11,7 @@
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   width: 100%;
-  gap: 4px;          /* el switch va pegado al título */
+  gap: 4px;
   margin-bottom: 12px;
 }
 
@@ -34,7 +34,7 @@
 .light-switch {
   position: absolute;
   top: 50%;
-  left: 100%;       /* borde derecho del h2 */
+  left: 100%;
   transform: translateY(-50%);
   margin-left: 8px;
 
@@ -44,7 +44,6 @@
   border-radius: 8px;
   overflow: hidden;
   background: #f6f8fa;
-  box-shadow: inset 0 0 0 0 rgba(0,0,0,0);
 }
 
 /* Botones del switch */
@@ -57,8 +56,6 @@
   background: transparent;
   user-select: none;
   min-width: 92px;
-
-  /* quitar highlight/tap y FOCUS RING AZUL en todos los navegadores */
   outline: none !important;
   -webkit-tap-highlight-color: transparent;
 }
@@ -75,10 +72,10 @@
   border-left: 1px solid #bfc7cd;
 }
 
-/* estado activo: leve relieve interior como “clickeada” */
+/* estado activo: leve relieve interior */
 .switch-seg.active {
   background: #e7edf2;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.12);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.12);
   font-weight: 600;
 }
 
@@ -165,7 +162,7 @@
   padding-left: 18px;
 }
 
-/* Botón base (si lo usás en otro lado) */
+/* Botón base */
 .btn {
   border: 1px solid #bbb;
   background: #f7f7f7;
@@ -181,4 +178,137 @@
 
 .precios-container h2 {
   font-weight: 500;
+}
+
+/* ====== Recargo Fuera de Fecha ====== */
+.recargo-card {
+  width: 55%;
+  min-width: 480px;
+  background: #f1f6f8;
+  border: 1px solid #ddd;
+  margin: 20px auto 8px auto;
+  padding: 14px 16px;
+  box-sizing: border-box;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.recargo-card h3 {
+  margin: 0 0 12px 0;
+  text-align: center;
+  font-weight: 400;
+}
+
+.recargo-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.recargo-field {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 6px;
+}
+
+.recargo-label {
+  font-size: 12px;
+  color: #32414b;
+}
+
+.recargo-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.recargo-input {
+  width: 100%;
+  padding: 8px 28px 8px 10px;
+  font-size: 13px;
+  background: #ffffff;
+  border: 1px solid #cfd8de;
+  border-radius: 6px;
+  box-sizing: border-box;
+  text-align: right;
+  outline: none;
+}
+
+.recargo-input:focus {
+  border-color: #9eb4c2;
+  box-shadow: 0 0 0 2px rgba(71, 126, 179, 0.15);
+}
+
+/* Sufijo % */
+.input-suffix {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: 12px;
+  color: #637481;
+}
+
+.with-suffix {
+  padding-right: 28px;
+}
+
+/* === BOTÓN "Guardar Recargos" === */
+.recargo-actions {
+  margin-top: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-primary {
+  padding: 8px 18px;
+  border: none;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #4e83b3 0%, #3b6a91 100%);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(180deg, #5a93c9 0%, #44779e 100%);
+  box-shadow: 0 3px 5px rgba(0, 0, 0, 0.18);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Mensaje al lado del botón */
+.save-hint {
+  font-size: 12px;
+  color: #415866;
+  background: rgba(255, 255, 255, 0.6);
+  padding: 3px 10px;
+  border-radius: 6px;
+  transition: opacity 0.3s;
+  user-select: none;
+}
+
+/* Responsive */
+@media (max-width: 680px) {
+  .precios-table {
+    width: 96%;
+    min-width: 0;
+  }
+  .recargo-card {
+    width: 96%;
+    min-width: 0;
+  }
+  .recargo-grid {
+    grid-template-columns: 1fr;
+  }
 }

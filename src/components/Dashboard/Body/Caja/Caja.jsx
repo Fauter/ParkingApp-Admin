@@ -14,22 +14,60 @@ const API_BASE = (typeof import.meta !== 'undefined' && import.meta?.env?.VITE_A
 const normalizarOperador = (op) => {
   if (!op) return '---';
   if (typeof op === 'string') {
-    if (op === '[object Object]') return '---';
-    if (/^[0-9a-fA-F]{24}$/.test(op)) return '---';
-    return op;
+    const s = op.trim();
+    if (!s) return '---';
+    if (s === '[object Object]') return '---';
+    if (/^[0-9a-fA-F]{24}$/.test(s)) return '---';
+    if (s.toLowerCase() === 'operador desconocido') return '---';
+    return s;
   }
   if (typeof op === 'object') {
-    return op.nombre || op.name || op.username || op.email || op._id || '---';
+    const cand = op.nombre || op.name || op.username || op.email || op._id || '';
+    return normalizarOperador(String(cand || '').trim());
   }
-  return String(op);
+  return normalizarOperador(String(op || '').trim());
 };
+
+/** =========================================
+ *  CANONIZADOR DE MOVIMIENTOS (aplana anidados)
+ *  =========================================
+ *  Soporta:
+ *  - Plano: { patente, descripcion, ... createdAt/fecha, ticket, fotoUrl }
+ *  - Envuelto: { msg, createdAt/fecha, movimiento: { ...props... } }
+ */
+function canonizarMovimiento(raw) {
+  const inner = raw?.movimiento || {};
+  const pick = (k) => (raw?.[k] != null ? raw[k] : inner?.[k]);
+
+  // Fecha/createdAt robusto (prefiere top-level si existe)
+  const createdAt = pick('createdAt') || pick('fecha') || null;
+
+  return {
+    _id: raw?._id || inner?._id || `${pick('patente') || ''}-${createdAt || Math.random()}`,
+    patente: pick('patente') || null,
+    descripcion: pick('descripcion') || null,
+    operador: pick('operador') || null,
+    tipoVehiculo: pick('tipoVehiculo') || null,
+    metodoPago: pick('metodoPago') || null,
+    factura: pick('factura') || null,
+    monto: pick('monto'),
+    promo: pick('promo'),
+    tipoTarifa: pick('tipoTarifa') || null,
+    ticket: pick('ticket') ?? null,
+    fotoUrl: pick('fotoUrl') || null,
+    // guardo ambas por compat
+    createdAt,
+    fecha: createdAt
+  };
+}
 
 /** ================================
  *  FECHAS (CREACIÓN DEL MOVIMIENTO)
  *  ================================
  */
 function fmtMovimientoFecha(mov) {
-  const src = mov?.createdAt || mov?.fecha;
+  // mov ya puede venir canonizado; igual hacemos fallback robusto
+  const src = mov?.createdAt || mov?.fecha || mov?.movimiento?.createdAt || mov?.movimiento?.fecha;
   if (!src) return '---';
   const d = new Date(src);
   if (isNaN(d)) return '---';
@@ -52,7 +90,7 @@ function fmtMovimientoFecha(mov) {
 }
 
 function movCreatedTs(mov) {
-  const src = mov?.createdAt || mov?.fecha;
+  const src = mov?.createdAt || mov?.fecha || mov?.movimiento?.createdAt || mov?.movimiento?.fecha;
   const t = src ? new Date(src).getTime() : NaN;
   return Number.isFinite(t) ? t : -Infinity;
 }
@@ -241,12 +279,16 @@ const Caja = ({
       <tr key={`empty-${i}`}>{Array.from({ length: columnas }, (_, j) => <td key={j}>---</td>)}</tr>
     ));
 
+  // === Prefetch de estadías para página visible (sin filtros de hora)
   useEffect(() => {
     if (activeCajaTab !== 'Caja') return;
 
     if (!filtros?.horaEntradaMov && !filtros?.horaSalidaMov) {
       const term = searchTerm.toUpperCase();
+
+      // Canonizamos antes de filtrar/sortear
       const preliminares = movimientos
+        .map(canonizarMovimiento)
         .filter(mov => (mov.patente || '').toUpperCase().includes(term))
         .sort((a, b) => movCreatedTs(b) - movCreatedTs(a));
 
@@ -258,6 +300,7 @@ const Caja = ({
     }
   }, [activeCajaTab, movimientos, paginaActual, searchTerm, filtros?.horaEntradaMov, filtros?.horaSalidaMov]);
 
+  // === Prefetch cuando hay filtros por hora (necesitamos info de la estadía)
   useEffect(() => {
     if (activeCajaTab !== 'Caja') return;
     const needsEntrada = Boolean(filtros?.horaEntradaMov);
@@ -266,6 +309,7 @@ const Caja = ({
 
     const term = searchTerm.toUpperCase();
     const objetivos = movimientos
+      .map(canonizarMovimiento)
       .filter(mov => (mov.patente || '').toUpperCase().includes(term));
 
     objetivos.forEach(mov => {
@@ -276,7 +320,9 @@ const Caja = ({
   const renderTablaCaja = () => {
     const term = searchTerm.toUpperCase();
 
+    // Siempre trabajar sobre movimientos canonizados
     let filtrados = movimientos
+      .map(canonizarMovimiento)
       .filter(mov => (mov.patente || '').toUpperCase().includes(term));
 
     if (filtros?.horaEntradaMov || filtros?.horaSalidaMov) {
@@ -326,7 +372,7 @@ const Caja = ({
                 const entrada = estadia?.entrada ? new Date(estadia.entrada) : null;
                 const salida = estadia?.salida ? new Date(estadia.salida) : null;
 
-                // ✅ FOTO: preferí la de la estadía; si no hay, usá la del movimiento
+                // ✅ FOTO: preferí la de la estadía; si no hay, usá la del movimiento canonizado
                 const fotoUrl = estadia?.fotoUrl || movimiento?.fotoUrl || null;
 
                 const patenteKey = movimiento.patente ? movimiento.patente.toUpperCase() : null;
@@ -339,7 +385,7 @@ const Caja = ({
                     <td>{loading ? 'Cargando...' : error ? 'Error' : (entrada?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || '---')}</td>
                     <td>{loading ? 'Cargando...' : error ? 'Error' : (salida?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || '---')}</td>
                     <td>{movimiento.descripcion || '---'}</td>
-                    <td>{movimiento.operador || '---'}</td>
+                    <td>{normalizarOperador(movimiento.operador)}</td>
                     <td>{movimiento.tipoVehiculo ? movimiento.tipoVehiculo[0].toUpperCase() + movimiento.tipoVehiculo.slice(1) : '---'}</td>
                     <td>{movimiento.metodoPago || '---'}</td>
                     <td>{movimiento.factura || '---'}</td>
@@ -408,7 +454,7 @@ const Caja = ({
                     <td>{veh.patente?.toUpperCase() || '---'}</td>
                     <td>{entrada?.toLocaleDateString() || '---'}</td>
                     <td>{entrada?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || '---'}</td>
-                    <td>{veh.estadiaActual?.operadorNombre || '---'}</td>
+                    <td>{normalizarOperador(veh.estadiaActual?.operadorNombre)}</td>
                     <td>{veh.tipoVehiculo ? veh.tipoVehiculo[0].toUpperCase() + veh.tipoVehiculo.slice(1) : '---'}</td>
                     <td>{abonadoTurnoTexto}</td>
                     <td>

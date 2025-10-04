@@ -1,3 +1,4 @@
+// src/components/Precios/Precios.jsx
 // Precios.jsx
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import './Precios.css';
@@ -49,13 +50,19 @@ const Precios = () => {
   const [loading, setLoading] = useState(false);
 
   // ---------- Orden visual (solo UI) ----------
-  // columnas por índice
   const [colOrder, setColOrder] = useState([]); // p.ej. [0,2,1]
-  // filas por clave derivada del nombre dentro de cada tipo
   const [rowOrder, setRowOrder] = useState({ hora: [], turno: [], abono: [] });
 
-  const dragRef = useRef(null); // { kind:'col'|'row', fromIndex:number, table?:'hora'|'turno'|'abono' }
-  const ordersLoadedRef = useRef(false); // para cargar desde LS una sola vez
+  const dragRef = useRef(null);
+  const ordersLoadedRef = useRef(false);
+
+  // ----- Recargo (persistente en backend) -----
+  const [recargo11, setRecargo11] = useState('');       // valor visible en input (string)
+  const [recargo22, setRecargo22] = useState('');       // valor visible en input (string)
+  const [recargo11Orig, setRecargo11Orig] = useState(''); // para cancelar con Esc / blur
+  const [recargo22Orig, setRecargo22Orig] = useState('');
+  const [savingRecargo, setSavingRecargo] = useState(false);
+  const [saveMsg, setSaveMsg] = useState('');
 
   /* ============ CATALOGOS ============ */
   const fetchCatalogos = useCallback(async () => {
@@ -85,13 +92,92 @@ const Precios = () => {
 
       const cache = { efectivo: efData || {}, otros: otData || {} };
       setPreciosCache(cache);
-      setPrecios(cache.efectivo || {}); // mostrar efectivo de arranque
+      setPrecios(cache.efectivo || {});
     } catch (e) {
       console.error('Error prefetch precios:', e);
     } finally {
       setLoading(false);
     }
   }, []);
+
+  /* ============ LEER PARAMETROS (para recargos) ============ */
+  const fetchParametros = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/parametros`);
+      if (!res.ok) throw new Error('No se pudo leer parámetros');
+      const data = await res.json();
+      // Normaliza a string para inputs
+      const p11 = (data?.apartirdia11 ?? 0).toString().replace(/[^\d]/g, '');
+      const p22 = (data?.apartirdia22 ?? 0).toString().replace(/[^\d]/g, '');
+      setRecargo11(p11);
+      setRecargo22(p22);
+      setRecargo11Orig(p11);
+      setRecargo22Orig(p22);
+    } catch (e) {
+      console.error('Error leyendo parámetros:', e);
+    }
+  }, []);
+
+  /* ============ GUARDAR RECARGO (inline, por campo) ============ */
+  const guardarRecargoField = useCallback(
+    async (field) => {
+      try {
+        setSavingRecargo(true);
+        setSaveMsg('');
+        const payload =
+          field === 'apartirdia11'
+            ? { apartirdia11: Number(recargo11 || 0) }
+            : { apartirdia22: Number(recargo22 || 0) };
+
+        const res = await fetch(`${API_BASE}/parametros`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error('Error al guardar recargo');
+
+        setSaveMsg('Guardado ✔');
+        // Releer para normalizar y fijar nuevos "orig"
+        await fetchParametros();
+      } catch (e) {
+        console.error(e);
+        setSaveMsg('No se pudo guardar. Intentá de nuevo.');
+      } finally {
+        setSavingRecargo(false);
+        setTimeout(() => setSaveMsg(''), 2000);
+      }
+    },
+    [recargo11, recargo22, fetchParametros]
+  );
+
+  // Handlers de teclado por input de recargo (Enter = guarda, Esc = cancela)
+  const onRecargoKeyDown = useCallback(
+    (field, e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (!savingRecargo) guardarRecargoField(field);
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        if (field === 'apartirdia11') {
+          setRecargo11(recargo11Orig);
+        } else {
+          setRecargo22(recargo22Orig);
+        }
+        setSaveMsg('Cancelado');
+        setTimeout(() => setSaveMsg(''), 1200);
+      }
+    },
+    [guardarRecargoField, savingRecargo, recargo11Orig, recargo22Orig]
+  );
+
+  // Opcional: cancelar al perder foco, como en las celdas (vuelve al valor original)
+  const onRecargoBlur = useCallback(
+    (field) => {
+      if (field === 'apartirdia11') setRecargo11(recargo11Orig);
+      else setRecargo22(recargo22Orig);
+    },
+    [recargo11Orig, recargo22Orig]
+  );
 
   /* ============ Montaje ============ */
   useEffect(() => {
@@ -101,9 +187,9 @@ const Precios = () => {
       } catch (e) {
         console.error('Error catálogos:', e);
       }
-      await prefetchPrecios();
+      await Promise.all([prefetchPrecios(), fetchParametros()]);
     })();
-  }, [fetchCatalogos, prefetchPrecios]);
+  }, [fetchCatalogos, prefetchPrecios, fetchParametros]);
 
   /* ============ Cambiar modo ============ */
   useEffect(() => {
@@ -114,7 +200,6 @@ const Precios = () => {
   /* ============ Cargar orden desde LocalStorage (una vez) ============ */
   useEffect(() => {
     if (ordersLoadedRef.current) return;
-    // esperamos a tener catálogos para poder validar índices/filas
     if (!(tiposVehiculo && tiposVehiculo.length)) return;
 
     try {
@@ -196,7 +281,6 @@ const Precios = () => {
       const next = { ...prev };
       for (const tipo of tipos) {
         const prevList = prev[tipo] || [];
-        // Mantener orden previo, eliminar no presentes, añadir nuevos al final
         const setKeys = new Set(keysPorTipo[tipo]);
         const filtered = prevList.filter((k) => setKeys.has(k));
         const setFiltered = new Set(filtered);
@@ -470,7 +554,59 @@ const Precios = () => {
       {loading && !(preciosCache.efectivo && preciosCache.otros) ? (
         <p style={{ marginTop: 16 }}>Cargando configuración…</p>
       ) : (
-        tiposTarifa.map(renderTablaPorTipo)
+        <>
+          {tiposTarifa.map(renderTablaPorTipo)}
+
+          {/* ----- Recargo Fuera de Fecha (persistente en backend) ----- */}
+          <div className="recargo-card">
+            <h3>Recargo Fuera de Fecha</h3>
+            <div className="recargo-grid">
+              <label className="recargo-field" title="Porcentaje de recargo a partir del día 11">
+                <span className="recargo-label">A partir del día 11</span>
+                <div className="recargo-input-wrap">
+                  <input
+                    type="text"
+                    className="recargo-input with-suffix"
+                    inputMode="numeric"
+                    placeholder="0"
+                    value={new Intl.NumberFormat('es-AR').format(Number(recargo11 || 0)).replace(/\./g, '.')}
+                    onChange={(e) => {
+                      const only = e.target.value.replace(/\D/g, '');
+                      setRecargo11(only);
+                    }}
+                    onKeyDown={(e) => onRecargoKeyDown('apartirdia11', e)}
+                    onBlur={() => onRecargoBlur('apartirdia11')}
+                    disabled={savingRecargo}
+                  />
+                  <span className="input-suffix">%</span>
+                </div>
+              </label>
+
+              <label className="recargo-field" title="Porcentaje de recargo a partir del día 22">
+                <span className="recargo-label">A partir del día 22</span>
+                <div className="recargo-input-wrap">
+                  <input
+                    type="text"
+                    className="recargo-input with-suffix"
+                    inputMode="numeric"
+                    placeholder="0"
+                    value={new Intl.NumberFormat('es-AR').format(Number(recargo22 || 0)).replace(/\./g, '.')}
+                    onChange={(e) => {
+                      const only = e.target.value.replace(/\D/g, '');
+                      setRecargo22(only);
+                    }}
+                    onKeyDown={(e) => onRecargoKeyDown('apartirdia22', e)}
+                    onBlur={() => onRecargoBlur('apartirdia22')}
+                    disabled={savingRecargo}
+                  />
+                  <span className="input-suffix">%</span>
+                </div>
+              </label>
+            </div>
+
+            {saveMsg ? <span className="save-hint">{saveMsg}</span> : null}
+          </div>
+        </>
       )}
     </div>
   );

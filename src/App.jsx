@@ -1,10 +1,11 @@
-// src/App.jsx
+// /admin/src/App.jsx 
 import './App.css';
 import React, { useEffect, useState, useMemo } from 'react';
 import { Routes, Route, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import Login from './components/Login/Login.jsx';
 import Dashboard from './components/Dashboard/Dashboard.jsx';
 import Auditor from './components/Auditor/Auditor.jsx';
+import Secret from './components/Secret/Secret.jsx'; // ✅ agregado
 
 function decodeJWT(token) {
   if (!token) return null;
@@ -168,6 +169,15 @@ const AppWrapper = () => {
             <RequireRole allowed={['auditor']}>
               <Auditor />
             </RequireRole>
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/secretito"
+        element={
+          <RequireAuth>
+            <Secret /> 
           </RequireAuth>
         }
       />
