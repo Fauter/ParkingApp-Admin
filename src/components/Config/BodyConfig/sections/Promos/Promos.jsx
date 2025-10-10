@@ -19,7 +19,7 @@ const Promos = () => {
   }, [editing]);
 
   const cargarPromos = () => {
-    fetch('https://api.garageia.com/api/promos')
+    fetch('https://apiprueba.garageia.com/api/promos')
       .then(res => res.json())
       .then(data => setPromos(data))
       .catch(err => console.error('Error al cargar promos:', err));
@@ -54,7 +54,7 @@ const Promos = () => {
         ...promoForm,
         descuento: Number(soloDigitos(promoForm.descuento || '0')),
       };
-      await fetch('https://api.garageia.com/api/promos', {
+      await fetch('https://apiprueba.garageia.com/api/promos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -71,7 +71,7 @@ const Promos = () => {
     if (!seguro) return;
 
     try {
-      await fetch(`https://api.garageia.com/api/promos/${id}`, { method: 'DELETE' });
+      await fetch(`https://apiprueba.garageia.com/api/promos/${id}`, { method: 'DELETE' });
       setPromos(prev => prev.filter(p => p._id !== id));
     } catch (err) {
       console.error('Error eliminando promo:', err);
@@ -94,7 +94,7 @@ const Promos = () => {
   const guardarInline = async (id, promo) => {
     try {
       const body = { ...promo, descuento: Number(soloDigitos(String(promo.descuento ?? '0'))) };
-      await fetch(`https://api.garageia.com/api/promos/${id}`, {
+      await fetch(`https://apiprueba.garageia.com/api/promos/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),

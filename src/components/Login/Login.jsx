@@ -33,7 +33,7 @@ export default function Login() {
 
     try {
       // 1) Login → token
-      const response = await fetch('https://api.garageia.com/api/auth/login', {
+      const response = await fetch('https://apiprueba.garageia.com/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
@@ -54,7 +54,7 @@ export default function Login() {
       }
 
       // 2) Perfil con rol
-      const profileResponse = await fetch('https://api.garageia.com/api/auth/profile', {
+      const profileResponse = await fetch('https://apiprueba.garageia.com/api/auth/profile', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,

@@ -72,7 +72,7 @@ const AbonoForm = ({ onClose, user }) => {
   }, []);
 
   useEffect(() => {
-    fetch('https://api.garageia.com/api/tarifas')
+    fetch('https://apiprueba.garageia.com/api/tarifas')
       .then(res => res.json())
       .then(data => setTarifas((Array.isArray(data) ? data : []).filter(t => t.tipo === 'abono')))
       .catch(err => console.error('Error al cargar tarifas', err));
@@ -80,19 +80,19 @@ const AbonoForm = ({ onClose, user }) => {
 
   useEffect(() => {
     // Tipos + Precios (para armar label "Tipo - $Precio")
-    fetch('https://api.garageia.com/api/tipos-vehiculo')
+    fetch('https://apiprueba.garageia.com/api/tipos-vehiculo')
       .then(res => res.json())
       .then(data => setTiposVehiculo(Array.isArray(data) ? data : []))
       .catch(err => console.error('Error al cargar tipos de vehículo', err));
 
-    fetch('https://api.garageia.com/api/precios')
+    fetch('https://apiprueba.garageia.com/api/precios')
       .then(res => res.json())
       .then(data => setPrecios(data || {}))
       .catch(err => console.error('Error al cargar precios', err));
   }, []);
 
   useEffect(() => {
-    fetch('https://api.garageia.com/api/clientes')
+    fetch('https://apiprueba.garageia.com/api/clientes')
       .then(res => res.json())
       .then(data => setClientes(Array.isArray(data) ? data : []))
       .catch(err => console.error('Error al cargar clientes', err));
@@ -111,7 +111,7 @@ const AbonoForm = ({ onClose, user }) => {
 
   const buscarClientePorNombre = async (nombre) => {
     try {
-      const res = await fetch(`https://api.garageia.com/api/clientes/nombre/${encodeURIComponent(nombre)}`);
+      const res = await fetch(`https://apiprueba.garageia.com/api/clientes/nombre/${encodeURIComponent(nombre)}`);
       if (res.ok) {
         const cliente = await res.json();
         if (cliente) {
@@ -233,10 +233,10 @@ const AbonoForm = ({ onClose, user }) => {
       }
 
       // 1) Vehículo
-      const vRes = await fetch(`https://api.garageia.com/api/vehiculos/${encodeURIComponent(patente)}`);
+      const vRes = await fetch(`https://apiprueba.garageia.com/api/vehiculos/${encodeURIComponent(patente)}`);
       let vehiculo = vRes.ok ? await vRes.json() : null;
       if (!vehiculo || vehiculo.msg === 'Vehículo no encontrado') {
-        const nv = await fetch('https://api.garageia.com/api/vehiculos/sin-entrada', {
+        const nv = await fetch('https://apiprueba.garageia.com/api/vehiculos/sin-entrada', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -249,7 +249,7 @@ const AbonoForm = ({ onClose, user }) => {
         const nvJson = await nv.json().catch(() => null);
         if (!nv.ok || !nvJson?._id) {
           await new Promise(r => setTimeout(r, 300));
-          const retry = await fetch(`https://api.garageia.com/api/vehiculos/${encodeURIComponent(patente)}`);
+          const retry = await fetch(`https://apiprueba.garageia.com/api/vehiculos/${encodeURIComponent(patente)}`);
           if (!retry.ok) throw new Error('El vehículo no se creó correctamente.');
           vehiculo = await retry.json();
         } else {
@@ -258,7 +258,7 @@ const AbonoForm = ({ onClose, user }) => {
       }
 
       // 2) Cliente
-      const clientesRes = await fetch('https://api.garageia.com/api/clientes');
+      const clientesRes = await fetch('https://apiprueba.garageia.com/api/clientes');
       if (!clientesRes.ok) throw new Error('Error al obtener clientes');
       const lista = await clientesRes.json();
       const clienteExistente = (Array.isArray(lista) ? lista : []).find(
@@ -269,7 +269,7 @@ const AbonoForm = ({ onClose, user }) => {
       if (clienteExistente) {
         clienteId = clienteExistente._id;
         // opcional: update básico
-        await fetch(`https://api.garageia.com/api/clientes/${clienteId}`, {
+        await fetch(`https://apiprueba.garageia.com/api/clientes/${clienteId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -285,7 +285,7 @@ const AbonoForm = ({ onClose, user }) => {
           })
         }).catch(() => {});
       } else {
-        const nuevoClienteRes = await fetch('https://api.garageia.com/api/clientes', {
+        const nuevoClienteRes = await fetch('https://apiprueba.garageia.com/api/clientes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -319,7 +319,7 @@ const AbonoForm = ({ onClose, user }) => {
       if (fotoCedulaVerde) fd.append('fotoCedulaVerde', fotoCedulaVerde);
       if (fotoCedulaAzul) fd.append('fotoCedulaAzul', fotoCedulaAzul);
 
-      const abonoRes = await fetch('https://api.garageia.com/api/abonos/registrar-abono', {
+      const abonoRes = await fetch('https://apiprueba.garageia.com/api/abonos/registrar-abono', {
         method: 'POST',
         body: fd
       });

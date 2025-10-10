@@ -95,7 +95,7 @@ const AuditoriaAdmin = forwardRef(({
       if (!token) return;
 
       try {
-        const response = await fetch('https://api.garageia.com/api/auth/profile', {
+        const response = await fetch('https://apiprueba.garageia.com/api/auth/profile', {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -114,7 +114,7 @@ const AuditoriaAdmin = forwardRef(({
 
     const cargarTiposVehiculo = async () => {
       try {
-        const response = await fetch('https://api.garageia.com/api/tipos-vehiculo');
+        const response = await fetch('https://apiprueba.garageia.com/api/tipos-vehiculo');
         const data = await response.json();
         // normalizo: espero array de objetos { nombre: 'auto' }
         const nombres = Array.isArray(data)
@@ -237,7 +237,7 @@ const AuditoriaAdmin = forwardRef(({
     };
 
     try {
-      const resAlerta = await fetch('https://api.garageia.com/api/alertas/', {
+      const resAlerta = await fetch('https://apiprueba.garageia.com/api/alertas/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -269,7 +269,7 @@ const AuditoriaAdmin = forwardRef(({
       const idsNormales = vehiculosSeleccionados.filter(id => !id.toString().startsWith('temp-'));
       const vehiculosTemporalesAuditados = vehiculosTemporales;
 
-      const response = await fetch('https://api.garageia.com/api/auditorias', {
+      const response = await fetch('https://apiprueba.garageia.com/api/auditorias', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -442,7 +442,7 @@ const AuditoriaAdmin = forwardRef(({
         throw new Error('No hay ID de auditoría disponible');
       }
       
-      const response = await fetch(`https://api.garageia.com/api/auditorias/descargar/${auditoria._id}`);
+      const response = await fetch(`https://apiprueba.garageia.com/api/auditorias/descargar/${auditoria._id}`);
       if (!response.ok) throw new Error('Error al descargar el archivo');
       
       const blob = await response.blob();

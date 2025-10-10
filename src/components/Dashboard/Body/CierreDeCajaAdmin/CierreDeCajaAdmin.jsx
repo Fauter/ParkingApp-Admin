@@ -109,7 +109,7 @@ const CierreDeCajaAdmin = forwardRef(({
   useEffect(() => {
     const fetchCierresDeCaja = async () => {
       try {
-        const res = await fetch('https://api.garageia.com/api/cierresdecaja/');
+        const res = await fetch('https://apiprueba.garageia.com/api/cierresdecaja/');
         if (!res.ok) throw new Error('Error al obtener cierres de caja');
         const data = await res.json();
 
@@ -128,7 +128,7 @@ const CierreDeCajaAdmin = forwardRef(({
   // Carga de Parciales
   const fetchParciales = async () => {
     try {
-      const res = await fetch('https://api.garageia.com/api/cierresdecaja/parcial');
+      const res = await fetch('https://apiprueba.garageia.com/api/cierresdecaja/parcial');
       if (!res.ok) throw new Error('Error al obtener parciales');
       const data = await res.json();
       setParciales(Array.isArray(data) ? data : []);
@@ -147,7 +147,7 @@ const CierreDeCajaAdmin = forwardRef(({
 
     const fetchCierres = async () => {
       try {
-        const res = await fetch('https://api.garageia.com/api/cierresdecaja/');
+        const res = await fetch('https://apiprueba.garageia.com/api/cierresdecaja/');
         if (!res.ok) throw new Error('Error al obtener cierres de caja');
         const data = await res.json();
         setDataARetirar(data.filter(i => !i.retirado));
@@ -204,7 +204,7 @@ const CierreDeCajaAdmin = forwardRef(({
     setRetiradosLocales(prev => new Set(prev).add(id));
 
     try {
-      const res = await fetch(`https://api.garageia.com/api/cierresdecaja/${id}`, {
+      const res = await fetch(`https://apiprueba.garageia.com/api/cierresdecaja/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ retirado: true }),

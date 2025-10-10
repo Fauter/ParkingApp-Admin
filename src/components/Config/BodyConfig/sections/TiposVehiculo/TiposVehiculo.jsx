@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import './TiposVehiculo.css';
 
-const API = 'https://api.garageia.com/api/tipos-vehiculo';
+const API = 'https://apiprueba.garageia.com/api/tipos-vehiculo';
 
 const TiposVehiculo = () => {
   const [tipos, setTipos] = useState([]);     // [{ nombre, hora, mensual }]

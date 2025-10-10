@@ -4,10 +4,10 @@ import './Caja.css';
 
 const ITEMS_POR_PAGINA = 10;
 
-// 👉 Base de API (puede venir por Vite): VITE_API_BASE=https://api.garageia.com
+// 👉 Base de API (puede venir por Vite): VITE_API_BASE=https://apiprueba.garageia.com
 const API_BASE = (typeof import.meta !== 'undefined' && import.meta?.env?.VITE_API_BASE
   ? import.meta.env.VITE_API_BASE
-  : 'https://api.garageia.com'
+  : 'https://apiprueba.garageia.com'
 ).replace(/\/+$/, '');
 
 // 🔒 Defensa: normaliza cualquier variante de "operador" a texto legible
@@ -381,18 +381,29 @@ const Caja = ({
                 return (
                   <tr key={movimiento._id}>
                     <td>{patenteKey || '---'}</td>
-                    <td>{fmtMovimientoFecha(movimiento)}</td>
-                    <td>{loading ? 'Cargando...' : error ? 'Error' : (entrada?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || '---')}</td>
-                    <td>{loading ? 'Cargando...' : error ? 'Error' : (salida?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || '---')}</td>
+                    <td>{fmtMovimientoFecha(movimiento) || '---'}</td>
+
+                    {/* ⬇️ Mientras cargue o si hay error => '---' */}
+                    <td>
+                      {loading || error
+                        ? '---'
+                        : (entrada?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || '---')}
+                    </td>
+                    <td>
+                      {loading || error
+                        ? '---'
+                        : (salida?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || '---')}
+                    </td>
+
                     <td>{movimiento.descripcion || '---'}</td>
                     <td>{normalizarOperador(movimiento.operador)}</td>
                     <td>{movimiento.tipoVehiculo ? movimiento.tipoVehiculo[0].toUpperCase() + movimiento.tipoVehiculo.slice(1) : '---'}</td>
                     <td>{movimiento.metodoPago || '---'}</td>
                     <td>{movimiento.factura || '---'}</td>
                     <td>{montoSeguro === 0 ? '---' : `$${montoSeguro.toLocaleString('es-AR')}`}</td>
+
                     <td>
-                      {loading && '...'}
-                      {!loading && fotoUrl && (
+                      {(!loading && !error && fotoUrl) ? (
                         <button
                           onClick={() => abrirFoto(fotoUrl)}
                           title="Ver foto"
@@ -400,9 +411,7 @@ const Caja = ({
                         >
                           Foto
                         </button>
-                      )}
-                      {!loading && !fotoUrl && '---'}
-                      {!loading && error && '⚠️'}
+                      ) : '---'}
                     </td>
                   </tr>
                 );
@@ -436,7 +445,7 @@ const Caja = ({
                 <th>Hora Entrada</th>
                 <th>Operador</th>
                 <th>Tipo de Vehículo</th>
-                <th>Abonado/Turno</th>
+                <th>Abonado/Anticipado</th>
                 <th>Foto</th>
               </tr>
             </thead>
@@ -445,7 +454,7 @@ const Caja = ({
                 const entrada = veh.estadiaActual?.entrada ? new Date(veh.estadiaActual.entrada) : null;
                 let abonadoTurnoTexto = 'No';
                 if (veh.abonado) abonadoTurnoTexto = 'Abonado';
-                else if (veh.turno) abonadoTurnoTexto = 'Turno';
+                else if (veh.turno) abonadoTurnoTexto = 'Anticipado';
 
                 const rawFoto = veh.estadiaActual?.fotoUrl;
 

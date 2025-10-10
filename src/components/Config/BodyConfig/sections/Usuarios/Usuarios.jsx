@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import './Usuarios.css';
 
 const TZ = 'America/Argentina/Buenos_Aires';
+const API_BASE = 'https://apiprueba.garageia.com/api/auth';
 
 function formatearFechaHora(v) {
   if (!v) return '—';
@@ -42,7 +43,7 @@ const Usuarios = () => {
   useEffect(() => {
     (async () => {
       try {
-        const response = await fetch('https://api.garageia.com/api/auth/');
+        const response = await fetch(`${API_BASE}/`);
         if (!response.ok) throw new Error('Error al obtener usuarios');
         const data = await response.json();
         setUsuarios(Array.isArray(data) ? data : []);
@@ -62,9 +63,9 @@ const Usuarios = () => {
   const handleEliminar = async (id) => {
     if (!window.confirm('¿Seguro que querés eliminar este usuario?')) return;
     try {
-      const res = await fetch(`https://api.garageia.com/api/auth/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_BASE}/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Error al eliminar el usuario');
-      setUsuarios((prev) => prev.filter((u) => u._id !== id));
+      setUsuarios((prev) => prev.filter((u) => (u._id || u.id) !== id));
       alert('Usuario eliminado correctamente');
     } catch (err) {
       console.error(err);
@@ -73,9 +74,9 @@ const Usuarios = () => {
   };
 
   const handleEditar = (id) => {
-    const usuario = usuarios.find((u) => u._id === id);
+    const usuario = usuarios.find((u) => (u._id || u.id) === id);
     if (!usuario) return;
-    const { nombre='', apellido='', username='', role='operador' } = usuario;
+    const { nombre = '', apellido = '', username = '', role = 'operador' } = usuario;
     setFormUsuario({ nombre, apellido, username, role, password: '' });
     setUsuarioEditadoId(id);
     setEditando(true);
@@ -88,7 +89,7 @@ const Usuarios = () => {
       const payload = { ...formUsuario };
       if (!payload.password) delete payload.password;
 
-      const res = await fetch(`https://api.garageia.com/api/auth/${usuarioEditadoId}`, {
+      const res = await fetch(`${API_BASE}/${usuarioEditadoId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -97,20 +98,25 @@ const Usuarios = () => {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.msg || 'Error al editar usuario');
 
+      // Tu backend responde { msg, user }
+      const actualizado = data?.user || data;
+
       setUsuarios((prev) =>
-        prev.map((u) => (u._id === usuarioEditadoId ? { ...u, ...data } : u))
+        prev.map((u) =>
+          (u._id || u.id) === usuarioEditadoId ? { ...u, ...actualizado } : u
+        )
       );
       cerrarModal();
-      alert('Usuario actualizado correctamente');
+      alert(data?.msg || 'Usuario actualizado correctamente');
     } catch (err) {
       console.error(err);
-      alert('Hubo un error al editar el usuario');
+      alert(err.message || 'Hubo un error al editar el usuario');
     }
   };
 
   const handleCrearUsuario = async () => {
     try {
-      const res = await fetch('https://api.garageia.com/api/auth/register', {
+      const res = await fetch(`${API_BASE}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formUsuario),
@@ -119,8 +125,9 @@ const Usuarios = () => {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.msg || 'Error al crear usuario');
 
-      // Usá el usuario real que devuelve el backend
-      const creado = data?.usuario || data?.user || data;
+      // Tu backend responde { msg, user, operador, token }
+      const creado = data?.user || data?.usuario || data;
+
       setUsuarios((prev) => [...prev, creado]);
       cerrarModal();
       alert(data?.msg || 'Usuario creado');
@@ -261,9 +268,12 @@ const Usuarios = () => {
                   value={formUsuario.role}
                   onChange={handleInputChange}
                 >
+                  {/* Incluye todos los roles soportados por tu schema */}
                   <option value="operador">Operador</option>
-                  <option value="superAdmin">Super Admin</option>
+                  <option value="cargaMensuales">Carga Mensuales</option>
                   <option value="auditor">Auditor</option>
+                  <option value="admin">Admin</option>
+                  <option value="superAdmin">Super Admin</option>
                 </select>
               </div>
 

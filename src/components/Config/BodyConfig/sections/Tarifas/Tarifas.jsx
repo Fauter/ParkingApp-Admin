@@ -61,13 +61,13 @@ const Tarifas = () => {
 
   useEffect(() => {
     // Cargar las tarifas desde la API
-    fetch('https://api.garageia.com/api/tarifas')
+    fetch('https://apiprueba.garageia.com/api/tarifas')
       .then(res => res.json())
       .then(data => setTarifas(data))
       .catch(err => console.error('Error cargando tarifas:', err));
 
     // Cargar los parámetros por defecto
-    fetch('https://api.garageia.com/api/parametros')
+    fetch('https://apiprueba.garageia.com/api/parametros')
       .then(res => res.json())
       .then(data => {
         const newParametros = {
@@ -116,7 +116,7 @@ const Tarifas = () => {
     const data = { ...defaults[selectedTipo], ...payload };
 
     try {
-      const res = await fetch('https://api.garageia.com/api/tarifas', {
+      const res = await fetch('https://apiprueba.garageia.com/api/tarifas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -134,7 +134,7 @@ const Tarifas = () => {
     if (!window.confirm("¿Estás seguro de que querés eliminar esta tarifa?")) return;
 
     try {
-      await fetch(`https://api.garageia.com/api/tarifas/${id}`, {
+      await fetch(`https://apiprueba.garageia.com/api/tarifas/${id}`, {
         method: 'DELETE',
       });
       setTarifas(prev => prev.filter(t => t._id !== id));
@@ -144,7 +144,7 @@ const Tarifas = () => {
   };
 
   const guardarParametros = () => {
-    fetch('https://api.garageia.com/api/parametros', {
+    fetch('https://apiprueba.garageia.com/api/parametros', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(parametros),
@@ -185,7 +185,7 @@ const Tarifas = () => {
       };
 
       try {
-        const res = await fetch(`https://api.garageia.com/api/tarifas/${tarifa._id}`, {
+        const res = await fetch(`https://apiprueba.garageia.com/api/tarifas/${tarifa._id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(actualizado),

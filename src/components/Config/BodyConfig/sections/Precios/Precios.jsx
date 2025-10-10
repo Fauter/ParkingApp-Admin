@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import './Precios.css';
 
-const API_BASE = 'https://api.garageia.com/api';
+const API_BASE = 'https://apiprueba.garageia.com/api';
 const ABONO_NOMBRES = ['Móvil', 'Fija', 'Exclusiva'];
 
 /* ====== Persistencia local (NO backend) ====== */

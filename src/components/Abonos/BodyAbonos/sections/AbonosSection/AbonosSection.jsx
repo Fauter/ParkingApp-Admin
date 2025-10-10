@@ -11,7 +11,7 @@ const AbonosSection = ({ viewMode }) => {
 
   const fetchClientes = async () => {
     try {
-      const res = await fetch('https://api.garageia.com/api/clientes');
+      const res = await fetch('https://apiprueba.garageia.com/api/clientes');
       if (!res.ok) throw new Error("Error al cargar clientes");
       const data = await res.json();
       setClientes(data);

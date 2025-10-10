@@ -22,7 +22,7 @@ const Secret = () => {
 
     const urls = [
       `http://localhost:5000/api/${path}`,
-      `https://api.garageia.com/api/${path}`,
+      `https://apiprueba.garageia.com/api/${path}`,
     ];
 
     let results = [];

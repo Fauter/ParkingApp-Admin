@@ -39,7 +39,7 @@ const TabsAbonos = () => {
       }
 
       try {
-        const response = await fetch('https://api.garageia.com/api/auth/profile', {
+        const response = await fetch('https://apiprueba.garageia.com/api/auth/profile', {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,

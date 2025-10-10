@@ -172,7 +172,7 @@ export default function Auditor() {
     const fetchUser = async () => {
       if (!token) return;
       try {
-        const response = await fetch('https://api.garageia.com/api/auth/profile', {
+        const response = await fetch('https://apiprueba.garageia.com/api/auth/profile', {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -188,7 +188,7 @@ export default function Auditor() {
 
     const cargarTiposVehiculo = async () => {
       try {
-        const response = await fetch('https://api.garageia.com/api/tipos-vehiculo');
+        const response = await fetch('https://apiprueba.garageia.com/api/tipos-vehiculo');
         const data = await response.json();
         setTiposVehiculo(
           Array.isArray(data)
@@ -202,7 +202,7 @@ export default function Auditor() {
 
     const cargarAuditorias = async () => {
       try {
-        const response = await fetch('https://api.garageia.com/api/auditorias', {
+        const response = await fetch('https://apiprueba.garageia.com/api/auditorias', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -214,7 +214,7 @@ export default function Auditor() {
 
     const cargarVehiculos = async () => {
       try {
-        const response = await fetch('https://api.garageia.com/api/vehiculos', {
+        const response = await fetch('https://apiprueba.garageia.com/api/vehiculos', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -285,7 +285,7 @@ export default function Auditor() {
     };
 
     try {
-      const resAlerta = await fetch('https://api.garageia.com/api/alertas/', {
+      const resAlerta = await fetch('https://apiprueba.garageia.com/api/alertas/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -316,7 +316,7 @@ export default function Auditor() {
       const idsNormales = vehiculosSeleccionados.filter(id => !id.toString().startsWith('temp-'));
       const vehiculosTemporalesAuditados = vehiculosTemporales;
 
-      const response = await fetch('https://api.garageia.com/api/auditorias', {
+      const response = await fetch('https://apiprueba.garageia.com/api/auditorias', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -362,7 +362,7 @@ export default function Auditor() {
 
       // Refrescar histórico
       try {
-        const histRes = await fetch('https://api.garageia.com/api/auditorias', { headers: { Authorization: `Bearer ${token}` }});
+        const histRes = await fetch('https://apiprueba.garageia.com/api/auditorias', { headers: { Authorization: `Bearer ${token}` }});
         const histData = await histRes.json();
         setAuditorias(Array.isArray(histData) ? histData : []);
       } catch {}
@@ -469,7 +469,7 @@ export default function Auditor() {
     e.preventDefault();
     try {
       if (!auditoria._id) throw new Error('No hay ID de auditoría disponible');
-      const response = await fetch(`https://api.garageia.com/api/auditorias/descargar/${auditoria._id}`);
+      const response = await fetch(`https://apiprueba.garageia.com/api/auditorias/descargar/${auditoria._id}`);
       if (!response.ok) throw new Error('Error al descargar el archivo');
       const blob = await response.blob();
       const nombre = auditoria.auditoria?.nombreArchivo || `auditoria-${auditoria._id}.pdf`;

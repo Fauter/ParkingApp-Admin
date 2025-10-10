@@ -37,7 +37,7 @@ const DetalleCliente = () => {
 
   const fetchCliente = async () => {
     try {
-      const res = await fetch(`https://api.garageia.com/api/clientes/id/${id}`);
+      const res = await fetch(`https://apiprueba.garageia.com/api/clientes/id/${id}`);
       if (!res.ok) throw new Error("Error al obtener cliente");
       const data = await res.json();
       setCliente(data);
@@ -70,7 +70,7 @@ const DetalleCliente = () => {
       if (!cliente) return;
 
       // Obtener precios actuales
-      const response = await fetch('https://api.garageia.com/api/precios', {
+      const response = await fetch('https://apiprueba.garageia.com/api/precios', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -110,7 +110,7 @@ const DetalleCliente = () => {
       // Tomar la patente del primer vehículo (asegurarse que existe)
       const patente = cliente.abonos[0].patente;
       
-      const response = await fetch(`https://api.garageia.com/api/clientes/${id}/renovar-abono`, {
+      const response = await fetch(`https://apiprueba.garageia.com/api/clientes/${id}/renovar-abono`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -216,9 +216,9 @@ const DetalleCliente = () => {
 
     let rutaFoto;
     if (nombreDecodificado.startsWith('/fotos/')) {
-      rutaFoto = `https://api.garageia.com/uploads${nombreDecodificado}`;
+      rutaFoto = `https://apiprueba.garageia.com/uploads${nombreDecodificado}`;
     } else {
-      rutaFoto = `https://api.garageia.com/uploads/fotos/${nombreDecodificado}`;
+      rutaFoto = `https://apiprueba.garageia.com/uploads/fotos/${nombreDecodificado}`;
     }
 
     const urlConTimestamp = `${rutaFoto}?t=${Date.now()}`;
