@@ -1,3 +1,4 @@
+// Secret.jsx
 import React, { useState } from "react";
 
 const Secret = () => {
@@ -16,13 +17,16 @@ const Secret = () => {
     { label: "Incidentes", path: "incidentes" },
   ];
 
+  const REMOTE_BASE = "https://apiprueba.garageia.com";
+  const LOCAL_BASE = "http://localhost:5000";
+
   const handleDelete = async (path, all = false) => {
     setLoading(true);
     setMessage(all ? "💣 Eliminando TODO..." : "");
 
     const urls = [
-      `http://localhost:5000/api/${path}`,
-      `https://apiprueba.garageia.com/api/${path}`,
+      `${LOCAL_BASE}/api/${path}`,
+      `${REMOTE_BASE}/api/${path}`,
     ];
 
     let results = [];
@@ -44,6 +48,26 @@ const Secret = () => {
     setLoading(false);
   };
 
+  // === NUEVO: helpers para "Borrar Todo" con orden estricto (remoto -> local)
+  const deleteAtBase = async (baseUrl, path) => {
+    const url = `${baseUrl}/api/${path}`;
+    try {
+      const res = await fetch(url, { method: "DELETE" });
+      if (res.ok) {
+        setMessage((prev) => (prev ? prev + "\n" : "") + `✔️ Éxito en ${url}`);
+      } else {
+        setMessage(
+          (prev) =>
+            (prev ? prev + "\n" : "") + `⚠️ Error (${res.status}) en ${url}`
+        );
+      }
+    } catch {
+      setMessage(
+        (prev) => (prev ? prev + "\n" : "") + `❌ No se pudo conectar a ${url}`
+      );
+    }
+  };
+
   const handleDeleteAll = async () => {
     if (
       !window.confirm(
@@ -52,11 +76,23 @@ const Secret = () => {
     )
       return;
 
-    setMessage("💣 Iniciando eliminación total...");
+    setLoading(true);
+    setMessage("💣 Iniciando eliminación total...\n➡️ Primero REMOTO, luego LOCAL");
+
+    // 1) REMOTO primero (todos los endpoints)
+    setMessage((prev) => prev + "\n\n🌐 Eliminando en REMOTO:");
     for (let api of endpoints) {
-      await handleDelete(api.path, true);
+      await deleteAtBase(REMOTE_BASE, api.path);
     }
-    setMessage((prev) => prev + "\n☠️ Todo borrado (o al menos intentado)");
+
+    // 2) LOCAL después (todos los endpoints)
+    setMessage((prev) => prev + "\n\n🖥️ Eliminando en LOCAL:");
+    for (let api of endpoints) {
+      await deleteAtBase(LOCAL_BASE, api.path);
+    }
+
+    setMessage((prev) => prev + "\n\n☠️ Todo borrado (o al menos intentado)");
+    setLoading(false);
   };
 
   return (
@@ -155,7 +191,7 @@ const styles = {
   },
 };
 
-// Hover manual (simple simulación)
+// Hover manual (simple simulación, no funciona con inline styles pero lo dejo como tenías)
 styles.button[":hover"] = {
   backgroundColor: "#c9302c",
 };
