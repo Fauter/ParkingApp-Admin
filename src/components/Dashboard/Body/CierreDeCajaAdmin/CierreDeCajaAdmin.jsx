@@ -4,18 +4,22 @@ import '../Caja/Caja.css';
 
 const ITEMS_POR_PAGINA = 10;
 
-// 🔒 Normaliza cualquier variante de "operador" a texto legible
+// 🔒 Defensa: normaliza cualquier variante de "operador" a texto legible (igual que en Caja.jsx)
 const normalizarOperador = (op) => {
   if (!op) return '---';
   if (typeof op === 'string') {
-    if (op === '[object Object]') return '---';
-    if (/^[0-9a-fA-F]{24}$/.test(op)) return '---';
-    return op;
+    const s = op.trim();
+    if (!s) return '---';
+    if (s === '[object Object]') return '---';
+    if (/^[0-9a-fA-F]{24}$/.test(s)) return '---';
+    if (s.toLowerCase() === 'operador desconocido') return '---';
+    return s;
   }
   if (typeof op === 'object') {
-    return op.nombre || op.name || op.username || op.email || op._id || '---';
+    const cand = op.nombre || op.name || op.username || op.email || op._id || '';
+    return normalizarOperador(String(cand || '').trim());
   }
-  return String(op);
+  return normalizarOperador(String(op || '').trim());
 };
 
 // 🔎 Descripción según reglas: nombre/texto

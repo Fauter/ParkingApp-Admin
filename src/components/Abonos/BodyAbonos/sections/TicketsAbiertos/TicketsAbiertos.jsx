@@ -3,12 +3,25 @@ import './TicketsAbiertos.css';
 import { FaCalendarAlt, FaRegClock } from 'react-icons/fa';
 
 const TicketsAbiertos = ({ viewMode }) => {
+  const [vehiculos, setVehiculos] = useState([]);
   const [abonos, setAbonos] = useState([]);
   const [turnos, setTurnos] = useState([]);
   const [busqueda, setBusqueda] = useState('');
 
   useEffect(() => {
     const fetchData = () => {
+      // Vehículos (solo los abonados)
+      fetch('https://apiprueba.garageia.com/api/vehiculos')
+        .then((res) => res.json())
+        .then((data) => {
+          const vehiculosAbonados = data
+            .filter((v) => v.abonado === true)
+            .map((v) => ({ ...v, tipoTicket: 'vehiculo' }));
+          setVehiculos(vehiculosAbonados);
+        })
+        .catch((err) => console.error('Error al obtener vehículos:', err));
+
+      // Abonos
       fetch('https://apiprueba.garageia.com/api/abonos')
         .then((res) => res.json())
         .then((data) =>
@@ -16,6 +29,7 @@ const TicketsAbiertos = ({ viewMode }) => {
         )
         .catch((err) => console.error('Error al obtener abonos:', err));
 
+      // Turnos
       fetch('https://apiprueba.garageia.com/api/turnos')
         .then((res) => res.json())
         .then((data) =>
@@ -35,6 +49,7 @@ const TicketsAbiertos = ({ viewMode }) => {
   };
 
   const formatearFechaHora = (fechaStr) => {
+    if (!fechaStr) return '-';
     const fecha = new Date(fechaStr);
     const dia = String(fecha.getDate()).padStart(2, '0');
     const mes = String(fecha.getMonth() + 1).padStart(2, '0');
@@ -43,10 +58,29 @@ const TicketsAbiertos = ({ viewMode }) => {
     return `${dia}/${mes} - ${horas}:${minutos}hs`;
   };
 
-  const abonosActivos = abonos.filter((abono) => new Date(abono.fechaExpiracion) > new Date());
+  // Unimos vehículos con su información de abono si existe
+  const vehiculosConAbono = vehiculos.map((vehiculo) => {
+    const abonoRelacionado = abonos.find(
+      (a) => a.patente?.toLowerCase() === vehiculo.patente?.toLowerCase()
+    );
+
+    return {
+      ...vehiculo,
+      tipoTicket: 'abono', // Se muestra como abono
+      nombreApellido: abonoRelacionado?.nombreApellido || 'N/A',
+      fechaCreacion: abonoRelacionado?.fechaCreacion || vehiculo.createdAt,
+      fechaExpiracion: abonoRelacionado?.fechaExpiracion || null,
+      precio: abonoRelacionado?.precio || 0,
+      metodoPago: abonoRelacionado?.metodoPago || '',
+      tipoTarifa: abonoRelacionado?.tipoTarifa || 'abono',
+    };
+  });
+
+  // Filtrar turnos activos
   const turnosActivos = turnos.filter((turno) => !turno.usado && !turno.expirado);
 
-  const tickets = [...abonosActivos, ...turnosActivos];
+  // Tickets combinados
+  const tickets = [...vehiculosConAbono, ...turnosActivos];
 
   // Filtrado por búsqueda
   const ticketsFiltrados = tickets
@@ -54,7 +88,10 @@ const TicketsAbiertos = ({ viewMode }) => {
       const query = busqueda.toLowerCase();
 
       const patente = ticket.patente?.toLowerCase() || '';
-      const nombre = ticket.nombreCliente?.toLowerCase() || ticket.nombreApellido?.toLowerCase() || '';
+      const nombre =
+        ticket.nombreCliente?.toLowerCase() ||
+        ticket.nombreApellido?.toLowerCase() ||
+        '';
       const tipoVehiculo = ticket.tipoVehiculo?.toLowerCase() || '';
       const tipoTicket = ticket.tipoTicket?.toLowerCase() || '';
 
@@ -78,7 +115,13 @@ const TicketsAbiertos = ({ viewMode }) => {
         <div className="search-cliente-container">
           <div className="search-cliente-input-container">
             <div className="search-cliente-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24px"
+                height="24px"
+                fill="currentColor"
+                viewBox="0 0 256 256"
+              >
                 <path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"></path>
               </svg>
             </div>
@@ -105,7 +148,13 @@ const TicketsAbiertos = ({ viewMode }) => {
       <div className="search-cliente-container">
         <div className="search-cliente-input-container">
           <div className="search-cliente-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24px"
+              height="24px"
+              fill="currentColor"
+              viewBox="0 0 256 256"
+            >
               <path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"></path>
             </svg>
           </div>
@@ -135,13 +184,28 @@ const TicketsAbiertos = ({ viewMode }) => {
           <tbody>
             {ticketsFiltrados.map((ticket) => (
               <tr key={ticket._id}>
-                <td>{ticket.tipoTicket === 'abono' ? 'Abono' : 'Turno'}</td>
+                <td>
+                  {ticket.tipoTicket === 'turno'
+                    ? 'Turno'
+                    : 'Abono (Vehículo)'}
+                </td>
                 <td>{ticket.patente}</td>
                 <td>{ticket.nombreCliente || ticket.nombreApellido || 'N/A'}</td>
                 <td>{capitalizar(ticket.tipoVehiculo)}</td>
-                <td>{formatearFechaHora(ticket.createdAt || ticket.fechaCreacion)}</td>
-                <td>{formatearFechaHora(ticket.fechaExpiracion || ticket.fin)}</td>
-                <td>${ticket.precio.toLocaleString('es-AR')}</td>
+                <td>
+                  {formatearFechaHora(ticket.createdAt || ticket.fechaCreacion)}
+                </td>
+                <td>
+                  {formatearFechaHora(
+                    ticket.fechaExpiracion || ticket.fin || null
+                  )}
+                </td>
+                <td>
+                  $
+                  {ticket.precio
+                    ? ticket.precio.toLocaleString('es-AR')
+                    : '0'}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -154,28 +218,30 @@ const TicketsAbiertos = ({ viewMode }) => {
                 className="abono-header-background"
                 style={{
                   backgroundColor:
-                    ticket.tipoTicket === 'abono'
-                      ? 'rgba(168, 216, 255, 0.4)'
-                      : 'rgba(168, 244, 215, 0.4)',
+                    ticket.tipoTicket === 'turno'
+                      ? 'rgba(168, 244, 215, 0.4)'
+                      : 'rgba(168, 216, 255, 0.4)',
                 }}
               >
                 <div className="abono-tipo-tarifa">
-                  {ticket.tipoTarifa === 'abono' ? (
-                    <div className="abono-tarifa-info">
-                      <FaCalendarAlt size={30} />
-                      <p>Abono</p>
-                    </div>
-                  ) : (
+                  {ticket.tipoTicket === 'turno' ? (
                     <div className="abono-tarifa-info">
                       <FaRegClock size={25} />
                       <p>Turno</p>
+                    </div>
+                  ) : (
+                    <div className="abono-tarifa-info">
+                      <FaCalendarAlt size={30} />
+                      <p>Abono</p>
                     </div>
                   )}
                 </div>
 
                 <div className="abono-header">
                   <h2 className="abono-patente">{ticket.patente}</h2>
-                  <p className="abono-vehiculo">{capitalizar(ticket.tipoVehiculo)}</p>
+                  <p className="abono-vehiculo">
+                    {capitalizar(ticket.tipoVehiculo)}
+                  </p>
                 </div>
               </div>
 
@@ -183,16 +249,29 @@ const TicketsAbiertos = ({ viewMode }) => {
                 <div className="abono-fechas">
                   <div className="fecha-item">
                     <p className="fecha-titulo">Creación:</p>
-                    <p className="fecha-info">{formatearFechaHora(ticket.createdAt || ticket.fechaCreacion)}</p>
+                    <p className="fecha-info">
+                      {formatearFechaHora(
+                        ticket.createdAt || ticket.fechaCreacion
+                      )}
+                    </p>
                   </div>
                   <div className="fecha-item">
                     <p className="fecha-titulo">Expiración:</p>
-                    <p className="fecha-info">{formatearFechaHora(ticket.fechaExpiracion || ticket.fin)}</p>
+                    <p className="fecha-info">
+                      {formatearFechaHora(
+                        ticket.fechaExpiracion || ticket.fin || null
+                      )}
+                    </p>
                   </div>
                 </div>
                 <div className="abono-precio">
                   <p className="importe-titulo">Importe Actual</p>
-                  <p className="importe-monto">${ticket.precio.toLocaleString('es-AR')}</p>
+                  <p className="importe-monto">
+                    $
+                    {ticket.precio
+                      ? ticket.precio.toLocaleString('es-AR')
+                      : '0'}
+                  </p>
                 </div>
               </div>
             </div>
