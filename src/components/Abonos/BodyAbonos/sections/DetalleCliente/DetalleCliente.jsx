@@ -427,7 +427,6 @@ const DetalleCliente = () => {
                                     <button onClick={() => abrirFoto(abono, 'dni')}>DNI</button>
                                     <button onClick={() => abrirFoto(abono, 'seguro')}>Seguro</button>
                                     <button onClick={() => abrirFoto(abono, 'cedulaVerde')}>Céd. Verde</button>
-                                    <button onClick={() => abrirFoto(abono, 'cedulaAzul')}>Céd. Azul</button>
                                   </div>
                                 </div>
                               </td>

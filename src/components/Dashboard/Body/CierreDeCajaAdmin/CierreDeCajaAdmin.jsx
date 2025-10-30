@@ -33,6 +33,14 @@ const buildDescripcion = (item) => {
   return '---';
 };
 
+// 🕒 Timestamp robusto para ordenar DESC por “últimos creados”
+const tsCierre = (item) => {
+  // Preferir createdAt si existe; si no, usar fecha+hora (local)
+  const src = item?.createdAt || (item?.fecha && (item.hora ? `${item.fecha}T${item.hora}` : `${item.fecha}T00:00`));
+  const t = src ? new Date(src).getTime() : NaN;
+  return Number.isFinite(t) ? t : -Infinity;
+};
+
 const CierreDeCajaAdmin = forwardRef(({
   activeCajaTab,
   searchTerm,
@@ -233,7 +241,8 @@ const CierreDeCajaAdmin = forwardRef(({
   const renderTablaCierres = (datos) => {
     const filtrados = aplicarFiltros(datos)
       .filter(item => !retiradosLocales.has(item._id))
-      .reverse();
+      // ⬇️ Ordenar por timestamp DESC (últimos arriba)
+      .sort((a, b) => tsCierre(b) - tsCierre(a));
 
     const paginados = paginar(filtrados, paginaActual);
     const total = totalPaginas(filtrados);
@@ -282,7 +291,10 @@ const CierreDeCajaAdmin = forwardRef(({
   };
 
   const renderTablaParciales = (datos) => {
-    const filtrados = aplicarFiltros(datos).reverse();
+    const filtrados = aplicarFiltros(datos)
+      // ⬇️ Últimos arriba
+      .sort((a, b) => tsCierre(b) - tsCierre(a));
+
     const paginados = paginar(filtrados, paginaActual);
     const total = totalPaginas(filtrados);
 
@@ -383,7 +395,9 @@ const CierreDeCajaAdmin = forwardRef(({
   const imprimirListadoCierre = () => {
     // 1) PARCIALES
     if (activeCajaTab === 'Parciales') {
-      const datos = aplicarFiltros(parciales).reverse();
+      const datos = aplicarFiltros(parciales)
+        .sort((a, b) => tsCierre(b) - tsCierre(a)); // últimos arriba
+
       const encabezados = ['Descripción', 'Fecha', 'Hora', 'Operador', 'Monto'];
       const filas = datos.map(item => `
         <tr>
@@ -403,7 +417,7 @@ const CierreDeCajaAdmin = forwardRef(({
     const base = isARetirar ? dataARetirar : dataRetirado;
     const datos = aplicarFiltros(base)
       .filter(item => !retiradosLocales.has(item._id))
-      .reverse();
+      .sort((a, b) => tsCierre(b) - tsCierre(a)); // últimos arriba
 
     const encabezados = ['Fecha', 'Hora', 'Operador', 'Total Recaudado', 'Dejó en Caja', 'Total Rendido'];
     const filas = datos.map(item => `

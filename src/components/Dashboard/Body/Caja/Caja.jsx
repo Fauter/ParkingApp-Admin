@@ -28,6 +28,23 @@ const normalizarOperador = (op) => {
   return normalizarOperador(String(op || '').trim());
 };
 
+// 👉 Helper: elegir operador priorizando el nombre humano del inner.movimiento
+function elegirOperador(rawOp, innerOp) {
+  const str = (v) => (v == null ? '' : String(v).trim());
+  const isObjId = (s) => /^[0-9a-fA-F]{24}$/.test(s);
+  const r = str(rawOp);
+  const i = str(innerOp);
+
+  // Si el inner es un nombre legible (no ObjectId), úsalo
+  if (i && !isObjId(i) && i !== '[object Object]') return i;
+
+  // Si el raw es un nombre legible, úsalo
+  if (r && !isObjId(r) && r !== '[object Object]') return r;
+
+  // Fallbacks
+  return i || r || null;
+}
+
 /** =========================================
  *  CANONIZADOR DE MOVIMIENTOS (aplana anidados)
  *  =========================================
@@ -42,11 +59,17 @@ function canonizarMovimiento(raw) {
   // Fecha/createdAt robusto (prefiere top-level si existe)
   const createdAt = pick('createdAt') || pick('fecha') || null;
 
+  // Operador: prioriza nombre del inner si el top-level es un ObjectId
+  const operador = elegirOperador(raw?.operador, inner?.operador);
+
+  // Foto: dejar ambas rutas posibles
+  const fotoUrl = inner?.fotoUrl ?? raw?.fotoUrl ?? null;
+
   return {
     _id: raw?._id || inner?._id || `${pick('patente') || ''}-${createdAt || Math.random()}`,
     patente: pick('patente') || null,
     descripcion: pick('descripcion') || null,
-    operador: pick('operador') || null,
+    operador,
     tipoVehiculo: pick('tipoVehiculo') || null,
     metodoPago: pick('metodoPago') || null,
     factura: pick('factura') || null,
@@ -54,7 +77,7 @@ function canonizarMovimiento(raw) {
     promo: pick('promo'),
     tipoTarifa: pick('tipoTarifa') || null,
     ticket: pick('ticket') ?? null,
-    fotoUrl: pick('fotoUrl') || null,
+    fotoUrl,
     // guardo ambas por compat
     createdAt,
     fecha: createdAt
@@ -65,28 +88,51 @@ function canonizarMovimiento(raw) {
  *  FECHAS (CREACIÓN DEL MOVIMIENTO)
  *  ================================
  */
+const BA_TZ = 'America/Argentina/Buenos_Aires';
+
 function fmtMovimientoFecha(mov) {
-  // mov ya puede venir canonizado; igual hacemos fallback robusto
   const src = mov?.createdAt || mov?.fecha || mov?.movimiento?.createdAt || mov?.movimiento?.fecha;
   if (!src) return '---';
   const d = new Date(src);
   if (isNaN(d)) return '---';
-  const tz = 'America/Argentina/Buenos_Aires';
 
   const ddmm = new Intl.DateTimeFormat('es-AR', {
-    timeZone: tz,
+    timeZone: BA_TZ,
     day: '2-digit',
     month: '2-digit',
   }).format(d);
 
   const hhmm = new Intl.DateTimeFormat('es-AR', {
-    timeZone: tz,
+    timeZone: BA_TZ,
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
   }).format(d);
 
   return `${ddmm} ${hhmm}`;
+}
+
+function fmtDDMM(date) {
+  if (!date) return '---';
+  const d = new Date(date);
+  if (isNaN(d)) return '---';
+  return new Intl.DateTimeFormat('es-AR', {
+    timeZone: BA_TZ,
+    day: '2-digit',
+    month: '2-digit',
+  }).format(d);
+}
+
+function fmtHHmm(date) {
+  if (!date) return '---';
+  const d = new Date(date);
+  if (isNaN(d)) return '---';
+  return new Intl.DateTimeFormat('es-AR', {
+    timeZone: BA_TZ,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(d);
 }
 
 function movCreatedTs(mov) {
@@ -146,6 +192,36 @@ function resolverFotoUrl(raw) {
   return `${API_BASE}${rebuilt}`.replace(/([^:])\/{2,}/g, '$1/');
 }
 
+/* ==========================
+ * Helpers de UI (stack 2 líneas)
+ * ========================== */
+function StackFechaHora({ date, placeholder = '---' }) {
+  if (!date) return <>{placeholder}</>;
+  const d = new Date(date);
+  if (isNaN(d)) return <>{placeholder}</>;
+  return (
+    <div style={{ lineHeight: 1.1 }}>
+      <div style={{ fontSize: '12px' }}>{fmtDDMM(d)}</div>
+      <div style={{ fontSize: '12px', opacity: 0.9 }}>{fmtHHmm(d)}</div>
+    </div>
+  );
+}
+
+function StackDescripcionPago({ descripcion }) {
+  if (!descripcion) return <>---</>;
+  // Busca "Pago por 55 Horas" / "Pago por 1 Hora" (case-insensitive y tolerante a espacios)
+  const m = /pago\s+por\s+(\d+)\s+horas?/i.exec(descripcion);
+  if (!m) return <>{descripcion}</>;
+  const n = parseInt(m[1], 10);
+  const linea2 = `${n} ${n === 1 ? 'hora' : 'horas'}`;
+  return (
+    <div style={{ lineHeight: 1.1 }}>
+      <div style={{ fontSize: '12px' }}>Pago por</div>
+      <div style={{ fontSize: '12px' }}>{linea2}</div>
+    </div>
+  );
+}
+
 const Caja = ({
   movimientos = [],
   vehiculos = [],
@@ -166,6 +242,9 @@ const Caja = ({
   // Cache de estadías por ticket para mostrar entrada/salida, etc.
   const [estadiaCache, setEstadiaCache] = useState({});
   const fetchingTickets = useRef({});
+
+  // ✅ Cache de disponibilidad de fotos por URL cruda (true/false)
+  const [fotoDisponible, setFotoDisponible] = useState({});
 
   useEffect(() => {
     setPaginaActual(1);
@@ -199,6 +278,32 @@ const Caja = ({
     }
   };
 
+  // === Verificación liviana de existencia de foto (para NO mostrar botón si 404)
+  const verificarFoto = useCallback((rawUrl) => {
+    if (!rawUrl) return;
+
+    // Evitar repetir checks
+    if (Object.prototype.hasOwnProperty.call(fotoDisponible, rawUrl)) return;
+
+    const abs = resolverFotoUrl(rawUrl);
+    const testUrl = `${abs}${abs.includes('?') ? '&' : '?'}t=${Date.now()}`;
+
+    const img = new Image();
+    try {
+      img.referrerPolicy = 'no-referrer';
+    } catch {}
+    try {
+      img.crossOrigin = 'anonymous';
+    } catch {}
+    img.onload = () => {
+      setFotoDisponible(prev => ({ ...prev, [rawUrl]: true }));
+    };
+    img.onerror = () => {
+      setFotoDisponible(prev => ({ ...prev, [rawUrl]: false }));
+    };
+    img.src = testUrl;
+  }, [fotoDisponible]);
+
   // Construye lista de candidatos (para fallback) y abre el modal
   const abrirFoto = useCallback((rawUrl) => {
     if (!rawUrl) return;
@@ -219,7 +324,6 @@ const Caja = ({
       const bust = `t=${Date.now()}`;
 
       // 2) API explícita que sí monta tu router (lee del mismo lugar real)
-      //    /api/fotos/entradas/:filename
       add(`${u.origin}/api/fotos/entradas/${encodeURIComponent(filename)}?${bust}`);
 
       // 3) Variante /uploads (por si el host reescribe encabezados entre mounts)
@@ -249,7 +353,7 @@ const Caja = ({
     }
   }, [modalAlternativas, modalFotoUrl, cerrarModal]);
 
-  // Cerrar modal con ESC y click fuera
+  // Cerrar modal con ESC
   useEffect(() => {
     if (!modalFotoUrl) return;
     const onKey = (e) => {
@@ -296,9 +400,11 @@ const Caja = ({
 
       paginados.forEach(mov => {
         if (mov.ticket != null) fetchEstadiaByTicket(mov.ticket);
+        // Pre-chequeo de foto (si viene en el movimiento canonizado)
+        if (mov.fotoUrl) verificarFoto(mov.fotoUrl);
       });
     }
-  }, [activeCajaTab, movimientos, paginaActual, searchTerm, filtros?.horaEntradaMov, filtros?.horaSalidaMov]);
+  }, [activeCajaTab, movimientos, paginaActual, searchTerm, filtros?.horaEntradaMov, filtros?.horaSalidaMov, verificarFoto]);
 
   // === Prefetch cuando hay filtros por hora (necesitamos info de la estadía)
   useEffect(() => {
@@ -314,8 +420,9 @@ const Caja = ({
 
     objetivos.forEach(mov => {
       if (mov.ticket != null) fetchEstadiaByTicket(mov.ticket);
+      if (mov.fotoUrl) verificarFoto(mov.fotoUrl);
     });
-  }, [activeCajaTab, movimientos, searchTerm, filtros?.horaEntradaMov, filtros?.horaSalidaMov]);
+  }, [activeCajaTab, movimientos, searchTerm, filtros?.horaEntradaMov, filtros?.horaSalidaMov, verificarFoto]);
 
   const renderTablaCaja = () => {
     const term = searchTerm.toUpperCase();
@@ -373,7 +480,9 @@ const Caja = ({
                 const salida = estadia?.salida ? new Date(estadia.salida) : null;
 
                 // ✅ FOTO: preferí la de la estadía; si no hay, usá la del movimiento canonizado
-                const fotoUrl = estadia?.fotoUrl || movimiento?.fotoUrl || null;
+                const fotoUrlRaw = estadia?.fotoUrl || movimiento?.fotoUrl || null;
+                if (fotoUrlRaw) verificarFoto(fotoUrlRaw);
+                const puedeMostrarBotonFoto = !!fotoUrlRaw && fotoDisponible[fotoUrlRaw] === true;
 
                 const patenteKey = movimiento.patente ? movimiento.patente.toUpperCase() : null;
                 const montoSeguro = typeof movimiento.monto === 'number' ? movimiento.monto : 0;
@@ -383,19 +492,27 @@ const Caja = ({
                     <td>{patenteKey || '---'}</td>
                     <td>{fmtMovimientoFecha(movimiento) || '---'}</td>
 
-                    {/* ⬇️ Mientras cargue o si hay error => '---' */}
+                    {/* Entrada: fecha (dd/mm) arriba + hora (hh:mm) abajo */}
                     <td>
                       {loading || error
                         ? '---'
-                        : (entrada?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || '---')}
-                    </td>
-                    <td>
-                      {loading || error
-                        ? '---'
-                        : (salida?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || '---')}
+                        : entrada
+                          ? <StackFechaHora date={entrada} />
+                          : '---'}
                     </td>
 
-                    <td>{movimiento.descripcion || '---'}</td>
+                    {/* Salida: fecha (dd/mm) arriba + hora (hh:mm) abajo */}
+                    <td>
+                      {loading || error
+                        ? '---'
+                        : salida
+                          ? <StackFechaHora date={salida} />
+                          : '---'}
+                    </td>
+
+                    {/* Descripción: si "Pago por X Hora(s)" => 2 líneas */}
+                    <td><StackDescripcionPago descripcion={movimiento.descripcion} /></td>
+
                     <td>{normalizarOperador(movimiento.operador)}</td>
                     <td>{movimiento.tipoVehiculo ? movimiento.tipoVehiculo[0].toUpperCase() + movimiento.tipoVehiculo.slice(1) : '---'}</td>
                     <td>{movimiento.metodoPago || '---'}</td>
@@ -403,9 +520,9 @@ const Caja = ({
                     <td>{montoSeguro === 0 ? '---' : `$${montoSeguro.toLocaleString('es-AR')}`}</td>
 
                     <td>
-                      {(!loading && !error && fotoUrl) ? (
+                      {puedeMostrarBotonFoto ? (
                         <button
-                          onClick={() => abrirFoto(fotoUrl)}
+                          onClick={() => abrirFoto(fotoUrlRaw)}
                           title="Ver foto"
                           className="btn-ver-foto"
                         >
@@ -457,6 +574,8 @@ const Caja = ({
                 else if (veh.turno) abonadoTurnoTexto = 'Anticipado';
 
                 const rawFoto = veh.estadiaActual?.fotoUrl;
+                if (rawFoto) verificarFoto(rawFoto);
+                const puedeMostrarBotonFoto = !!rawFoto && fotoDisponible[rawFoto] === true;
 
                 return (
                   <tr key={veh._id}>
@@ -467,7 +586,7 @@ const Caja = ({
                     <td>{veh.tipoVehiculo ? veh.tipoVehiculo[0].toUpperCase() + veh.tipoVehiculo.slice(1) : '---'}</td>
                     <td>{abonadoTurnoTexto}</td>
                     <td>
-                      {rawFoto ? (
+                      {puedeMostrarBotonFoto ? (
                         <button
                           onClick={() => abrirFoto(rawFoto)}
                           title="Ver foto"
