@@ -1,3 +1,4 @@
+// src/components/Header/Header.jsx
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import profilePic from '../../../assets/profilePic.png';
@@ -5,15 +6,30 @@ import './Header.css';
 
 const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [user, setUser] = useState(null);
+
+  // ✅ Inicializar el usuario con lo que haya en localStorage para evitar "undefined"
+  const [user, setUser] = useState(() => {
+    try {
+      const raw = localStorage.getItem('user');
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  });
+
   const navigate = useNavigate();
 
+  // ✅ Sincronizar estado con el backend y con cambios en otras pestañas
   useEffect(() => {
-    const fetchUser = async () => {
-      const token = localStorage.getItem('token');
+    let aborted = false;
 
+    const ensureAuth = async () => {
+      const token = localStorage.getItem('token');
       if (!token) {
-        navigate('/login');
+        // Si no hay token, aseguramos logout local y mandamos a login
+        localStorage.removeItem('user');
+        setUser(null);
+        navigate('/login', { replace: true });
         return;
       }
 
@@ -26,21 +42,65 @@ const Header = () => {
           },
         });
 
-        const data = await response.json();
-
+        // Si la respuesta es OK, refrescamos user y persistimos
         if (response.ok) {
-          setUser(data);
-        } else if (response.status === 401) {
-          localStorage.removeItem('token');
-          setUser(null);
-          navigate('/login');
+          const data = await response.json();
+          if (!aborted) {
+            setUser(data);
+            try {
+              localStorage.setItem('user', JSON.stringify(data));
+            } catch {
+              /* ignore storage errors */
+            }
+          }
+          return;
         }
+
+        // Si el token es inválido/expirado
+        if (response.status === 401 || response.status === 403) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          if (!aborted) {
+            setUser(null);
+            navigate('/login', { replace: true });
+          }
+          return;
+        }
+
+        // Otros errores: no tumbamos sesión local, solo log
+        console.warn('Error al obtener perfil:', response.status);
+
       } catch (error) {
         console.error('Error fetching user:', error);
+        // Si hay error de red, mantenemos lo que haya localmente para no romper la UI.
       }
     };
 
-    fetchUser();
+    ensureAuth();
+
+    // ✅ Escuchar cambios en otras pestañas/ventanas (logout/login)
+    const onStorage = (e) => {
+      if (e.key === 'token' || e.key === 'user') {
+        try {
+          const token = localStorage.getItem('token');
+          if (!token) {
+            setUser(null);
+            navigate('/login', { replace: true });
+            return;
+          }
+          const raw = localStorage.getItem('user');
+          setUser(raw ? JSON.parse(raw) : null);
+        } catch {
+          setUser(null);
+        }
+      }
+    };
+
+    window.addEventListener('storage', onStorage);
+    return () => {
+      aborted = true;
+      window.removeEventListener('storage', onStorage);
+    };
   }, [navigate]);
 
   const toggleMenu = () => {
@@ -48,11 +108,18 @@ const Header = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
+    try {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user'); // ✅ limpiar user también
+    } catch { /* ignore */ }
     setUser(null);
     setMenuOpen(false);
-    navigate('/login');
+    navigate('/login', { replace: true });
   };
+
+  // Nombre seguro (evita "undefined")
+  const displayName =
+    (user && (user.nombre || user.username || user.email)) || 'Usuario';
 
   return (
     <div className="header-container">
@@ -71,13 +138,15 @@ const Header = () => {
         </div>
         <div className="header-right">
           <div className="profile-name">
-            {user ? `${user.nombre}` : 'Cargando...'}
+            {displayName}
           </div>
           <div className="profile-container">
             <div
               className="profile-pic"
               onClick={toggleMenu}
               style={{ backgroundImage: `url(${profilePic})` }}
+              role="button"
+              aria-label="Abrir menú de usuario"
             />
             {menuOpen && (
               <div className="dropdown-menu">

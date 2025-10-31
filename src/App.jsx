@@ -5,8 +5,11 @@ import { Routes, Route, useNavigate, Navigate, useLocation } from 'react-router-
 import Login from './components/Login/Login.jsx';
 import Dashboard from './components/Dashboard/Dashboard.jsx';
 import Auditor from './components/Auditor/Auditor.jsx';
-import Secret from './components/Secret/Secret.jsx'; // ✅ agregado
+import Secret from './components/Secret/Secret.jsx';
 
+/* ============================
+   JWT helpers
+============================= */
 function decodeJWT(token) {
   if (!token) return null;
   const payload = token.split('.')[1];
@@ -26,22 +29,46 @@ function decodeJWT(token) {
   }
 }
 
+function isTokenValid(decoded) {
+  if (!decoded) return false;
+  // validar exp (segundos desde epoch)
+  if (typeof decoded.exp === 'number') {
+    const nowSec = Math.floor(Date.now() / 1000);
+    if (decoded.exp <= nowSec) return false;
+  }
+  return true;
+}
+
 function getCurrentRole() {
   const token = localStorage.getItem('token');
   const decoded = decodeJWT(token);
   return (decoded && decoded.role) ? decoded.role : 'unknown';
 }
 
+/* ============================
+   Host/Role Guards (estrictos)
+============================= */
+function resolveHostContext(hostname) {
+  if (hostname === 'admin.garageia.com') return 'admin';
+  if (hostname === 'operador.garageia.com') return 'operador';
+
+  const dev = (import.meta?.env?.VITE_DEV_HOST || '').toLowerCase();
+  if (dev === 'admin' || dev === 'operador' || dev === 'auditor') return dev;
+  return 'admin'; // default dev
+}
+
 function hasHostPermission(hostname, role) {
   if (!role) return false;
+  const ctx = resolveHostContext(hostname);
 
-  if (hostname === 'admin.garageia.com') {
-    return role === 'admin' || role === 'superAdmin' || role === 'auditor';
-  }
-  if (hostname === 'operador.garageia.com') {
-    return role === 'operador' || role === 'admin' || role === 'superAdmin' || role === 'auditor';
-  }
-  return true; // localhost/dev
+  const ALLOWED_BY_CTX = {
+    admin: new Set(['admin', 'superAdmin', 'auditor']),
+    operador: new Set(['operador', 'admin', 'superAdmin', 'auditor']),
+    auditor: new Set(['auditor'])
+  };
+
+  const allowed = ALLOWED_BY_CTX[ctx] || ALLOWED_BY_CTX.admin;
+  return allowed.has(role);
 }
 
 function homePathByRole(role) {
@@ -49,17 +76,20 @@ function homePathByRole(role) {
   return '/';
 }
 
-/** ✅ helper: match exact segmento (/auditor o /auditor/...) */
+/** exact match helper */
 function isAtRoute(pathname, base) {
   return pathname === base || pathname.startsWith(base + '/');
 }
 
+/* ============================
+   Route Guards
+============================= */
 function RequireAuth({ children }) {
   const token = localStorage.getItem('token');
   const decoded = decodeJWT(token);
   const location = useLocation();
 
-  if (!token || !decoded) {
+  if (!token || !decoded || !isTokenValid(decoded)) {
     localStorage.setItem('redirectAfterLogin', location.pathname);
     return <Navigate to="/login" replace />;
   }
@@ -74,6 +104,9 @@ function RequireRole({ allowed = [], children }) {
   return children;
 }
 
+/* ============================
+   App Wrapper
+============================= */
 const AppWrapper = () => {
   const navigate = useNavigate();
   const [checkingAuth, setCheckingAuth] = useState(true);
@@ -87,12 +120,10 @@ const AppWrapper = () => {
       const token = localStorage.getItem('token');
       const redirectAfterLogin = localStorage.getItem('redirectAfterLogin');
 
-      console.log("Hostname:", hostname);
-      console.log("Current Path:", pathname);
-      console.log("Token:", token);
+      const decoded = decodeJWT(token);
 
-      if (!token) {
-        console.log("No token found, redirigiendo a login");
+      // 1) sin token o token inválido/expirado → login
+      if (!token || !decoded || !isTokenValid(decoded)) {
         if (pathname !== '/login') {
           localStorage.setItem('redirectAfterLogin', pathname);
           navigate('/login', { replace: true });
@@ -100,47 +131,36 @@ const AppWrapper = () => {
         return false;
       }
 
-      const decoded = decodeJWT(token);
-      console.log("Decoded token payload:", decoded);
-
-      if (!decoded) {
-        alert("Token inválido, por favor inicia sesión nuevamente.");
-        localStorage.removeItem('token');
-        navigate('/login', { replace: true });
-        return false;
-      }
-
       const role = decoded.role || 'unknown';
-      console.log("Role del usuario:", role);
 
+      // 2) Guard por host/contexto: si no tiene permiso, forzar logout + mensaje
       if (!hasHostPermission(hostname, role)) {
-        alert("No tienes permisos para acceder a esta aplicación");
+        alert('No tienes permisos para acceder desde este entorno.');
         localStorage.removeItem('token');
+        localStorage.removeItem('user');
         navigate('/login', { replace: true });
         return false;
       }
 
+      // 3) Si ya está autenticado y está en /login, redirigir
       if (pathname === '/login') {
         const target = redirectAfterLogin || homePathByRole(role);
-        console.log("Usuario autenticado, redirigiendo a:", target);
         navigate(target, { replace: true });
         return true;
       }
 
-      // ✅ Redirección sólo para AUDITOR usando match por segmento
+      // 4) Regla específica de auditor
       const desiredHome = homePathByRole(role);
       const onAuditor = isAtRoute(pathname, '/auditor');
       const isAuditor = role === 'auditor';
 
       if (isAuditor && !onAuditor) {
-        console.log("Forzando auditor → /auditor");
         navigate('/auditor', { replace: true });
         return true;
       }
 
-      // ⚠️ Importante: NO tocar /auditoria (Dashboard) — sólo /auditor
+      // No tocar /auditoria (Dashboard) — sólo /auditor
       if (!isAuditor && onAuditor) {
-        console.log("Usuario sin rol auditor intentando /auditor → redirigiendo a", desiredHome);
         navigate(desiredHome, { replace: true });
         return true;
       }
@@ -148,10 +168,9 @@ const AppWrapper = () => {
       return true;
     };
 
-    setTimeout(() => {
-      validarAcceso();
-      setCheckingAuth(false);
-    }, 100);
+    // ejecutar sincrónico; el setTimeout no es necesario
+    validarAcceso();
+    setCheckingAuth(false);
   }, [navigate, hostname, pathname]);
 
   if (checkingAuth) {
@@ -177,7 +196,7 @@ const AppWrapper = () => {
         path="/secretito"
         element={
           <RequireAuth>
-            <Secret /> 
+            <Secret />
           </RequireAuth>
         }
       />
