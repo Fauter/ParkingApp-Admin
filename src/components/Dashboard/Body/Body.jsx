@@ -110,7 +110,10 @@ function Body() {
 
   // ⚠️ Filtrado de movimientos por campos del movimiento
   const movimientosFiltrados = movimientos.filter(mov => {
-    const patenteMatch = !searchTerm || (mov.patente || '').toUpperCase().includes(searchTerm.toUpperCase());
+    const patenteMatch = !searchTerm ||
+      (mov?.patente ||
+      mov?.movimiento?.patente ||
+      '').toUpperCase().includes(searchTerm.toUpperCase());
 
     const d = getMovDate(mov);
     const horaMovimiento = d ? d.getHours() : null;
