@@ -15,6 +15,7 @@ const Secret = () => {
     { label: "Cierres Parciales", path: "cierresdecaja/parcial" },
     { label: "Alertas", path: "alertas" },
     { label: "Incidentes", path: "incidentes" },
+    { label: "Cocheras", path: "cocheras" },
   ];
 
   const REMOTE_BASE = "https://apiprueba.garageia.com";
