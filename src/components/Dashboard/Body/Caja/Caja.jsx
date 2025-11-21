@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Tabs from '../Tabs/Tabs';
 import './Caja.css';
 
-const ITEMS_POR_PAGINA = 10;
+const ITEMS_POR_PAGINA = 50;
 
 // 👉 Base de API (puede venir por Vite): VITE_API_BASE=https://apiprueba.garageia.com
 const API_BASE = (typeof import.meta !== 'undefined' && import.meta?.env?.VITE_API_BASE
@@ -35,34 +35,18 @@ function elegirOperador(rawOp, innerOp) {
   const r = str(rawOp);
   const i = str(innerOp);
 
-  // Si el inner es un nombre legible (no ObjectId), úsalo
   if (i && !isObjId(i) && i !== '[object Object]') return i;
-
-  // Si el raw es un nombre legible, úsalo
   if (r && !isObjId(r) && r !== '[object Object]') return r;
 
-  // Fallbacks
   return i || r || null;
 }
 
-/** =========================================
- *  CANONIZADOR DE MOVIMIENTOS (aplana anidados)
- *  =========================================
- *  Soporta:
- *  - Plano: { patente, descripcion, ... createdAt/fecha, ticket, fotoUrl }
- *  - Envuelto: { msg, createdAt/fecha, movimiento: { ...props... } }
- */
 function canonizarMovimiento(raw) {
   const inner = raw?.movimiento || {};
   const pick = (k) => (raw?.[k] != null ? raw[k] : inner?.[k]);
 
-  // Fecha/createdAt robusto (prefiere top-level si existe)
   const createdAt = pick('createdAt') || pick('fecha') || null;
-
-  // Operador: prioriza nombre del inner si el top-level es un ObjectId
   const operador = elegirOperador(raw?.operador, inner?.operador);
-
-  // Foto: dejar ambas rutas posibles
   const fotoUrl = inner?.fotoUrl ?? raw?.fotoUrl ?? null;
 
   return {
@@ -78,16 +62,11 @@ function canonizarMovimiento(raw) {
     tipoTarifa: pick('tipoTarifa') || null,
     ticket: pick('ticket') ?? null,
     fotoUrl,
-    // guardo ambas por compat
     createdAt,
     fecha: createdAt
   };
 }
 
-/** ================================
- *  FECHAS (CREACIÓN DEL MOVIMIENTO)
- *  ================================
- */
 const BA_TZ = 'America/Argentina/Buenos_Aires';
 
 function fmtMovimientoFecha(mov) {
@@ -154,34 +133,22 @@ function hourRangeMatches(dateObj, rangeStr) {
   return h >= a && h < b;
 }
 
-/** =========================================
- *  RESOLUCIÓN ROBUSTA DE URL DE FOTO (uploads)
- *  =========================================
- */
 function resolverFotoUrl(raw) {
   if (!raw) return null;
-
   let url = String(raw).trim();
 
-  // Ya absoluta
   if (/^https?:\/\//i.test(url)) return url;
-
-  // Si es data URL
   if (/^data:image\//i.test(url)) return url;
 
-  // Normalizar separadores y asegurar que empiece con /
   if (url.startsWith('/')) {
-    // ok
   } else if (url.startsWith('uploads')) {
     url = '/' + url;
   } else if (!url.includes('/')) {
-    // Sólo nombre de archivo
     url = '/uploads/fotos/entradas/' + url;
   } else {
     url = '/' + url.replace(/^\/+/, '');
   }
 
-  // Encodear cada segmento (sin romper slashes)
   const [pathOnly, query] = url.split('?');
   const encodedPath = pathOnly
     .split('/')
@@ -192,9 +159,6 @@ function resolverFotoUrl(raw) {
   return `${API_BASE}${rebuilt}`.replace(/([^:])\/{2,}/g, '$1/');
 }
 
-/* ==========================
- * Helpers de UI (stack 2 líneas)
- * ========================== */
 function StackFechaHora({ date, placeholder = '---' }) {
   if (!date) return <>{placeholder}</>;
   const d = new Date(date);
@@ -209,7 +173,6 @@ function StackFechaHora({ date, placeholder = '---' }) {
 
 function StackDescripcionPago({ descripcion }) {
   if (!descripcion) return <>---</>;
-  // Busca "Pago por 55 Horas" / "Pago por 1 Hora" (case-insensitive y tolerante a espacios)
   const m = /pago\s+por\s+(\d+)\s+horas?/i.exec(descripcion);
   if (!m) return <>{descripcion}</>;
   const n = parseInt(m[1], 10);
@@ -235,15 +198,12 @@ const Caja = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [paginaActual, setPaginaActual] = useState(1);
 
-  // Modal foto
   const [modalFotoUrl, setModalFotoUrl] = useState(null);
   const [modalAlternativas, setModalAlternativas] = useState([]);
 
-  // Cache de estadías por ticket para mostrar entrada/salida, etc.
   const [estadiaCache, setEstadiaCache] = useState({});
   const fetchingTickets = useRef({});
 
-  // ✅ Cache de disponibilidad de fotos por URL cruda (true/false)
   const [fotoDisponible, setFotoDisponible] = useState({});
 
   useEffect(() => {
@@ -278,11 +238,8 @@ const Caja = ({
     }
   };
 
-  // === Verificación liviana de existencia de foto (para NO mostrar botón si 404)
   const verificarFoto = useCallback((rawUrl) => {
     if (!rawUrl) return;
-
-    // Evitar repetir checks
     if (Object.prototype.hasOwnProperty.call(fotoDisponible, rawUrl)) return;
 
     const abs = resolverFotoUrl(rawUrl);
@@ -296,41 +253,33 @@ const Caja = ({
       img.crossOrigin = 'anonymous';
     } catch {}
     img.onload = () => {
-      setFotoDisponible(prev => ({ ...prev, [rawUrl]: true }));
+      setFotoDisponible((prev) => ({ ...prev, [rawUrl]: true }));
     };
     img.onerror = () => {
-      setFotoDisponible(prev => ({ ...prev, [rawUrl]: false }));
+      setFotoDisponible((prev) => ({ ...prev, [rawUrl]: false }));
     };
     img.src = testUrl;
   }, [fotoDisponible]);
 
-  // Construye lista de candidatos (para fallback) y abre el modal
   const abrirFoto = useCallback((rawUrl) => {
     if (!rawUrl) return;
 
-    // Principal (resuelto a /uploads/... absoluto)
     const primary = resolverFotoUrl(rawUrl);
 
     const candidatos = new Set();
     const add = (u) => { if (u) candidatos.add(u); };
 
-    // 1) principal con cache-buster
     add(`${primary}${primary.includes('?') ? '&' : '?'}t=${Date.now()}`);
 
     try {
       const u = new URL(primary);
-      const path = u.pathname; // /uploads/fotos/entradas/XXXX.jpg
+      const path = u.pathname;
       const filename = path.split('/').pop();
       const bust = `t=${Date.now()}`;
 
-      // 2) API explícita que sí monta tu router (lee del mismo lugar real)
       add(`${u.origin}/api/fotos/entradas/${encodeURIComponent(filename)}?${bust}`);
-
-      // 3) Variante /uploads (por si el host reescribe encabezados entre mounts)
       add((`${u.origin}${path}?${bust}`).replace(/([^:])\/{2,}/g, '$1/'));
-    } catch {
-      // si falla URL(), nos quedamos con primary+timestamp
-    }
+    } catch {}
 
     const lista = Array.from(candidatos);
     setModalAlternativas(lista);
@@ -353,7 +302,6 @@ const Caja = ({
     }
   }, [modalAlternativas, modalFotoUrl, cerrarModal]);
 
-  // Cerrar modal con ESC
   useEffect(() => {
     if (!modalFotoUrl) return;
     const onKey = (e) => {
@@ -383,14 +331,12 @@ const Caja = ({
       <tr key={`empty-${i}`}>{Array.from({ length: columnas }, (_, j) => <td key={j}>---</td>)}</tr>
     ));
 
-  // === Prefetch de estadías para página visible (sin filtros de hora)
   useEffect(() => {
     if (activeCajaTab !== 'Caja') return;
 
     if (!filtros?.horaEntradaMov && !filtros?.horaSalidaMov) {
       const term = searchTerm.toUpperCase();
 
-      // Canonizamos antes de filtrar/sortear
       const preliminares = movimientos
         .map(canonizarMovimiento)
         .filter(mov => (mov.patente || '').toUpperCase().includes(term))
@@ -400,17 +346,15 @@ const Caja = ({
 
       paginados.forEach(mov => {
         if (mov.ticket != null) fetchEstadiaByTicket(mov.ticket);
-        // Pre-chequeo de foto (si viene en el movimiento canonizado)
         if (mov.fotoUrl) verificarFoto(mov.fotoUrl);
       });
     }
   }, [activeCajaTab, movimientos, paginaActual, searchTerm, filtros?.horaEntradaMov, filtros?.horaSalidaMov, verificarFoto]);
 
-  // === Prefetch cuando hay filtros por hora (necesitamos info de la estadía)
   useEffect(() => {
     if (activeCajaTab !== 'Caja') return;
     const needsEntrada = Boolean(filtros?.horaEntradaMov);
-    const needsSalida  = Boolean(filtros?.horaSalidaMov);
+    const needsSalida = Boolean(filtros?.horaSalidaMov);
     if (!needsEntrada && !needsSalida) return;
 
     const term = searchTerm.toUpperCase();
@@ -424,10 +368,12 @@ const Caja = ({
     });
   }, [activeCajaTab, movimientos, searchTerm, filtros?.horaEntradaMov, filtros?.horaSalidaMov, verificarFoto]);
 
+  //-----------------------------------------------------------------------
+  // ★★★★★  TABLA CAJA  ★★★★★
+  //-----------------------------------------------------------------------
   const renderTablaCaja = () => {
     const term = searchTerm.toUpperCase();
 
-    // Siempre trabajar sobre movimientos canonizados
     let filtrados = movimientos
       .map(canonizarMovimiento)
       .filter(mov => (mov.patente || '').toUpperCase().includes(term));
@@ -436,11 +382,11 @@ const Caja = ({
       filtrados = filtrados.filter(mov => {
         if (!mov.ticket) return false;
         const info = estadiaCache[mov.ticket];
-        const est  = info?.data;
+        const est = info?.data;
         if (!est) return false;
 
         const okEntrada = !filtros.horaEntradaMov || (est.entrada && hourRangeMatches(new Date(est.entrada), filtros.horaEntradaMov));
-        const okSalida  = !filtros.horaSalidaMov  || (est.salida  && hourRangeMatches(new Date(est.salida),  filtros.horaSalidaMov));
+        const okSalida = !filtros.horaSalidaMov || (est.salida && hourRangeMatches(new Date(est.salida), filtros.horaSalidaMov));
         return okEntrada && okSalida;
       });
     }
@@ -467,8 +413,12 @@ const Caja = ({
                 <th>Factura</th>
                 <th>Monto</th>
                 <th>Foto</th>
+
+                {/* ★ NUEVA COLUMNA TICKET ★ */}
+                <th style={{ width: "55px" }}>Ticket</th>
               </tr>
             </thead>
+
             <tbody>
               {paginados.map(movimiento => {
                 const estadiaInfo = movimiento.ticket ? estadiaCache[movimiento.ticket] : null;
@@ -479,7 +429,6 @@ const Caja = ({
                 const entrada = estadia?.entrada ? new Date(estadia.entrada) : null;
                 const salida = estadia?.salida ? new Date(estadia.salida) : null;
 
-                // ✅ FOTO: preferí la de la estadía; si no hay, usá la del movimiento canonizado
                 const fotoUrlRaw = estadia?.fotoUrl || movimiento?.fotoUrl || null;
                 if (fotoUrlRaw) verificarFoto(fotoUrlRaw);
                 const puedeMostrarBotonFoto = !!fotoUrlRaw && fotoDisponible[fotoUrlRaw] === true;
@@ -491,28 +440,9 @@ const Caja = ({
                   <tr key={movimiento._id}>
                     <td>{patenteKey || '---'}</td>
                     <td>{fmtMovimientoFecha(movimiento) || '---'}</td>
-
-                    {/* Entrada: fecha (dd/mm) arriba + hora (hh:mm) abajo */}
-                    <td>
-                      {loading || error
-                        ? '---'
-                        : entrada
-                          ? <StackFechaHora date={entrada} />
-                          : '---'}
-                    </td>
-
-                    {/* Salida: fecha (dd/mm) arriba + hora (hh:mm) abajo */}
-                    <td>
-                      {loading || error
-                        ? '---'
-                        : salida
-                          ? <StackFechaHora date={salida} />
-                          : '---'}
-                    </td>
-
-                    {/* Descripción: si "Pago por X Hora(s)" => 2 líneas */}
+                    <td>{loading || error ? '---' : entrada ? <StackFechaHora date={entrada} /> : '---'}</td>
+                    <td>{loading || error ? '---' : salida ? <StackFechaHora date={salida} /> : '---'}</td>
                     <td><StackDescripcionPago descripcion={movimiento.descripcion} /></td>
-
                     <td>{normalizarOperador(movimiento.operador)}</td>
                     <td>{movimiento.tipoVehiculo ? movimiento.tipoVehiculo[0].toUpperCase() + movimiento.tipoVehiculo.slice(1) : '---'}</td>
                     <td>{movimiento.metodoPago || '---'}</td>
@@ -521,27 +451,29 @@ const Caja = ({
 
                     <td>
                       {puedeMostrarBotonFoto ? (
-                        <button
-                          onClick={() => abrirFoto(fotoUrlRaw)}
-                          title="Ver foto"
-                          className="btn-ver-foto"
-                        >
-                          Foto
-                        </button>
+                        <button onClick={() => abrirFoto(fotoUrlRaw)} title="Ver foto" className="btn-ver-foto">Foto</button>
                       ) : '---'}
                     </td>
+
+                    {/* ★ NUEVA CELDA TICKET ★ */}
+                    <td>{movimiento.ticket ?? '---'}</td>
                   </tr>
                 );
               })}
-              {renderFilasVacias(ITEMS_POR_PAGINA - paginados.length, 11)}
+
+              {renderFilasVacias(ITEMS_POR_PAGINA - paginados.length, 12)}
             </tbody>
           </table>
+
           {renderPaginado(total)}
         </div>
       </div>
     );
   };
 
+  //-----------------------------------------------------------------------
+  // ★★★★★  TABLA INGRESOS  ★★★★★
+  //-----------------------------------------------------------------------
   const renderTablaIngresos = () => {
     const term = searchTerm.toUpperCase();
     const filtrados = vehiculos
@@ -564,11 +496,16 @@ const Caja = ({
                 <th>Tipo de Vehículo</th>
                 <th>Abonado/Anticipado</th>
                 <th>Foto</th>
+
+                {/* ★ NUEVA COLUMNA TICKET ★ */}
+                <th style={{ width: "55px" }}>Ticket</th>
               </tr>
             </thead>
+
             <tbody>
               {paginados.map(veh => {
                 const entrada = veh.estadiaActual?.entrada ? new Date(veh.estadiaActual.entrada) : null;
+
                 let abonadoTurnoTexto = 'No';
                 if (veh.abonado) abonadoTurnoTexto = 'Abonado';
                 else if (veh.turno) abonadoTurnoTexto = 'Anticipado';
@@ -585,23 +522,23 @@ const Caja = ({
                     <td>{normalizarOperador(veh.estadiaActual?.operadorNombre)}</td>
                     <td>{veh.tipoVehiculo ? veh.tipoVehiculo[0].toUpperCase() + veh.tipoVehiculo.slice(1) : '---'}</td>
                     <td>{abonadoTurnoTexto}</td>
+
                     <td>
                       {puedeMostrarBotonFoto ? (
-                        <button
-                          onClick={() => abrirFoto(rawFoto)}
-                          title="Ver foto"
-                          className="btn-ver-foto"
-                        >
-                          Foto
-                        </button>
+                        <button onClick={() => abrirFoto(rawFoto)} title="Ver foto" className="btn-ver-foto">Foto</button>
                       ) : '---'}
                     </td>
+
+                    {/* ★ NUEVA CELDA TICKET ★ */}
+                    <td>{veh.estadiaActual?.ticket ?? '---'}</td>
                   </tr>
                 );
               })}
-              {renderFilasVacias(ITEMS_POR_PAGINA - paginados.length, 7)}
+
+              {renderFilasVacias(ITEMS_POR_PAGINA - paginados.length, 8)}
             </tbody>
           </table>
+
           {renderPaginado(total)}
         </div>
       </div>
@@ -616,6 +553,7 @@ const Caja = ({
         normalizarOperador(a.operador)?.toUpperCase().includes(term)
       )
       .reverse();
+
     const paginadas = paginar(filtradas, paginaActual);
     const total = totalPaginas(filtradas);
 
@@ -643,6 +581,7 @@ const Caja = ({
               {renderFilasVacias(ITEMS_POR_PAGINA - paginadas.length, 4)}
             </tbody>
           </table>
+
           {renderPaginado(total)}
         </div>
       </div>
@@ -657,6 +596,7 @@ const Caja = ({
         normalizarOperador(i.operador)?.toUpperCase().includes(term)
       )
       .reverse();
+
     const paginados = paginar(filtrados, paginaActual);
     const total = totalPaginas(filtrados);
 
@@ -687,6 +627,7 @@ const Caja = ({
               {renderFilasVacias(ITEMS_POR_PAGINA - paginados.length, 4)}
             </tbody>
           </table>
+
           {renderPaginado(total)}
         </div>
       </div>

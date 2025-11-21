@@ -590,7 +590,7 @@ const AuditoriaAdmin = forwardRef(({
                   <th>Hora Entrada</th>
                   <th>Operador</th>
                   <th>Tipo de Vehículo</th>
-                  <th>Abonado/Turno</th>
+                  <th>Ticket</th>
                   <th>Estado</th>
                   <th className="td-check"></th>
                 </tr>
