@@ -61,6 +61,7 @@ function canonizarMovimiento(raw) {
     promo: pick('promo'),
     tipoTarifa: pick('tipoTarifa') || null,
     ticket: pick('ticket') ?? null,
+    ticketPago: pick('ticketPago') ?? null,   // ★★ AGREGADO ★★
     fotoUrl,
     createdAt,
     fecha: createdAt
@@ -374,10 +375,12 @@ const Caja = ({
   const renderTablaCaja = () => {
     const term = searchTerm.toUpperCase();
 
+    // 1) Filtrar
     let filtrados = movimientos
       .map(canonizarMovimiento)
       .filter(mov => (mov.patente || '').toUpperCase().includes(term));
 
+    // 2) Aplicar filtros hora entrada / salida
     if (filtros?.horaEntradaMov || filtros?.horaSalidaMov) {
       filtrados = filtrados.filter(mov => {
         if (!mov.ticket) return false;
@@ -391,10 +394,20 @@ const Caja = ({
       });
     }
 
+    // 3) ORDENAR por fecha DESC (más nuevo primero)
     filtrados.sort((a, b) => movCreatedTs(b) - movCreatedTs(a));
 
-    const paginados = paginar(filtrados, paginaActual);
-    const total = totalPaginas(filtrados);
+    // ★★★ 4) AGREGAR NUMERACIÓN SECUENCIAL (1 es el más viejo) ★★★
+    const totalFiltrados = filtrados.length;
+    const filtradosNumerados = filtrados.map((mov, idxDesc) => {
+      // idxDesc = 0 es el más nuevo → debe tener número más alto
+      const numeroSecuencial = totalFiltrados - idxDesc;
+      return { ...mov, numeroSecuencial };
+    });
+
+    // 5) PAGINACIÓN (no reinicia, solo corta)
+    const paginados = paginar(filtradosNumerados, paginaActual);
+    const total = totalPaginas(filtradosNumerados);
 
     return (
       <div className="table-container">
@@ -414,7 +427,7 @@ const Caja = ({
                 <th>Monto</th>
                 <th>Foto</th>
 
-                {/* ★ NUEVA COLUMNA TICKET ★ */}
+                {/* ★ COLUMNA NUMERO SECUENCIAL ★ */}
                 <th style={{ width: "55px" }}>Ticket</th>
               </tr>
             </thead>
@@ -455,8 +468,8 @@ const Caja = ({
                       ) : '---'}
                     </td>
 
-                    {/* ★ NUEVA CELDA TICKET ★ */}
-                    <td>{movimiento.ticket ?? '---'}</td>
+                    {/* ★ MUESTRO EL NUMERO SECUENCIAL ★ */}
+                    <td>{movimiento.ticketPago ?? '---'}</td>
                   </tr>
                 );
               })}
@@ -498,7 +511,7 @@ const Caja = ({
                 <th>Foto</th>
 
                 {/* ★ NUEVA COLUMNA TICKET ★ */}
-                <th style={{ width: "55px" }}>Ticket</th>
+                <th style={{ width: "55px" }}>Ingreso</th>
               </tr>
             </thead>
 
