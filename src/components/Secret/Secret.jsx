@@ -1,9 +1,25 @@
 // Secret.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import "./Secret.css";
 
 const Secret = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [tab, setTab] = useState("delete");
+
+  // Buscar ticket
+  const [ticketInput, setTicketInput] = useState("");
+  const [ticketResult, setTicketResult] = useState(null);
+  const [ticketError, setTicketError] = useState("");
+
+  // 🔥 RESET AUTOMÁTICO CUANDO CAMBIO DE PESTAÑA
+  useEffect(() => {
+    if (tab !== "ticket") {
+      setTicketInput("");
+      setTicketResult(null);
+      setTicketError("");
+    }
+  }, [tab]);
 
   const endpoints = [
     { label: "Movimientos", path: "movimientos" },
@@ -21,9 +37,29 @@ const Secret = () => {
   const REMOTE_BASE = "https://apiprueba.garageia.com";
   const LOCAL_BASE = "http://localhost:5000";
 
-  const handleDelete = async (path, all = false) => {
+  const fmt = (dateString) => {
+    if (!dateString) return null;
+    const d = new Date(dateString);
+    return isNaN(d) ? null : d.toLocaleString();
+  };
+
+  const capitalize = (s) =>
+    !s ? "" : s.charAt(0).toUpperCase() + s.slice(1);
+
+  const Item = ({ label, value }) =>
+    value ? (
+      <p className="itemRow">
+        <span className="itemLabel">{label}</span>
+        <span className="itemValue">{value}</span>
+      </p>
+    ) : null;
+
+  // =====================================================
+  // DELETE ENDPOINTS
+  // =====================================================
+  const handleDelete = async (path) => {
     setLoading(true);
-    setMessage(all ? "💣 Eliminando TODO..." : "");
+    setMessage("");
 
     const urls = [
       `${LOCAL_BASE}/api/${path}`,
@@ -35,166 +71,230 @@ const Secret = () => {
     for (let url of urls) {
       try {
         const res = await fetch(url, { method: "DELETE" });
-        if (res.ok) {
-          results.push(`✔️ Éxito en ${url}`);
-        } else {
-          results.push(`⚠️ Error (${res.status}) en ${url}`);
-        }
-      } catch (err) {
+        results.push(
+          res.ok ? `✔️ Éxito en ${url}` : `⚠️ Error (${res.status}) en ${url}`
+        );
+      } catch {
         results.push(`❌ No se pudo conectar a ${url}`);
       }
     }
 
-    setMessage((prev) => (prev ? prev + "\n" : "") + results.join("\n"));
+    setMessage(results.join("\n"));
     setLoading(false);
   };
 
-  // === NUEVO: helpers para "Borrar Todo" con orden estricto (remoto -> local)
   const deleteAtBase = async (baseUrl, path) => {
     const url = `${baseUrl}/api/${path}`;
     try {
       const res = await fetch(url, { method: "DELETE" });
-      if (res.ok) {
-        setMessage((prev) => (prev ? prev + "\n" : "") + `✔️ Éxito en ${url}`);
-      } else {
-        setMessage(
-          (prev) =>
-            (prev ? prev + "\n" : "") + `⚠️ Error (${res.status}) en ${url}`
-        );
-      }
-    } catch {
-      setMessage(
-        (prev) => (prev ? prev + "\n" : "") + `❌ No se pudo conectar a ${url}`
+      setMessage((prev) =>
+        prev + "\n" + (res.ok ? `✔️ ${url}` : `⚠️ Error ${url}`)
       );
+    } catch {
+      setMessage((prev) => prev + `\n❌ No se pudo conectar a ${url}`);
     }
   };
 
   const handleDeleteAll = async () => {
-    if (
-      !window.confirm(
-        "⚠️ Esto va a borrar absolutamente todo en local y producción. ¿Seguro?"
-      )
-    )
+    if (!window.confirm("⚠️ Esto borra TODO en local y producción. ¿Seguro?"))
       return;
 
     setLoading(true);
-    setMessage("💣 Iniciando eliminación total...\n➡️ Primero REMOTO, luego LOCAL");
+    setMessage("Iniciando eliminación total...");
 
-    // 1) REMOTO primero (todos los endpoints)
     setMessage((prev) => prev + "\n\n🌐 Eliminando en REMOTO:");
-    for (let api of endpoints) {
-      await deleteAtBase(REMOTE_BASE, api.path);
-    }
+    for (let api of endpoints) await deleteAtBase(REMOTE_BASE, api.path);
 
-    // 2) LOCAL después (todos los endpoints)
     setMessage((prev) => prev + "\n\n🖥️ Eliminando en LOCAL:");
-    for (let api of endpoints) {
-      await deleteAtBase(LOCAL_BASE, api.path);
-    }
+    for (let api of endpoints) await deleteAtBase(LOCAL_BASE, api.path);
 
-    setMessage((prev) => prev + "\n\n☠️ Todo borrado (o al menos intentado)");
+    setMessage((prev) => prev + "\n\n☠️ Finalizado.");
     setLoading(false);
   };
 
-  return (
-    <div style={styles.container}>
-      <h2 style={styles.title}>🧨 Panel Secreto — Borrado de APIs</h2>
-      <p style={styles.subtitle}>
-        Usá con cuidado. Esto borra los datos en producción y local. No hay
-        vuelta atrás 😬
-      </p>
+  // =====================================================
+  // BUSCAR POR TICKET
+  // =====================================================
+  const buscarPorTicket = async () => {
+    setLoading(true);
+    setTicketError("");
+    setTicketResult(null);
 
-      <div style={styles.buttonsContainer}>
-        {endpoints.map((api) => (
-          <button
-            key={api.path}
-            onClick={() => handleDelete(api.path)}
-            style={styles.button}
-            disabled={loading}
-          >
-            {loading ? "Borrando..." : `Borrar ${api.label}`}
-          </button>
-        ))}
+    if (!ticketInput.trim()) {
+      setTicketError("Ingresá un ticket válido.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const url = `https://apiprueba.garageia.com/api/vehiculos/ticket-admin/${ticketInput}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setTicketResult(data);
+    } catch {
+      setTicketError("❌ Ticket no encontrado.");
+    }
+
+    setLoading(false);
+  };
+
+  const onEnter = (e) => {
+    if (e.key === "Enter") buscarPorTicket();
+  };
+
+  // =====================================================
+  // RENDER RESULTADO
+  // =====================================================
+
+  const renderTicketResult = () => {
+    if (!ticketResult) return null;
+
+    const v = ticketResult.vehiculo;
+    if (!v) return null;
+
+    const ultima = ticketResult.estadia;
+    const actual = v.estadiaActual;
+    const historial = v.historialEstadias || [];
+
+    return (
+      <div className="ticketCard">
+        <h3 className="sectionTitle">Datos del Vehículo</h3>
+
+        <div className="infoGrid">
+          <Item label="Patente" value={v.patente} />
+          <Item label="Tipo" value={capitalize(v.tipoVehiculo)} />
+          <Item label="Operador" value={v.operador} />
+          <Item label="Abonado" value={v.abonado ? "Sí" : "No"} />
+        </div>
+
+        {ultima && (
+          <>
+            <h4 className="sectionTitle">Última Estadía</h4>
+            <div className="infoGrid">
+              <Item label="Entrada" value={fmt(ultima.entrada)} />
+              {ultima.salida && <Item label="Salida" value={fmt(ultima.salida)} />}
+              {ultima.salida && ultima.costoTotal != null && (
+                <Item label="Costo Total" value={`$${ultima.costoTotal}`} />
+              )}
+              {ultima.salida && ultima.metodoPago && (
+                <Item label="Método Pago" value={ultima.metodoPago} />
+              )}
+              {ultima.salida && ultima.ticket && (
+                <Item label="Ticket" value={ultima.ticket} />
+              )}
+            </div>
+          </>
+        )}
+
+        {actual && Object.keys(actual).length > 0 && (
+          <>
+            <h4 className="sectionTitle">Estadía Actual</h4>
+            <div className="infoGrid">
+              <Item label="Entrada" value={fmt(actual.entrada)} />
+              {actual.costoTotal != null && (
+                <Item label="Costo Total" value={`$${actual.costoTotal}`} />
+              )}
+              {actual.ticket && <Item label="Ticket" value={actual.ticket} />}
+              {actual.operadorNombre && (
+                <Item label="Operador" value={actual.operadorNombre} />
+              )}
+            </div>
+          </>
+        )}
+
+        {historial.length > 0 && (
+          <>
+            <h4 className="sectionTitle">Historial</h4>
+            {historial.map((h, i) => (
+              <div key={i} className="histCard">
+                <Item label="Entrada" value={fmt(h.entrada)} />
+                <Item label="Salida" value={fmt(h.salida)} />
+                <Item label="Operador" value={h.operadorNombre} />
+                <Item label="Ticket" value={h.ticket} />
+                <Item label="Costo Total" value={`$${h.costoTotal}`} />
+              </div>
+            ))}
+          </>
+        )}
+      </div>
+    );
+  };
+
+  // =====================================================
+  return (
+    <div className="secret-container">
+      <h2 className="secret-title">🧨 Panel Secreto</h2>
+
+      <div className="tabs">
+        <button
+          onClick={() => setTab("delete")}
+          className={tab === "delete" ? "tabActive" : "tab"}
+        >
+          🗑️ Eliminación
+        </button>
+
+        <button
+          onClick={() => setTab("ticket")}
+          className={tab === "ticket" ? "tabActive" : "tab"}
+        >
+          🎫 Buscar por Ticket
+        </button>
       </div>
 
-      <button
-        onClick={handleDeleteAll}
-        style={{
-          ...styles.button,
-          ...styles.deleteAllButton,
-        }}
-        disabled={loading}
-      >
-        {loading ? "💣 Borrando Todo..." : "💣☠️ BORRAR TODO ☠️💣"}
-      </button>
+      {tab === "delete" && (
+        <>
+          <div className="buttonsContainer">
+            {endpoints.map((api) => (
+              <button
+                key={api.path}
+                onClick={() => handleDelete(api.path)}
+                disabled={loading}
+                className="secret-btn"
+              >
+                {loading ? "Borrando..." : `Borrar ${api.label}`}
+              </button>
+            ))}
+          </div>
 
-      {message && <pre style={styles.resultBox}>{message}</pre>}
+          <button
+            onClick={handleDeleteAll}
+            disabled={loading}
+            className="secret-btn deleteAllButton"
+          >
+            {loading ? "Borrando..." : "💣 BORRAR TODO"}
+          </button>
+
+          {message && <pre className="resultBox">{message}</pre>}
+        </>
+      )}
+
+      {tab === "ticket" && (
+        <div>
+          <input
+            type="number"
+            placeholder="Ingresá ticket..."
+            value={ticketInput}
+            onChange={(e) => setTicketInput(e.target.value)}
+            onKeyDown={onEnter}
+            className="secret-input"
+          />
+
+          <button
+            onClick={buscarPorTicket}
+            disabled={loading}
+            className="secret-btn ticket-btn"
+          >
+            Buscar
+          </button>
+
+          {ticketError && <p className="error">{ticketError}</p>}
+
+          {renderTicketResult()}
+        </div>
+      )}
     </div>
   );
-};
-
-// Estilos caseros, sin Tailwind
-const styles = {
-  container: {
-    fontFamily: "Arial, sans-serif",
-    maxWidth: "550px",
-    margin: "40px auto",
-    padding: "25px",
-    border: "2px dashed #b33",
-    borderRadius: "14px",
-    backgroundColor: "#fff8f8",
-    textAlign: "center",
-    boxShadow: "0 0 10px rgba(0,0,0,0.1)",
-  },
-  title: {
-    marginBottom: "10px",
-    color: "#a00",
-  },
-  subtitle: {
-    marginBottom: "20px",
-    color: "#555",
-    fontSize: "14px",
-  },
-  buttonsContainer: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "10px",
-    marginBottom: "25px",
-  },
-  button: {
-    padding: "10px",
-    borderRadius: "8px",
-    border: "none",
-    backgroundColor: "#d9534f",
-    color: "white",
-    fontWeight: "bold",
-    cursor: "pointer",
-    transition: "all 0.2s",
-  },
-  deleteAllButton: {
-    backgroundColor: "#000",
-    color: "#fff",
-    fontSize: "16px",
-    marginTop: "10px",
-    border: "3px solid red",
-    textShadow: "0 0 3px red",
-    transform: "scale(1)",
-  },
-  resultBox: {
-    textAlign: "left",
-    backgroundColor: "#fefefe",
-    padding: "10px",
-    borderRadius: "8px",
-    border: "1px solid #ddd",
-    fontSize: "13px",
-    whiteSpace: "pre-wrap",
-    marginTop: "20px",
-  },
-};
-
-// Hover manual (simple simulación, no funciona con inline styles pero lo dejo como tenías)
-styles.button[":hover"] = {
-  backgroundColor: "#c9302c",
 };
 
 export default Secret;

@@ -1,15 +1,20 @@
+/* ────────────────────────────────────────────── */
+/* CONTENEDOR GENERAL                            */
+/* ────────────────────────────────────────────── */
 .clienteTab-container {
   position: relative;
   z-index: 10;
   max-width: 900px;
+  margin: 0 auto;
   padding: 20px 50px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   color: #212529;
   background-color: #fafafa;
-  margin-left: auto;
-  margin-right: auto;
 }
 
+/* ────────────────────────────────────────────── */
+/* HEADER                                        */
+/* ────────────────────────────────────────────── */
 .clienteTab-header {
   display: flex;
   align-items: center;
@@ -21,9 +26,9 @@
 .clienteTab-links {
   flex: 1;
   display: flex;
+  justify-content: center;
   align-items: center;
   gap: 16px;
-  justify-content: center;
 }
 
 .clienteTab-link {
@@ -47,38 +52,43 @@
   color: #343a40;
 }
 
+/* ────────────────────────────────────────────── */
+/* TABS                                          */
+/* ────────────────────────────────────────────── */
 .detalle-cliente-tabs-container {
   margin-top: 25px;
+  position: relative;
 }
 
 .detalle-cliente-tabs {
   display: flex;
   justify-content: center;
   gap: 18px;
-  border-bottom: 1px solid #d3e0e6; /* más suave, azul claro */
+  border-bottom: 1px solid #d3e0e6;
 }
 
 .detalle-cliente-tab-button {
   padding: 10px 20px;
+  min-width: 140px;
+  text-align: center;
   font-size: 0.95rem;
-  background-color: #e5eef3; /* como el background de los th de abonos */
+  background-color: #e5eef3;
   border: 1px solid transparent;
   border-bottom: none;
   border-radius: 6px 6px 0 0;
   cursor: pointer;
-  color: #495057;
   font-weight: 600;
+  color: #495057;
   transition: all 0.3s ease;
-  min-width: 140px;
-  text-align: center;
 }
+
 .detalle-cliente-tab-button:hover:not(.active) {
-  background-color: #d7e6ee; /* un azul celeste más fuerte al hover */
+  background-color: #d7e6ee;
 }
 
 .detalle-cliente-tab-button.active {
-  background-color: #f1f6f8; /* el fondo general claro del abonos */
-  border: 1px solid #aac7d3; /* borde azul suave */
+  background-color: #f1f6f8;
+  border: 1px solid #aac7d3;
   border-bottom: none;
   color: #212529;
   font-weight: 700;
@@ -87,395 +97,21 @@
 }
 
 .detalle-cliente-tab-content {
-  position: relative;
-  z-index: 1;
-  transform: translateZ(0);
   display: flex;
   justify-content: center;
+  gap: 30px;
+  padding: 25px 30px;
   background-color: #f1f6f8;
   border: 1px solid #aac7d3;
   border-radius: 0 6px 6px 6px;
-  padding: 25px 30px;
   margin-top: -1px;
-  gap: 30px;
   min-height: 320px;
-  color: #212529;
   font-size: 0.95rem;
 }
-.floating-tab-button {
-  position: absolute;
-  z-index: -100;
-  top: 10%;
-  right: -35px; /* sobresale del borde derecho */
-  transform: translateY(-50%);
-  background-color: #e5eef3;
-  border: 1px solid #d3e0e6;
-  border-left: none;
-  border-radius: 0 6px 6px 0;
-  padding: 8px 12px;
-  font-size: 1.2rem;
-  font-weight: bold;
-  color: #495057;
-  cursor: pointer;
-  box-shadow: 0 0 5px rgba(0,0,0,0.1);
-  transition: background-color 0.3s ease;
-}
-.floating-tab-button:hover {
-  background-color: #d7e6ee;
-}
 
-
-.vehiculos-section {
-  display: flex;
-  width: 100%;
-  justify-content: center;
-}
-
-.detalle-left {
-  flex: 1 1 30%;
-}
-.detalle-info-box {
-  background-color: #ffffff; /* blanco limpio */
-  border: 1px solid #d7e6ee; /* borde azul clarito */
-  border-radius: 8px;
-  padding: 20px 10px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-}
-
-.detalle-info-box h4 {
-  font-weight: 700;
-  font-size: 1.2rem;
-  margin-bottom: 10px;
-  color: #343a40;
-}
-.detalle-info-box p {
-  margin: 8px 0px;
-  font-size: 0.9rem;
-}
-
-.detalle-right {
-  flex: 1 1 70%;
-  display: flex;
-  flex-direction: column;
-}
-
-.balance-section {
-  background-color: #ffffff;
-  border: 1px solid #d7e6ee;
-  border-radius: 8px;
-  padding: 18px 22px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-}
-.balance-section h4 {
-  font-weight: 700;
-  font-size: 1.1rem;
-  color: #343a40;
-}
-.balance-amount {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #198754; /* verde suave, igual */
-}
-.balance-amount.negativo {
-  color: #dc3545; /* rojo clásico, igual */
-}
-.balance-info-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 40px;
-}
-.monto-positivo {
-  color: #2f7c4f; /* verde pastel oscuro */
-  font-weight: 600;
-}
-.monto-negativo {
-  color: #a94442; /* rojo pastel oscuro */
-  font-weight: 600;
-}
-/* Este envuelve el balance para controlar tamaño y alineación */
-.balance-main {
-  flex: 1;
-}
-
-/* Cartel de Abonado a la derecha */
-.abonado-status-container {
-  flex-basis: 150px;
-  border-radius: 8px;
-  padding: 12px 18px;
-  text-align: center;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-  font-weight: 700;
-  font-size: 1.1rem;
-}
-
-/* Colores según estado */
-.abonado-status-container.abonado {
-  border-color: #198754; /* verde */
-  color: #198754;
-  background-color: #e6f4ea;
-}
-
-.abonado-status-container.no-abonado {
-  border-color: #dc3545; /* rojo */
-  color: #dc3545;
-  background-color: #f8d7da;
-}
-
-/* Texto de la fecha más pequeño */
-.abonado-fecha {
-  font-weight: 500;
-  font-size: 0.85rem;
-  color: #6c757d;
-  margin-top: 6px;
-}
-
-.botones-acciones {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin: 10px 0px;
-}
-.botones-acciones button {
-  background-color: #d7e6ee; /* azul claro */
-  border: 1px solid #aac7d3;
-  border-radius: 6px;
-  padding: 5px 10px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #495057;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: background-color 0.25s ease, color 0.25s ease;
-}
-.botones-acciones button:hover {
-  background-color: #aac7d3;
-  color: #212529;
-}
-
-/* Tablas */
-
-.tabla-movimientos{
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0 10px;
-  font-size: 0.9rem;
-  text-align: center;
-  background-color: #f1f6f8; /* como el container abonos */
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
-  border-radius: 8px;
-  overflow: hidden;
-}
-.tabla-movimientos tbody tr {
-  font-size: 0.8rem;
-}
-.tabla-movimientos thead tr {
-  background-color: #e5eef3; /* fondo th */
-  color: #0d161c;
-  font-weight: 600;
-  text-align: left;
-}
-.tabla-movimientos thead th {
-  padding: 12px 15px;
-  user-select: none;
-}
-.tabla-movimientos tbody tr{
-  background-color: #ffffff; /* blanco */
-  transition: background-color 0.3s ease;
-  cursor: default;
-  border-radius: 6px;
-  box-shadow: inset 0 -1px 0 #d7e6ee; /* sombra suave azul */
-  display: table-row;
-}
-.tabla-movimientos tbody tr:hover{
-  background-color: #eaf3f7; /* azul muy claro al hover */
-}
-.tabla-movimientos tbody td {
-  padding: 10px 5px;
-  border: none;
-}
-.tabla-movimientos tbody td:last-child {
-  text-align: right;
-  font-weight: 600;
-}
-.tabla-movimientos tbody td:last-child.negativo {
-  color: #dc3545;
-}
-
-.tabla-vehiculos {
-  width: 100%;
-  height: 10px;
-  table-layout: fixed;
-  border-collapse: separate;
-  border-spacing: 0 0;
-  border: 1px #d2d2d2 solid;
-  font-size: 0.9rem;
-  background-color: #f1f6f8;
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
-  border-radius: 8px;
-  overflow: hidden;
-}
-.tabla-vehiculos thead tr {
-  background-color: #e5eef3;
-  color: #0d161c;
-  font-weight: 600;
-  text-align: left;
-}
-.tabla-vehiculos thead th {
-  padding: 12px 15px;
-  user-select: none;
-}
-.tabla-vehiculos tbody tr {
-  background-color: #ffffff;
-  transition: background-color 0.3s ease;
-  cursor: default;
-  box-shadow: inset 0 -1px 0 #d7e6ee;
-  display: table-row;
-}
-.tabla-vehiculos tbody tr:hover {
-  background-color: #eaf3f7;
-}
-.tabla-vehiculos tbody td {
-  padding: 5px 25px;
-  border: none;
-}
-
-.tabla-vehiculos th,
-.tabla-vehiculos td {
-  text-align: center;
-}
-
-.fila-expandida td {
-  background-color:rgb(243, 243, 243);
-}
-
-.expandido-botones-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
-}
-
-.botones-documentos {
-  display: flex;
-  gap: 10px;
-}
-
-.botones-documentos button {
-  padding: 2px 6px;
-  font-size: 0.85rem;
-  background-color: #e9ecef;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.botones-documentos button:hover {
-  background-color: #dfe4e8;
-}
-
-.eliminar-btn {
-  padding: 2px 6px;
-  background-color: #dc3545;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 0.85rem;
-  cursor: pointer;
-}
-
-.eliminar-btn:hover {
-  background-color: #c82333;
-}
-
-/* Modal overlay: ocupa toda la pantalla con fondo oscuro semitransparente */
-.modal-foto-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0,0,0,0.75);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-}
-
-/* Contenedor del contenido del modal */
-.modal-foto-content {
-  position: relative;
-  max-width: 90vw;
-  max-height: 90vh;
-  background: #fff;
-  padding: 1rem;
-  border-radius: 8px;
-  box-shadow: 0 0 15px rgba(0,0,0,0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-/* Imagen dentro del modal */
-.modal-foto-content img {
-  max-width: 100%;
-  max-height: 80vh;
-  object-fit: contain;
-  border-radius: 4px;
-}
-
-/* Botón para cerrar: posición arriba a la derecha */
-.modal-close-btn {
-  position: absolute;
-  top: 5px;
-  right: 10px;
-  font-size: 2rem;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  color: #333;
-  font-weight: bold;
-  line-height: 1;
-  transition: color 0.2s ease;
-}
-
-.modal-close-btn:hover {
-  color: #000;
-}
-
-.detalle-cliente-tab-extra {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  z-index: -10;
-}
-
-.detalle-cliente-plus-button {
-  background-color: #007bff;
-  color: white;
-  border: none;
-  font-size: 1.2rem;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  cursor: pointer;
-  box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.2);
-  transition: background-color 0.2s ease;
-}
-
-.detalle-cliente-plus-button:hover {
-  background-color: #0056b3;
-}
-
-
-.detalle-cliente-tabs-container {
-  position: relative; /* necesario para el posicionamiento absoluto interno */
-}
-
+/* ────────────────────────────────────────────── */
+/* BOTÓN FLOTANTE (+)                            */
+/* ────────────────────────────────────────────── */
 .boton-plus {
   position: absolute;
   top: 16%;
@@ -485,127 +121,290 @@
   font-size: 24px;
   border-radius: 4px;
   border: 1px solid #aac7d3;
-  border: 1px rgb(170, 199, 211) solid;
   background-color: #f1f6f8;
   color: #212529;
   cursor: pointer;
   display: flex;
-  justify-content: center;
   align-items: center;
-  user-select: none;
-  transition: background-color 0.2s ease;
-  padding: 0;
+  justify-content: center;
+  transition: background-color .2s ease;
 }
-
 .boton-plus:hover {
   background-color: #ddd;
 }
 
-/* Estilos para el botón de renovación */
-.btn-renovar {
-  margin-top: 8px;
-  padding: 5px 10px;
-  background-color: #28a745;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
+/* ────────────────────────────────────────────── */
+/* COLUMNA IZQUIERDA (info cliente)              */
+/* ────────────────────────────────────────────── */
+.detalle-left {
+  flex: 1 1 30%;
 }
 
-.btn-renovar:hover {
-  background-color: #218838;
-}
-
-/* Estilos para el modal de renovación */
-.modal-renovar-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0,0,0,0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 10000;
-}
-
-.modal-renovar-content {
+.detalle-info-box {
   background-color: white;
-  padding: 20px;
+  border: 1px solid #d7e6ee;
   border-radius: 8px;
-  width: 90%;
-  max-width: 400px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.3);
-  position: relative;
+  padding: 20px 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
 }
 
-.modal-renovar-header {
-  margin-bottom: 15px;
-  text-align: center;
-}
-
-.modal-renovar-header h3 {
-  margin: 0;
+.detalle-info-box h4 {
+  margin-bottom: 10px;
+  font-size: 1.2rem;
+  font-weight: 700;
   color: #343a40;
 }
 
-.detalles-renovacion {
-  margin-bottom: 20px;
-}
-
-.detalles-renovacion p {
+.detalle-info-box p {
   margin: 8px 0;
+  font-size: 0.9rem;
 }
 
-.form-group {
-  margin: 15px 0;
+/* ────────────────────────────────────────────── */
+/* COLUMNA DERECHA (movimientos y balance)       */
+/* ────────────────────────────────────────────── */
+.detalle-right {
+  flex: 1 1 70%;
+  display: flex;
+  flex-direction: column;
 }
 
-.form-group label {
-  display: block;
-  margin-bottom: 5px;
+.balance-section {
+  background-color: #fff;
+  border: 1px solid #d7e6ee;
+  border-radius: 8px;
+  padding: 18px 22px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+.balance-section h4 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #343a40;
+}
+
+.balance-main {
+  flex: 1;
+}
+
+.balance-amount {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #198754;
+}
+.balance-amount.negativo {
+  color: #dc3545;
+}
+
+.balance-info-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ────────────────────────────────────────────── */
+/* TABLA MOVIMIENTOS                              */
+/* ────────────────────────────────────────────── */
+.tabla-movimientos {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 10px;
+  background-color: #f1f6f8;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+  border-radius: 8px;
+  overflow: hidden;
+  font-size: 0.9rem;
+}
+
+.tabla-movimientos thead tr {
+  background-color: #e5eef3;
+  color: #0d161c;
+  font-weight: 600;
+}
+.tabla-movimientos thead th {
+  padding: 12px 15px;
+}
+
+.tabla-movimientos tbody tr {
+  background-color: #fff;
+  box-shadow: inset 0 -1px 0 #d7e6ee;
+  transition: background-color 0.3s ease;
+}
+.tabla-movimientos tbody tr:hover {
+  background-color: #eaf3f7;
+}
+.tabla-movimientos tbody td {
+  padding: 10px 5px;
+}
+.tabla-movimientos tbody td:last-child {
+  text-align: right;
+  font-weight: 600;
+}
+.monto-negativo {
+  color: #dc3545;
+}
+
+/* ────────────────────────────────────────────── */
+/* VEHÍCULOS — GRUPOS DE COCHERA                 */
+/* ────────────────────────────────────────────── */
+.cochera-group {
+  margin-bottom: 25px;
+}
+
+/* Estado cochera + abono */
+.status-abono-container {
+  margin-bottom: 10px;
+}
+
+.status-abono {
+  background-color: #fff;
+  border: 1px solid #aac7d3;
+  padding: 10px 15px;
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
   font-weight: 600;
 }
 
-.form-control {
+.status-abono.activo {
+  background-color: #e6f4ea;
+  border-color: #198754;
+  color: #198754;
+}
+
+.status-abono.inactivo {
+  background-color: #f8d7da;
+  border-color: #dc3545;
+  color: #dc3545;
+}
+
+.status-fecha {
+  font-weight: 700;
+  margin-left: 6px;
+}
+
+/* ────────────────────────────────────────────── */
+/* TABLA VEHÍCULOS                                */
+/* ────────────────────────────────────────────── */
+.tabla-vehiculos {
   width: 100%;
-  padding: 8px;
+  border-collapse: separate;
+  border-spacing: 0 0;
+  border: 1px solid #d2d2d2;
+  background-color: #f1f6f8;
+  border-radius: 8px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+  overflow: hidden;
+}
+
+.tabla-vehiculos thead tr {
+  background-color: #e5eef3;
+  font-weight: 600;
+  color: #0d161c;
+}
+
+.tabla-vehiculos thead th {
+  padding: 12px 15px;
+  text-align: center;
+}
+
+.tabla-vehiculos tbody tr {
+  background-color: #fff;
+  box-shadow: inset 0 -1px 0 #d7e6ee;
+  transition: background-color .25s ease;
+}
+.tabla-vehiculos tbody tr:hover {
+  background-color: #eaf3f7;
+}
+
+.tabla-vehiculos tbody td {
+  padding: 5px 25px;
+  text-align: center;
+}
+
+.fila-expandida td {
+  background-color: #f3f3f3;
+}
+
+/* Expandido */
+.expandido-contenido {
+  display: flex;
+  gap: 20px;
+  padding: 10px;
+}
+
+.detalles-adicionales p {
+  margin: 6px 0;
+  font-size: 0.9rem;
+}
+
+/* Documentos */
+.botones-documentos {
+  display: flex;
+  gap: 10px;
+}
+.botones-documentos button {
+  padding: 2px 6px;
+  font-size: 0.85rem;
+  background-color: #e9ecef;
   border: 1px solid #ced4da;
   border-radius: 4px;
-}
-
-.btn-confirmar {
-  width: 100%;
-  padding: 10px;
-  background-color:#28a745db;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: background-color .2s ease;
+}
+.botones-documentos button:hover {
+  background-color: #dfe4e8;
 }
 
-.btn-confirmar:hover {
-  background-color: #218838;
+/* ────────────────────────────────────────────── */
+/* MODAL FOTO                                      */
+/* ────────────────────────────────────────────── */
+.modal-foto-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0,0,0,0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
 }
 
-.btn-confirmar:disabled {
-  background-color: #6c757d;
-  cursor: not-allowed;
+.modal-foto-content {
+  background: #fff;
+  padding: 1rem;
+  border-radius: 8px;
+  max-width: 90vw;
+  max-height: 90vh;
+  box-shadow: 0 0 15px rgba(0,0,0,0.5);
+  position: relative;
+}
+
+.modal-foto-content img {
+  max-width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
 }
 
 .modal-close-btn {
   position: absolute;
-  top: 10px;
+  top: 5px;
   right: 10px;
-  background: none;
+  background: transparent;
   border: none;
-  font-size: 1.5rem;
+  font-size: 2rem;
   cursor: pointer;
-  color: #6c757d;
+  color: #333;
+  transition: color 0.2s ease;
+}
+.modal-close-btn:hover {
+  color: #000;
+}
+
+/* ────────────────────────────────────────────── */
+/* COCHERAS LOADING                                */
+/* ────────────────────────────────────────────── */
+.cocheras-loading {
+  text-align: center;
+  padding: 15px;
+  font-weight: 600;
+  color: #495057;
 }
