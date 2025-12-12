@@ -10,6 +10,9 @@ const DetalleCliente = () => {
   const [cliente, setCliente] = useState(null);
   const [tab, setTab] = useState('cuenta');
 
+  // 🔹 Abonos reales del cliente (NO vienen en /clientes)
+  const [abonosCliente, setAbonosCliente] = useState([]);
+
   const [vehiculoExpandido, setVehiculoExpandido] = useState(null);
   const [modalFotoUrl, setModalFotoUrl] = useState(null);
   const [modalAgregarVisible, setModalAgregarVisible] = useState(false);
@@ -31,23 +34,55 @@ const DetalleCliente = () => {
     fotoCedulaAzul: null,
   });
 
-  // 🔹 Vehículos desde /api/vehiculos
-  const [vehiculosCliente, setVehiculosCliente] = useState([]);
   // 🔹 Cocheras agrupadas con vehículos/abonos (como en DetalleClienteCajero)
   const [cocherasConVehiculos, setCocherasConVehiculos] = useState([]);
   const [cocherasLoading, setCocherasLoading] = useState(false);
+
+  const abonos = Array.isArray(abonosCliente) ? abonosCliente : [];
 
   const fetchCliente = async () => {
     try {
       const res = await fetch(`https://apiprueba.garageia.com/api/clientes/id/${id}`);
       if (!res.ok) throw new Error("Error al obtener cliente");
       const data = await res.json();
-      setCliente(data);
+
+      setCliente(prev => {
+        if (!prev) return data;
+        if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
+        return data;
+      });
     } catch (err) {
       console.error("Error al obtener cliente:", err);
-      setCliente(null);
     }
   };
+
+  useEffect(() => {
+    const fetchAbonosCliente = async () => {
+      if (!id) {
+        setAbonosCliente([]);
+        return;
+      }
+
+      try {
+        const res = await fetch(
+          `https://apiprueba.garageia.com/api/abonos?cliente=${id}`
+        );
+        if (!res.ok) throw new Error('Error cargando abonos');
+
+        const data = await res.json();
+        setAbonosCliente(prev => {
+          const next = Array.isArray(data) ? data : [];
+          if (JSON.stringify(prev) === JSON.stringify(next)) return prev;
+          return next;
+        });
+      } catch (err) {
+        console.error('Error cargando abonos del cliente:', err);
+        setAbonosCliente([]);
+      }
+    };
+
+    fetchAbonosCliente();
+  }, [id]);
 
   useEffect(() => {
     fetchCliente();
@@ -55,13 +90,26 @@ const DetalleCliente = () => {
 
   // 🔁 Poll cada 15s cuando estás en pestaña Vehículos: refresca cliente (y por rebote, cocheras/vehículos)
   useEffect(() => {
+    if (tab !== 'vehiculos') return;
+
     const interval = setInterval(() => {
-      if (tab === 'vehiculos') {
+      if (!modalAgregarVisible && !vehiculoExpandido) {
         fetchCliente();
+        fetch(`https://apiprueba.garageia.com/api/abonos?cliente=${id}`)
+          .then(r => r.json())
+          .then(d => {
+            setAbonosCliente(prev => {
+              const next = Array.isArray(d) ? d : [];
+              if (JSON.stringify(prev) === JSON.stringify(next)) return prev;
+              return next;
+            });
+          })
+          .catch(() => {});
       }
     }, 15000);
+
     return () => clearInterval(interval);
-  }, [tab]);
+  }, [tab, modalAgregarVisible, vehiculoExpandido, id]);
 
   const handleChange = (e) => {
     const { name, value, files, type } = e.target;
@@ -147,35 +195,6 @@ const DetalleCliente = () => {
 
   // ================== LÓGICA NUEVA: vehículos + cocheras ==================
 
-  // 1) Traer todos los vehículos y filtrar los del cliente
-  useEffect(() => {
-    const fetchVehiculosCliente = async () => {
-      if (!cliente || !cliente._id) {
-        setVehiculosCliente([]);
-        return;
-      }
-
-      try {
-        const res = await fetch('https://apiprueba.garageia.com/api/vehiculos');
-        if (!res.ok) {
-          console.error('No se pudieron cargar vehículos (status)', res.status);
-          return;
-        }
-
-        const data = await res.json();
-        const propios = Array.isArray(data)
-          ? data.filter(v => v.cliente && String(v.cliente._id) === String(cliente._id))
-          : [];
-
-        setVehiculosCliente(propios);
-      } catch (err) {
-        console.error('Error cargando vehículos del cliente:', err);
-      }
-    };
-
-    fetchVehiculosCliente();
-  }, [cliente]);
-
   // 2) Elegir el abono correcto por patente (igual a Cajero)
   const elegirAbonoPorPatente = (abonosCliente, patenteUpper) => {
     if (!Array.isArray(abonosCliente) || !patenteUpper) return null;
@@ -197,35 +216,29 @@ const DetalleCliente = () => {
     return [...mismos].sort(ordenarPorFecha)[0];
   };
 
-  // 3) Merge inteligente Vehículo + Abono
-  const mergeAbonoVehiculo = (vehiculo, abono) => {
-    if (!vehiculo && !abono) return null;
-    if (!vehiculo) return abono;
-    if (!abono) return vehiculo;
+  const enriquecerAbonoDesdeCliente = (abono) => {
+    if (!abono || !cliente?.abonos?.length) return abono;
+
+    const match = cliente.abonos.find(
+      a => String(a.patente || '').toUpperCase() === String(abono.patente || '').toUpperCase()
+    );
+
+    if (!match) return abono;
 
     return {
-      ...vehiculo,
-      patente: abono.patente || vehiculo.patente,
-      tipoVehiculo: abono.tipoVehiculo || vehiculo.tipoVehiculo,
-
-      marca: abono.marca || vehiculo.marca,
-      modelo: abono.modelo || vehiculo.modelo,
-      color: abono.color || vehiculo.color,
-      anio: abono.anio || vehiculo.anio,
-      companiaSeguro: abono.companiaSeguro || vehiculo.companiaSeguro,
-
-      precio: abono.precio ?? vehiculo.precio,
-      fechaExpiracion: abono.fechaExpiracion ?? vehiculo.fechaExpiracion,
-      fechaCreacion: abono.fechaCreacion ?? vehiculo.fechaCreacion,
-      activo: abono.activo ?? vehiculo.activo,
-
-      cochera: abono.cochera || vehiculo.cochera,
-      piso: abono.piso ?? vehiculo.piso,
-      exclusiva: (abono.exclusiva !== undefined ? abono.exclusiva : vehiculo.exclusiva),
-
-      _id: abono._id || vehiculo._id,
+      ...abono,
+      companiaSeguro: abono.companiaSeguro ?? match.companiaSeguro,
+      fotoSeguro: abono.fotoSeguro ?? match.fotoSeguro,
+      fotoDNI: abono.fotoDNI ?? match.fotoDNI,
+      fotoCedulaVerde: abono.fotoCedulaVerde ?? match.fotoCedulaVerde,
+      fotoCedulaAzul: abono.fotoCedulaAzul ?? match.fotoCedulaAzul,
     };
   };
+
+  // ✅ En DetalleCliente la fila del vehículo se construye desde el ABONO.
+  // La cochera solo aporta el “listado de patentes existentes” (cochera.vehiculos[])
+  // y el abono aporta todos los campos ricos (marca/modelo/fotos/fechas/etc).
+  // No se necesita merge.
 
   // 4) Helpers de estado de abono por conjunto de abonos (cochera)
   const obtenerFinAbonoDeAbonos = (abonos) => {
@@ -257,61 +270,52 @@ const DetalleCliente = () => {
       try {
         setCocherasLoading(true);
 
-        const abonosCliente = Array.isArray(cliente.abonos) ? cliente.abonos : [];
+        const abonos = Array.isArray(abonosCliente) ? abonosCliente : [];
+
         const resultado = [];
 
         for (const c of cliente.cocheras) {
-          if (!c || !c.cocheraId) continue;
+          if (!c?.cocheraId) continue;
 
-          try {
-            const res = await fetch(`https://apiprueba.garageia.com/api/cocheras/${c.cocheraId}`);
-            if (!res.ok) continue;
+          const res = await fetch(`https://apiprueba.garageia.com/api/cocheras/${c.cocheraId}`);
+          if (!res.ok) continue;
 
-            const cocheraData = await res.json();
-            const vehiculosCochera = Array.isArray(cocheraData.vehiculos)
-              ? cocheraData.vehiculos
-              : [];
-            const vehiculosAbonos = [];
+          const cocheraData = await res.json();
 
-            for (const v of vehiculosCochera) {
-              const patenteUpper = (v?.patente || '').toUpperCase();
+          const vehiculosCochera = Array.isArray(cocheraData.vehiculos) ? cocheraData.vehiculos : [];
 
-              const vehiculoDoc = vehiculosCliente.find((veh) =>
-                (veh._id && v._id && String(veh._id) === String(v._id)) ||
-                ((veh.patente || '').toUpperCase() === patenteUpper)
-              );
+          // ✅ Cada “vehículo mostrado” sale del ABONO (no del /vehiculos)
+          const abonosDeEstaCochera = vehiculosCochera
+            .map(v =>
+              elegirAbonoPorPatente(
+                abonos,
+                String(v?.patente || '').toUpperCase()
+              )
+            )
+            .filter(Boolean);
 
-              const abonoMatch = elegirAbonoPorPatente(abonosCliente, patenteUpper);
-
-              if (!vehiculoDoc && !abonoMatch) continue;
-
-              vehiculosAbonos.push(
-                mergeAbonoVehiculo(vehiculoDoc, abonoMatch)
-              );
-            }
-
-            resultado.push({
-              cocheraId: cocheraData._id || c.cocheraId,
-              tipo: cocheraData.tipo ?? c.cochera,
-              piso: cocheraData.piso ?? c.piso,
-              exclusiva: typeof cocheraData.exclusiva === 'boolean'
-                ? cocheraData.exclusiva
-                : !!c.exclusiva,
-              vehiculos: vehiculosAbonos,
-            });
-          } catch (err) {
-            console.error('Error cargando cochera cliente:', c.cocheraId, err);
-          }
+          resultado.push({
+            cocheraId: cocheraData._id || c.cocheraId,
+            tipo: cocheraData.tipo ?? c.cochera,
+            piso: cocheraData.piso ?? c.piso,
+            exclusiva: typeof cocheraData.exclusiva === 'boolean'
+              ? cocheraData.exclusiva
+              : !!c.exclusiva,
+            vehiculos: abonosDeEstaCochera.map(enriquecerAbonoDesdeCliente),
+          });
         }
 
         setCocherasConVehiculos(resultado);
+      } catch (err) {
+        console.error('Error cargando cocheras del cliente:', err);
+        setCocherasConVehiculos([]);
       } finally {
         setCocherasLoading(false);
       }
     };
 
     fetchCocherasCliente();
-  }, [cliente, vehiculosCliente]);
+  }, [cliente, abonosCliente]);
 
   if (!cliente) {
     return (
@@ -323,39 +327,26 @@ const DetalleCliente = () => {
   }
 
   const calcularCantidadVehiculosMostrados = () => {
-    // Caso con cocheras
-    if (Array.isArray(cocherasConVehiculos) && cocherasConVehiculos.length > 0) {
-      let total = 0;
+    if (!Array.isArray(cocherasConVehiculos)) return 0;
+    const patentesEnCocheras = new Set();
+    cocherasConVehiculos.forEach(c =>
+      (c.vehiculos || []).forEach(a =>
+        a?.patente && patentesEnCocheras.add(a.patente.toUpperCase())
+      )
+    );
 
-      cocherasConVehiculos.forEach(c => {
-        if (Array.isArray(c.vehiculos)) {
-          total += c.vehiculos.length;
-        }
-      });
+    const sinCochera = abonos.filter(a =>
+      a?.activo !== false &&
+      a?.patente &&
+      !patentesEnCocheras.has(a.patente.toUpperCase())
+    );
 
-      // sumar los activos sin cochera
-      const abonosActivos = Array.isArray(cliente?.abonos)
-        ? cliente.abonos.filter(a => a && a.activo !== false)
-        : [];
-
-      const idsEnCocheras = new Set();
-      cocherasConVehiculos.forEach(c =>
-        (c.vehiculos || []).forEach(v => v?._id && idsEnCocheras.add(String(v._id)))
-      );
-
-      const sinCochera = abonosActivos.filter(
-        a => a?._id && !idsEnCocheras.has(String(a._id))
-      );
-
-      return total + sinCochera.length;
-    }
-
-    // Caso legacy (sin cocheras)
-    if (Array.isArray(cliente?.abonos)) {
-      return cliente.abonos.filter(a => a && a.activo !== false).length;
-    }
-
-    return 0;
+    return (
+      cocherasConVehiculos.reduce(
+        (acc, c) => acc + (Array.isArray(c.vehiculos) ? c.vehiculos.length : 0),
+        0
+      ) + sinCochera.length
+    );
   };
 
   return (
@@ -468,21 +459,23 @@ const DetalleCliente = () => {
 
               {(() => {
                 const clienteCocherasArr = Array.isArray(cliente.cocheras) ? cliente.cocheras : [];
-                const abonosActivos = Array.isArray(cliente.abonos)
-                  ? cliente.abonos.filter(a => a && a.activo !== false)
-                  : [];
+                const abonosActivos = abonos.filter(a => a && a.activo !== false);
 
                 // Abonos activos que ya están asignados a alguna cochera
-                const abonosEnCocherasIds = new Set();
+                const patentesEnCocheras = new Set();
                 cocherasConVehiculos.forEach(c => {
-                  (c.vehiculos || []).forEach(v => {
-                    if (v && v._id) abonosEnCocherasIds.add(String(v._id));
+                  (c.vehiculos || []).forEach(a => {
+                    const p = String(a?.patente || '').toUpperCase();
+                    if (p) patentesEnCocheras.add(p);
                   });
                 });
 
-                const abonosSinCochera = abonosActivos.filter(
-                  a => !abonosEnCocherasIds.has(String(a._id))
-                );
+                const abonosSinCochera = abonosActivos
+                  .filter(a => {
+                    const p = String(a?.patente || '').toUpperCase();
+                    return p && !patentesEnCocheras.has(p);
+                  })
+                  .map(enriquecerAbonoDesdeCliente);
 
                 // ========= CASO CON COCHERAS =========
                 if (clienteCocherasArr.length > 0) {

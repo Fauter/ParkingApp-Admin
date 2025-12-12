@@ -4,6 +4,7 @@ import './AbonosSection.css';
 
 const AbonosSection = ({ viewMode }) => {
   const [clientes, setClientes] = useState([]);
+  const [cocheras, setCocheras] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busqueda, setBusqueda] = useState('');
   const navigate = useNavigate();
@@ -21,10 +22,27 @@ const AbonosSection = ({ viewMode }) => {
       setLoading(false);
     }
   };
+  const fetchCocheras = async () => {
+    try {
+      const res = await fetch('https://apiprueba.garageia.com/api/cocheras');
+      if (!res.ok) throw new Error('Error al cargar cocheras');
+      const data = await res.json();
+      setCocheras(data);
+    } catch (err) {
+      console.error('Error al obtener cocheras:', err);
+    }
+  };
 
   useEffect(() => {
     fetchClientes();
+    fetchCocheras();
   }, []);
+
+  const getVehiculosCliente = (clienteId) => {
+    return cocheras
+      .filter(c => c.cliente?._id === clienteId)
+      .flatMap(c => c.vehiculos || []);
+  };
 
   // Si venimos con location.state.recargar, recargamos la lista
   useEffect(() => {
@@ -39,10 +57,10 @@ const AbonosSection = ({ viewMode }) => {
   useEffect(() => {
     const interval = setInterval(() => {
       fetchClientes();
+      fetchCocheras();
     }, 5000);
     return () => clearInterval(interval);
   }, []);
-
   const handleRowClick = (cliente) => {
     navigate(`/detalle/${cliente._id}`);
   };
@@ -53,7 +71,9 @@ const AbonosSection = ({ viewMode }) => {
       const termino = busqueda.toLowerCase();
       return (
         cliente.nombreApellido.toLowerCase().includes(termino) ||
-        cliente.vehiculos?.some((v) => v.patente.toLowerCase().includes(termino))
+        getVehiculosCliente(cliente._id).some(v =>
+          v.patente.toLowerCase().includes(termino)
+        )
       );
   });
 
@@ -103,12 +123,15 @@ const AbonosSection = ({ viewMode }) => {
                   style={{ cursor: 'pointer' }}
                 >
                   <td>{cliente.nombreApellido}</td>
-                  <td>{cliente.vehiculos?.length || 0}</td>
-                  <td>
-                    {cliente.vehiculos?.length > 0
-                      ? cliente.vehiculos.map((v) => v.patente).join(', ')
-                      : '—'}
-                  </td>
+                  {(() => {
+                    const vehiculos = getVehiculosCliente(cliente._id);
+                    return (
+                      <>
+                        <td>{vehiculos.length}</td>
+                        <td>{vehiculos.length ? vehiculos.map(v => v.patente).join(', ') : '—'}</td>
+                      </>
+                    );
+                  })()}
                   <td style={{ color: cliente.balance < 0 ? 'red' : 'green' }}>
                     ${cliente.balance.toFixed(2)}
                   </td>
