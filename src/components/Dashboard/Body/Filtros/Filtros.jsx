@@ -425,11 +425,12 @@ function Filtros({
       );
     }
 
-    // CIERRES DE CAJA
+    // CIERRES DE CAJA + CÓMPUTOS
     if (
       activeCajaTab === "A Retirar" ||
       activeCajaTab === "Retirado" ||
-      activeCajaTab === "Parciales"
+      activeCajaTab === "Parciales" ||
+      activeCajaTab === "Cómputos"
     ) {
       return (
         <>

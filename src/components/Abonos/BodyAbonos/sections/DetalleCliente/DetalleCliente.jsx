@@ -322,6 +322,42 @@ const DetalleCliente = () => {
     );
   }
 
+  const calcularCantidadVehiculosMostrados = () => {
+    // Caso con cocheras
+    if (Array.isArray(cocherasConVehiculos) && cocherasConVehiculos.length > 0) {
+      let total = 0;
+
+      cocherasConVehiculos.forEach(c => {
+        if (Array.isArray(c.vehiculos)) {
+          total += c.vehiculos.length;
+        }
+      });
+
+      // sumar los activos sin cochera
+      const abonosActivos = Array.isArray(cliente?.abonos)
+        ? cliente.abonos.filter(a => a && a.activo !== false)
+        : [];
+
+      const idsEnCocheras = new Set();
+      cocherasConVehiculos.forEach(c =>
+        (c.vehiculos || []).forEach(v => v?._id && idsEnCocheras.add(String(v._id)))
+      );
+
+      const sinCochera = abonosActivos.filter(
+        a => a?._id && !idsEnCocheras.has(String(a._id))
+      );
+
+      return total + sinCochera.length;
+    }
+
+    // Caso legacy (sin cocheras)
+    if (Array.isArray(cliente?.abonos)) {
+      return cliente.abonos.filter(a => a && a.activo !== false).length;
+    }
+
+    return 0;
+  };
+
   return (
     <div className="clienteTab-container">
       <div className="clienteTab-header">
@@ -348,7 +384,7 @@ const DetalleCliente = () => {
             className={`detalle-cliente-tab-button ${tab === 'vehiculos' ? 'active' : ''}`}
             onClick={() => setTab('vehiculos')}
           >
-            Vehículos ({cliente.abonos?.length || 0})
+            Vehículos ({calcularCantidadVehiculosMostrados()})
           </button>
         </nav>
 

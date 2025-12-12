@@ -693,7 +693,7 @@ function Body() {
 
         {activeTab === "Cierre" && (
           <CierreDeCajaAdmin
-            ref={cierreRef} // <-- NUEVO
+            ref={cierreRef}
             activeCajaTab={activeCajaTab}
             searchTerm={searchTerm}
             onCajaTabChange={setActiveCajaTab}
