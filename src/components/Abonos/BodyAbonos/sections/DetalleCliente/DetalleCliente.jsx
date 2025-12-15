@@ -325,27 +325,14 @@ const DetalleCliente = () => {
       </div>
     );
   }
-
+  
   const calcularCantidadVehiculosMostrados = () => {
     if (!Array.isArray(cocherasConVehiculos)) return 0;
-    const patentesEnCocheras = new Set();
-    cocherasConVehiculos.forEach(c =>
-      (c.vehiculos || []).forEach(a =>
-        a?.patente && patentesEnCocheras.add(a.patente.toUpperCase())
-      )
-    );
 
-    const sinCochera = abonos.filter(a =>
-      a?.activo !== false &&
-      a?.patente &&
-      !patentesEnCocheras.has(a.patente.toUpperCase())
-    );
-
-    return (
-      cocherasConVehiculos.reduce(
-        (acc, c) => acc + (Array.isArray(c.vehiculos) ? c.vehiculos.length : 0),
-        0
-      ) + sinCochera.length
+    return cocherasConVehiculos.reduce(
+      (total, cochera) =>
+        total + (Array.isArray(cochera.vehiculos) ? cochera.vehiculos.length : 0),
+      0
     );
   };
 
@@ -458,24 +445,13 @@ const DetalleCliente = () => {
               )}
 
               {(() => {
-                const clienteCocherasArr = Array.isArray(cliente.cocheras) ? cliente.cocheras : [];
-                const abonosActivos = abonos.filter(a => a && a.activo !== false);
+                const clienteCocherasArr = Array.isArray(cliente.cocheras)
+                  ? cliente.cocheras
+                  : [];
 
-                // Abonos activos que ya están asignados a alguna cochera
-                const patentesEnCocheras = new Set();
-                cocherasConVehiculos.forEach(c => {
-                  (c.vehiculos || []).forEach(a => {
-                    const p = String(a?.patente || '').toUpperCase();
-                    if (p) patentesEnCocheras.add(p);
-                  });
-                });
+                // ❗ NO existen abonos "sueltos" en DetalleCliente
+                // ❗ Solo se renderiza lo que esté dentro de una cochera
 
-                const abonosSinCochera = abonosActivos
-                  .filter(a => {
-                    const p = String(a?.patente || '').toUpperCase();
-                    return p && !patentesEnCocheras.has(p);
-                  })
-                  .map(enriquecerAbonoDesdeCliente);
 
                 // ========= CASO CON COCHERAS =========
                 if (clienteCocherasArr.length > 0) {
@@ -600,85 +576,6 @@ const DetalleCliente = () => {
                           </div>
                         );
                       })}
-
-                      {/* Vehículos activos sin cochera asignada */}
-                      {abonosSinCochera.length > 0 && (
-                        <div className="cochera-group cochera-sin-asignar">
-                          <div className="cochera-group-header">
-                            <h4>Vehículos sin cochera asignada</h4>
-                          </div>
-                          <table className="tabla-vehiculos">
-                            <thead>
-                              <tr>
-                                <th>Patente</th>
-                                <th>Marca</th>
-                                <th>Modelo</th>
-                                <th>Año</th>
-                                <th>Color</th>
-                                <th>Tipo</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {abonosSinCochera.map((abono) => {
-                                const expandido = vehiculoExpandido === abono._id;
-                                return (
-                                  <React.Fragment key={abono._id}>
-                                    <tr
-                                      onClick={() =>
-                                        setVehiculoExpandido(prev =>
-                                          prev === abono._id ? null : abono._id
-                                        )
-                                      }
-                                      className="fila-vehiculo"
-                                      style={{ cursor: 'pointer' }}
-                                    >
-                                      <td>{abono.patente?.toUpperCase() || '---'}</td>
-                                      <td>{capitalizeFirstLetter(abono.marca)}</td>
-                                      <td>{capitalizeFirstLetter(abono.modelo)}</td>
-                                      <td>{abono.anio || '---'}</td>
-                                      <td>{capitalizeFirstLetter(abono.color)}</td>
-                                      <td>{capitalizeFirstLetter(abono.tipoVehiculo)}</td>
-                                    </tr>
-                                    {expandido && (
-                                      <tr className="fila-expandida">
-                                        <td colSpan="6">
-                                          <div className="expandido-contenido">
-                                            <div className="expandido-left">
-                                              <div className="detalles-adicionales">
-                                                <p>
-                                                  <strong>Color:</strong>{' '}
-                                                  {capitalizeFirstLetter(abono.color)}
-                                                </p>
-                                                <p>
-                                                  <strong>Seguro:</strong>{' '}
-                                                  {capitalizeFirstLetter(abono.companiaSeguro)}
-                                                </p>
-                                              </div>
-                                              <div className="botones-documentos">
-                                                <button onClick={() => abrirFoto(abono, 'dni')}>
-                                                  DNI
-                                                </button>
-                                                <button onClick={() => abrirFoto(abono, 'seguro')}>
-                                                  Seguro
-                                                </button>
-                                                <button
-                                                  onClick={() => abrirFoto(abono, 'cedulaVerde')}
-                                                >
-                                                  Céd. Verde
-                                                </button>
-                                              </div>
-                                            </div>
-                                          </div>
-                                        </td>
-                                      </tr>
-                                    )}
-                                  </React.Fragment>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
 
                       {cocherasConVehiculos.length === 0 && abonosActivos.length === 0 && (
                         <div className="sin-vehiculos">
